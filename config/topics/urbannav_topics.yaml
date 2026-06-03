@@ -1,0 +1,24 @@
+dataset: urbannav
+standard_topics:
+  lidar: /localization/lidar/pointcloud
+  camera: /localization/camera/image_raw
+  imu: /localization/imu/data
+  gps: /localization/gps/fix
+  odometry: /localization/odometry
+  path: /localization/path
+remappings:
+  lidar_in:
+    from: /velodyne_points
+    to: /localization/lidar/pointcloud
+  camera_in:
+    from: /left/image_raw
+    to: /localization/camera/image_raw
+  imu_in:
+    from: /imu/data
+    to: /localization/imu/data
+  gps_in:
+    from: /gps/fix
+    to: /localization/gps/fix
+  odom_out:
+    from: "/{algo}/odometry"
+    to: /localization/odometry

@@ -1,0 +1,16 @@
+perturbations:
+  camera:
+    vibration_blur:
+      enabled: true
+      blur_kernel: 9
+      rotation_std_deg: 1.0
+  lidar:
+    vibration:
+      enabled: true
+      position_sigma: 0.05
+      yaw_sigma_deg: 0.5
+  imu:
+    vibration_noise:
+      enabled: true
+      accel_noise_std: 0.2
+      gyro_noise_std: 0.05

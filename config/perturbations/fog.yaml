@@ -1,0 +1,13 @@
+perturbations:
+  camera:
+    fog_haze:
+      enabled: true
+      density: 0.5
+      overlay_opacity: 0.3
+  lidar:
+    fog_attenuation:
+      enabled: true
+      visibility_distance: 30.0
+      intensity_scale: 0.7
+      point_drop_ratio: 0.15
+      backscatter_ratio: 0.05

@@ -1,0 +1,27 @@
+# Rough road in morning fog scenario.
+perturbations:
+  camera:
+    fog_haze:
+      enabled: true
+      density: 0.6
+      overlay_opacity: 0.35
+    vibration_blur:
+      enabled: true
+      blur_kernel: 7
+      rotation_std_deg: 0.8
+  lidar:
+    fog_attenuation:
+      enabled: true
+      visibility_distance: 25.0
+      intensity_scale: 0.65
+      point_drop_ratio: 0.18
+      backscatter_ratio: 0.06
+    vibration:
+      enabled: true
+      position_sigma: 0.06
+      yaw_sigma_deg: 0.6
+  imu:
+    vibration_noise:
+      enabled: true
+      accel_noise_std: 0.25
+      gyro_noise_std: 0.06

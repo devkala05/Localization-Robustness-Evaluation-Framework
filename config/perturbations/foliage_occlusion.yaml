@@ -1,0 +1,15 @@
+perturbations:
+  camera:
+    foliage_mask:
+      enabled: true
+      x_min: 200
+      x_max: 600
+      y_min: 100
+      y_max: 350
+      opacity: 0.85
+  lidar:
+    azimuth_occlusion:
+      enabled: true
+      azimuth_start: 330
+      azimuth_end: 30
+      point_drop_ratio: 0.9

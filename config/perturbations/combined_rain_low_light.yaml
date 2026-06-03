@@ -1,0 +1,25 @@
+# Realistic night rain scenario.
+perturbations:
+  camera:
+    brightness_noise:
+      enabled: true
+      brightness_factor: 0.35
+      noise_std: 12
+    rain_droplets:
+      enabled: true
+      intensity: 0.5
+      streak_length: 20
+      contrast_scale: 0.75
+      droplet_count: 30
+      droplet_blur_kernel: 13
+  lidar:
+    point_dropout:
+      enabled: true
+      dropout_fraction: 0.25
+    intensity_scale:
+      enabled: true
+      intensity_scale: 0.75
+  gps:
+    dropout:
+      enabled: true
+      drop_probability: 0.1

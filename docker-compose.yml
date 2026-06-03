@@ -1,0 +1,104 @@
+x-ros-common: &ros-common
+  environment:
+    ROS_DOMAIN_ID: "42"
+    RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+  network_mode: host
+  volumes:
+    - ./config:/config:ro
+    - ./results:/results
+    - ./data:/data:ro
+
+services:
+  base:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+    image: localization_eval/base:latest
+    profiles: ["build"]
+
+  orchestrator:
+    <<: *ros-common
+    image: localization_eval/orchestrator:latest
+    build:
+      context: .
+      dockerfile: docker/orchestrator/Dockerfile
+    volumes:
+      - ./config:/config:ro
+      - ./results:/results
+      - ./data:/data:ro
+      - ./ros2_ws:/ros2_ws:ro
+      - ./scripts:/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    depends_on:
+      - perturbation_injector
+      - evaluator
+    command: python3 /ros2_ws/src/orchestrator/orchestrator/orchestrator.py --config /config/pipeline.yaml
+
+  perturbation_injector:
+    <<: *ros-common
+    image: localization_eval/perturbation_injector:latest
+    build:
+      context: .
+      dockerfile: docker/perturbation_injector/Dockerfile
+    command: tail -f /dev/null
+
+  evaluator:
+    <<: *ros-common
+    image: localization_eval/evaluator:latest
+    build:
+      context: .
+      dockerfile: docker/evaluator/Dockerfile
+    command: tail -f /dev/null
+
+  fast_livo2:
+    <<: *ros-common
+    image: localization_eval/fast_livo2:latest
+    build:
+      context: .
+      dockerfile: docker/fast_livo2/Dockerfile
+    runtime: nvidia
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+      ROS_DOMAIN_ID: "42"
+    profiles: ["algo"]
+    command: tail -f /dev/null
+
+  lio_sam:
+    <<: *ros-common
+    image: localization_eval/lio_sam:latest
+    build:
+      context: .
+      dockerfile: docker/lio_sam/Dockerfile
+    runtime: nvidia
+    profiles: ["algo"]
+    command: tail -f /dev/null
+
+  glim:
+    image: koide3/glim_ros2:humble_cuda12.2
+    <<: *ros-common
+    runtime: nvidia
+    profiles: ["algo"]
+    command: tail -f /dev/null
+
+  fast_lio2:
+    <<: *ros-common
+    image: localization_eval/fast_lio2:latest
+    build:
+      context: .
+      dockerfile: docker/fast_lio2/Dockerfile
+    runtime: nvidia
+    profiles: ["algo"]
+    command: tail -f /dev/null
+
+  orb_slam3:
+    <<: *ros-common
+    image: localization_eval/orb_slam3:latest
+    build:
+      context: .
+      dockerfile: docker/orb_slam3/Dockerfile
+    runtime: nvidia
+    profiles: ["algo"]
+    command: tail -f /dev/null

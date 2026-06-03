@@ -1,0 +1,7 @@
+# All perturbations disabled - produces golden reference.
+perturbations:
+  lidar: {}
+  camera: {}
+  imu: {}
+  gps: {}
+  global: {}

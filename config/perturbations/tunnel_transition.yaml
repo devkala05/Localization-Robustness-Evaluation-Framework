@@ -1,0 +1,11 @@
+perturbations:
+  camera:
+    tunnel_transition:
+      enabled: true
+      start_time: 20.0
+      end_time: 35.0
+      brightness_start: 1.0
+      brightness_end: 0.15
+  lidar:
+    tunnel_transition:
+      enabled: false

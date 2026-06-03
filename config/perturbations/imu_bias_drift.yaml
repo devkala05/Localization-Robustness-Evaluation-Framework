@@ -1,0 +1,9 @@
+perturbations:
+  imu:
+    bias_drift_linear:
+      enabled: true
+      gyro_drift_rate: 0.001
+      accel_drift_rate: 0.01
+    temperature_scale_factor:
+      enabled: true
+      scale_factor_error: 0.02

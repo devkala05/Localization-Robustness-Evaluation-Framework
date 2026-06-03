@@ -1,0 +1,9 @@
+perturbations:
+  camera:
+    brightness_noise:
+      enabled: true
+      brightness_factor: 0.4
+      noise_std: 10
+  lidar:
+    low_light:
+      enabled: false

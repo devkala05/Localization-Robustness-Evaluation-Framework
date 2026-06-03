@@ -1,0 +1,29 @@
+perturbations:
+  camera:
+    rain_droplets:
+      enabled: true
+      intensity: 0.4
+      streak_length: 15
+      contrast_scale: 0.8
+      droplet_count: 20
+      droplet_blur_kernel: 11
+  lidar:
+    point_dropout:
+      enabled: true
+      dropout_fraction: 0.20
+    reflective_ghosts:
+      enabled: true
+      x_min: -20
+      x_max: 20
+      y_min: -20
+      y_max: 20
+      point_drop_ratio: 0.0
+      ghost_point_ratio: 0.05
+      noise_std: 0.1
+    intensity_scale:
+      enabled: true
+      intensity_scale: 0.8
+  gps:
+    dropout:
+      enabled: true
+      drop_probability: 0.05

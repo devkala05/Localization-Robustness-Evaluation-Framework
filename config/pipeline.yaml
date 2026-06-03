@@ -1,0 +1,98 @@
+# ================================================================
+# Master Pipeline Configuration
+# Edit this file to adapt to different hardware or run subsets.
+# ================================================================
+hardware:
+  cpu_threads: 6
+  gpu_vram_gb: 8
+  ram_gb: 12
+  cuda_visible_devices: "0"
+  parallel_algos: 1
+
+ros:
+  domain_id: 42
+  ros_distro: humble
+
+dataset:
+  name: kitti
+  sequences:
+    - id: "urban_01"
+      bag_path: "/data/sequences/urban_01"
+      duration_s: 15.8
+      description: "KITTI 2011_09_26_drive_0005 residential/urban sequence with enough frames for >100 FAST-LIO2 poses"
+    - id: "highway_01"
+      bag_path: "/data/sequences/highway_01"
+      duration_s: 11.0
+      description: "KITTI 2011_09_26_drive_0001 shorter secondary sequence for contrast"
+  ground_truth_format: tum
+
+algorithms:
+  fast_livo2:
+    enabled: true
+    priority: 1
+    docker_image: "localization_eval/fast_livo2:latest"
+    launch_file: "fast_livo2.launch.py"
+    output_topic: "/localization/odometry"
+    sensors_required: [lidar, camera, imu]
+  lio_sam:
+    enabled: true
+    priority: 2
+    docker_image: "localization_eval/lio_sam:latest"
+    launch_file: "lio_sam.launch.py"
+    output_topic: "/localization/odometry"
+    sensors_required: [lidar, imu, gps]
+  glim:
+    enabled: true
+    priority: 3
+    docker_image: "koide3/glim_ros2:humble_cuda12.2"
+    launch_file: "glim_ros2.launch.py"
+    output_topic: "/localization/odometry"
+    sensors_required: [lidar, imu]
+  fast_lio2:
+    enabled: true
+    priority: 4
+    docker_image: "localization_eval/fast_lio2:latest"
+    launch_file: "fast_lio2.launch.py"
+    output_topic: "/localization/odometry"
+    sensors_required: [lidar, imu]
+  orb_slam3:
+    enabled: true
+    priority: 5
+    docker_image: "localization_eval/orb_slam3:latest"
+    launch_file: "orb_slam3.launch.py"
+    output_topic: "/localization/odometry"
+    sensors_required: [camera, imu]
+
+scenarios:
+  baseline: { enabled: true, description: "Golden reference - no perturbations" }
+  low_light: { enabled: true, description: "Night/tunnel low illumination" }
+  glare: { enabled: true, description: "Direct sunlight / headlights" }
+  tunnel_transition: { enabled: true, description: "Auto-exposure lag entering/exiting tunnel" }
+  rain: { enabled: true, description: "Rain on lens and in air" }
+  fog: { enabled: true, description: "Fog/dust/haze reducing visibility" }
+  foliage_occlusion: { enabled: true, description: "Tree branches / parked vehicles" }
+  partial_failure: { enabled: true, description: "Intermittent sensor dropout across all sensors" }
+  vibration: { enabled: true, description: "Rough terrain / engine vibration" }
+  imu_bias_drift: { enabled: true, description: "IMU temperature drift" }
+  combined_rain_low_light: { enabled: true, description: "Night rain combined" }
+  combined_fog_vibration: { enabled: true, description: "Rough road in fog combined" }
+
+evaluation:
+  failure_threshold_m: 5.0
+  tracking_loss_threshold_m: 10.0
+  max_run_timeout_multiplier: 1.5
+  alignment_method: umeyama
+
+gemini:
+  api_key_env: "GEMINI_API_KEY"
+  # Official Gemini docs currently list gemini-2.0-flash as the latest Flash
+  # text model with free-tier pricing shown for Gemini 2.0 Flash/Lite.
+  model: "gemini-2.0-flash"
+  mode: per_scenario_and_final
+  max_output_tokens: 1024
+
+output:
+  results_base: "/results"
+  plot_dpi: 150
+  plot_style: "dark_background"
+  save_rosbags: false

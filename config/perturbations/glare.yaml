@@ -1,0 +1,19 @@
+perturbations:
+  camera:
+    glare:
+      enabled: true
+      intensity_threshold: 200
+      brightness_scale: 1.8
+    lens_flare:
+      enabled: true
+      intensity: 0.4
+  lidar:
+    reflective_ghosts:
+      enabled: true
+      x_min: 5
+      x_max: 15
+      y_min: -3
+      y_max: 3
+      point_drop_ratio: 0.2
+      ghost_point_ratio: 0.1
+      noise_std: 0.2
