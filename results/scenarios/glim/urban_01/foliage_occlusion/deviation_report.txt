@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : glim
+Sequence   : urban_01
+Scenario   : foliage_occlusion
+Run date   : 2026-06-03T10:01:05.774513+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.294   0.245   0.221   0.560   0.741  
+Lateral (m)      : 0.225   0.174   0.134   0.446   0.813  
+Vertical (m)     : 0.171   0.134   0.113   0.346   0.442  
+Yaw (deg)        : 85.014  67.556  55.422  161.366 179.294
+3D Position (m)  : 0.408   0.368   0.340   0.710   1.033  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.02109 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

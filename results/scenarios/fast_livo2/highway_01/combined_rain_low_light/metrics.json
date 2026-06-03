@@ -1,0 +1,89 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "highway_01",
+  "scenario": "combined_rain_low_light",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "brightness_noise": {
+          "enabled": true,
+          "brightness_factor": 0.35,
+          "noise_std": 12
+        },
+        "rain_droplets": {
+          "enabled": true,
+          "intensity": 0.5,
+          "streak_length": 20,
+          "contrast_scale": 0.75,
+          "droplet_count": 30,
+          "droplet_blur_kernel": 13
+        }
+      },
+      "lidar": {
+        "point_dropout": {
+          "enabled": true,
+          "dropout_fraction": 0.25
+        },
+        "intensity_scale": {
+          "enabled": true,
+          "intensity_scale": 0.75
+        }
+      },
+      "gps": {
+        "dropout": {
+          "enabled": true,
+          "drop_probability": 0.1
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.4195111834563664,
+    "lateral_m": 0.16977310297457687,
+    "vertical_m": 0.3415665782240835,
+    "yaw_deg": 92.85326621361997,
+    "orientation_deg": 92.85326621361997,
+    "position_3d_m": 0.5669922987998041
+  },
+  "mean": {
+    "longitudinal_m": 0.34605997389695353,
+    "lateral_m": 0.1360261156472513,
+    "vertical_m": 0.26581525921782767,
+    "yaw_deg": 72.40687636753538,
+    "orientation_deg": 72.40687636753538,
+    "position_3d_m": 0.5167819179884385
+  },
+  "median": {
+    "longitudinal_m": 0.30435518907476367,
+    "lateral_m": 0.11616213040790016,
+    "vertical_m": 0.20438987350174614,
+    "yaw_deg": 55.233141866499665,
+    "orientation_deg": 55.233141866499665,
+    "position_3d_m": 0.4943271883497966
+  },
+  "max": {
+    "longitudinal_m": 1.1603519864285587,
+    "lateral_m": 0.4198479614558013,
+    "vertical_m": 0.9412655792377718,
+    "yaw_deg": 177.9096778525579,
+    "orientation_deg": 177.9096778525579,
+    "position_3d_m": 1.1838390723317744
+  },
+  "p95": {
+    "longitudinal_m": 0.8119494909145852,
+    "lateral_m": 0.3239237072977447,
+    "vertical_m": 0.6475853381202846,
+    "yaw_deg": 173.0519158776352,
+    "orientation_deg": 173.0519158776352,
+    "position_3d_m": 0.9423639822868001
+  },
+  "drift_rate_m_per_s": 0.059858343969716565,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:38.143440+00:00"
+}

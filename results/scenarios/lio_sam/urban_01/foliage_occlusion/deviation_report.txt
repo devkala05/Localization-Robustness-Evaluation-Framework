@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : lio_sam
+Sequence   : urban_01
+Scenario   : foliage_occlusion
+Run date   : 2026-06-03T10:00:44.942236+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.272   0.209   0.167   0.573   0.898  
+Lateral (m)      : 0.287   0.224   0.181   0.557   0.832  
+Vertical (m)     : 0.112   0.090   0.078   0.223   0.346  
+Yaw (deg)        : 89.234  72.811  66.530  165.107 179.846
+3D Position (m)  : 0.411   0.366   0.349   0.730   0.905  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.02141 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

@@ -1,0 +1,81 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "lio_sam",
+  "sequence": "highway_01",
+  "scenario": "glare",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "glare": {
+          "enabled": true,
+          "intensity_threshold": 200,
+          "brightness_scale": 1.8
+        },
+        "lens_flare": {
+          "enabled": true,
+          "intensity": 0.4
+        }
+      },
+      "lidar": {
+        "reflective_ghosts": {
+          "enabled": true,
+          "x_min": 5,
+          "x_max": 15,
+          "y_min": -3,
+          "y_max": 3,
+          "point_drop_ratio": 0.2,
+          "ghost_point_ratio": 0.1,
+          "noise_std": 0.2
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.22912877839993287,
+    "lateral_m": 0.21598756510567776,
+    "vertical_m": 0.10262794835163354,
+    "yaw_deg": 82.51478798132246,
+    "orientation_deg": 82.51478798132246,
+    "position_3d_m": 0.3311844216659209
+  },
+  "mean": {
+    "longitudinal_m": 0.1855021370349274,
+    "lateral_m": 0.17474468265627166,
+    "vertical_m": 0.0827050402297669,
+    "yaw_deg": 66.82343412556534,
+    "orientation_deg": 66.82343412556534,
+    "position_3d_m": 0.30193642802659665
+  },
+  "median": {
+    "longitudinal_m": 0.15551347677727584,
+    "lateral_m": 0.1298587421606237,
+    "vertical_m": 0.07523136991217025,
+    "yaw_deg": 55.16192556493695,
+    "orientation_deg": 55.16192556493695,
+    "position_3d_m": 0.29857186641624245
+  },
+  "max": {
+    "longitudinal_m": 0.48515422370959554,
+    "lateral_m": 0.5992953119935805,
+    "vertical_m": 0.2568359068314127,
+    "yaw_deg": 171.68524021523686,
+    "orientation_deg": 171.68524021523686,
+    "position_3d_m": 0.7293048719453215
+  },
+  "p95": {
+    "longitudinal_m": 0.4607151491783471,
+    "lateral_m": 0.40469528262175636,
+    "vertical_m": 0.18626906033063712,
+    "yaw_deg": 156.23220718357038,
+    "orientation_deg": 156.23220718357038,
+    "position_3d_m": 0.5139844001664149
+  },
+  "drift_rate_m_per_s": 0.01889487611770472,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:52.002303+00:00"
+}

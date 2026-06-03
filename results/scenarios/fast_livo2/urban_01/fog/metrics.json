@@ -1,0 +1,74 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "urban_01",
+  "scenario": "fog",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "fog_haze": {
+          "enabled": true,
+          "density": 0.5,
+          "overlay_opacity": 0.3
+        }
+      },
+      "lidar": {
+        "fog_attenuation": {
+          "enabled": true,
+          "visibility_distance": 30.0,
+          "intensity_scale": 0.7,
+          "point_drop_ratio": 0.15,
+          "backscatter_ratio": 0.05
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.33220333611557085,
+    "lateral_m": 0.27130371315231877,
+    "vertical_m": 0.18930730827118974,
+    "yaw_deg": 88.58635099444678,
+    "orientation_deg": 88.58635099444678,
+    "position_3d_m": 0.4688304792368281
+  },
+  "mean": {
+    "longitudinal_m": 0.25985072261291303,
+    "lateral_m": 0.22337804167370753,
+    "vertical_m": 0.15193253996314912,
+    "yaw_deg": 73.73826085491935,
+    "orientation_deg": 73.73826085491935,
+    "position_3d_m": 0.42006584933909913
+  },
+  "median": {
+    "longitudinal_m": 0.2070878431296107,
+    "lateral_m": 0.18652440277201238,
+    "vertical_m": 0.12374256567379617,
+    "yaw_deg": 62.367991021970894,
+    "orientation_deg": 62.367991021970894,
+    "position_3d_m": 0.3948932174180131
+  },
+  "max": {
+    "longitudinal_m": 1.0243546578457203,
+    "lateral_m": 0.8075581935965549,
+    "vertical_m": 0.4823503259961237,
+    "yaw_deg": 178.40431314033262,
+    "orientation_deg": 178.40431314033262,
+    "position_3d_m": 1.052478999845227
+  },
+  "p95": {
+    "longitudinal_m": 0.6285188994698115,
+    "lateral_m": 0.525884384150821,
+    "vertical_m": 0.37492296417521437,
+    "yaw_deg": 160.78313240003453,
+    "orientation_deg": 160.78313240003453,
+    "position_3d_m": 0.7587049895310016
+  },
+  "drift_rate_m_per_s": 0.03637876682619053,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:24.365285+00:00"
+}

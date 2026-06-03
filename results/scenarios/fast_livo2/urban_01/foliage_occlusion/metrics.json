@@ -1,0 +1,76 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "urban_01",
+  "scenario": "foliage_occlusion",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "foliage_mask": {
+          "enabled": true,
+          "x_min": 200,
+          "x_max": 600,
+          "y_min": 100,
+          "y_max": 350,
+          "opacity": 0.85
+        }
+      },
+      "lidar": {
+        "azimuth_occlusion": {
+          "enabled": true,
+          "azimuth_start": 330,
+          "azimuth_end": 30,
+          "point_drop_ratio": 0.9
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.24303756699545004,
+    "lateral_m": 0.2177265494225904,
+    "vertical_m": 0.16953078854355244,
+    "yaw_deg": 83.17741696552112,
+    "orientation_deg": 83.17741696552112,
+    "position_3d_m": 0.3677129281909112
+  },
+  "mean": {
+    "longitudinal_m": 0.19778366540013467,
+    "lateral_m": 0.17658036345459263,
+    "vertical_m": 0.13291529222279155,
+    "yaw_deg": 67.02472788022656,
+    "orientation_deg": 67.02472788022656,
+    "position_3d_m": 0.3368785630672515
+  },
+  "median": {
+    "longitudinal_m": 0.17860825417818244,
+    "lateral_m": 0.15729673634868638,
+    "vertical_m": 0.10745761598487341,
+    "yaw_deg": 52.75336268162914,
+    "orientation_deg": 52.75336268162914,
+    "position_3d_m": 0.32382176613061875
+  },
+  "max": {
+    "longitudinal_m": 0.6354314737592696,
+    "lateral_m": 0.7892632306334533,
+    "vertical_m": 0.5386146226533943,
+    "yaw_deg": 179.66553907503155,
+    "orientation_deg": 179.66553907503155,
+    "position_3d_m": 0.9644121536382978
+  },
+  "p95": {
+    "longitudinal_m": 0.45555147754644704,
+    "lateral_m": 0.4082529404986418,
+    "vertical_m": 0.3559812053973181,
+    "yaw_deg": 170.57819328439294,
+    "orientation_deg": 170.57819328439294,
+    "position_3d_m": 0.5749872700241482
+  },
+  "drift_rate_m_per_s": 0.01878310601409973,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:25.120576+00:00"
+}

@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : orb_slam3
+Sequence   : urban_01
+Scenario   : vibration
+Run date   : 2026-06-03T10:01:47.142670+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.323   0.254   0.204   0.600   1.068  
+Lateral (m)      : 0.211   0.161   0.129   0.421   0.771  
+Vertical (m)     : 0.276   0.216   0.164   0.550   0.759  
+Yaw (deg)        : 86.969  71.161  57.398  159.759 174.800
+3D Position (m)  : 0.475   0.426   0.390   0.798   1.079  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.02117 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

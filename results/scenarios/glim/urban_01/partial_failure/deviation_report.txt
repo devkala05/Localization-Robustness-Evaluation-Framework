@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : glim
+Sequence   : urban_01
+Scenario   : partial_failure
+Run date   : 2026-06-03T10:01:06.597415+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.465   0.368   0.323   0.906   1.268  
+Lateral (m)      : 0.505   0.423   0.376   0.944   1.373  
+Vertical (m)     : 0.202   0.161   0.133   0.366   0.607  
+Yaw (deg)        : 93.444  79.667  71.981  165.187 177.772
+3D Position (m)  : 0.715   0.649   0.602   1.212   1.609  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.04804 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

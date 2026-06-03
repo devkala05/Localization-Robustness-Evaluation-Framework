@@ -1,0 +1,5 @@
+orb_slam3 on highway_01 in the vibration scenario reached 0.522 m 3D RMSE, 0.376 m lateral RMSE, 0.330 m longitudinal RMSE, and 89.475 deg yaw RMSE. The clean baseline position RMSE was 0.069889 m, so the position degradation factor is 7.46x.
+
+The largest error component was longitudinal error at 0.330 m RMSE, while lateral error remained 0.376 m RMSE. This is physically plausible for the configured rain case because LiDAR point dropout, reflective ghost points, intensity scaling, camera rain streaks, and GPS dropout reduce scan consistency without creating a large sideways jump. Active perturbation groups were: camera, lidar, imu.
+
+The run produced 110 real odometry poses over 10.90 seconds, with 0 tracking-loss events and a drift rate of 0.049 m/s. The recommended robustness improvement is to reject low-confidence rain returns using intensity/range consistency before scan matching and to increase reliance on IMU propagation during short windows of LiDAR degradation.

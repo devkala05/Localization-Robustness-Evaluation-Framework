@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : glim
+Sequence   : urban_01
+Scenario   : imu_bias_drift
+Run date   : 2026-06-03T10:01:08.235612+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.209   0.166   0.135   0.442   0.597  
+Lateral (m)      : 0.218   0.174   0.137   0.439   0.698  
+Vertical (m)     : 0.117   0.094   0.084   0.221   0.293  
+Yaw (deg)        : 79.605  63.975  55.431  154.266 178.027
+3D Position (m)  : 0.324   0.295   0.267   0.540   0.734  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.03268 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

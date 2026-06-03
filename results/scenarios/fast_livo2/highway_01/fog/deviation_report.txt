@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : fast_livo2
+Sequence   : highway_01
+Scenario   : fog
+Run date   : 2026-06-03T10:00:34.017330+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.275   0.229   0.213   0.449   0.837  
+Lateral (m)      : 0.214   0.172   0.139   0.401   0.561  
+Vertical (m)     : 0.283   0.229   0.189   0.519   0.682  
+Yaw (deg)        : 85.395  70.609  61.180  161.740 179.984
+3D Position (m)  : 0.449   0.409   0.402   0.792   0.916  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.07791 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

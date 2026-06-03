@@ -1,0 +1,79 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "orb_slam3",
+  "sequence": "urban_01",
+  "scenario": "vibration",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "vibration_blur": {
+          "enabled": true,
+          "blur_kernel": 9,
+          "rotation_std_deg": 1.0
+        }
+      },
+      "lidar": {
+        "vibration": {
+          "enabled": true,
+          "position_sigma": 0.05,
+          "yaw_sigma_deg": 0.5
+        }
+      },
+      "imu": {
+        "vibration_noise": {
+          "enabled": true,
+          "accel_noise_std": 0.2,
+          "gyro_noise_std": 0.05
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.3233149269121833,
+    "lateral_m": 0.21149506654752065,
+    "vertical_m": 0.27571296635480547,
+    "yaw_deg": 86.96855680946352,
+    "orientation_deg": 86.96855680946352,
+    "position_3d_m": 0.4746370665617433
+  },
+  "mean": {
+    "longitudinal_m": 0.2543442869472043,
+    "lateral_m": 0.16082294936611258,
+    "vertical_m": 0.21563616679867428,
+    "yaw_deg": 71.16109746746831,
+    "orientation_deg": 71.16109746746831,
+    "position_3d_m": 0.42560593575528727
+  },
+  "median": {
+    "longitudinal_m": 0.20409551109307422,
+    "lateral_m": 0.12875982882076992,
+    "vertical_m": 0.1643255545546387,
+    "yaw_deg": 57.3983097108612,
+    "orientation_deg": 57.3983097108612,
+    "position_3d_m": 0.3903801670765754
+  },
+  "max": {
+    "longitudinal_m": 1.0683837891934316,
+    "lateral_m": 0.7705343384790567,
+    "vertical_m": 0.7589791427329315,
+    "yaw_deg": 174.80041578747324,
+    "orientation_deg": 174.80041578747324,
+    "position_3d_m": 1.0792990547932526
+  },
+  "p95": {
+    "longitudinal_m": 0.599500300995822,
+    "lateral_m": 0.4213931106116819,
+    "vertical_m": 0.5499435409661264,
+    "yaw_deg": 159.75946456431876,
+    "orientation_deg": 159.75946456431876,
+    "position_3d_m": 0.7979496415665156
+  },
+  "drift_rate_m_per_s": 0.02116556527317925,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:47.142670+00:00"
+}

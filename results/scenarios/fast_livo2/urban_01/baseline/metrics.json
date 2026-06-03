@@ -1,0 +1,63 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "urban_01",
+  "scenario": "baseline",
+  "perturbation_params": {
+    "perturbations": {
+      "lidar": {},
+      "camera": {},
+      "imu": {},
+      "gps": {},
+      "global": {}
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.02912891831690661,
+    "lateral_m": 0.03800355365346011,
+    "vertical_m": 0.013275647709268333,
+    "yaw_deg": 18.055438568816005,
+    "orientation_deg": 18.055438568816005,
+    "position_3d_m": 0.049689101367453206
+  },
+  "mean": {
+    "longitudinal_m": 0.023855991507090255,
+    "lateral_m": 0.030107822789178285,
+    "vertical_m": 0.010827566200336907,
+    "yaw_deg": 13.783939589728899,
+    "orientation_deg": 13.783939589728899,
+    "position_3d_m": 0.04534962735115454
+  },
+  "median": {
+    "longitudinal_m": 0.02013575414151382,
+    "lateral_m": 0.02447683277252511,
+    "vertical_m": 0.009361242840541637,
+    "yaw_deg": 10.782151863236074,
+    "orientation_deg": 10.782151863236074,
+    "position_3d_m": 0.040835758139055225
+  },
+  "max": {
+    "longitudinal_m": 0.07627641075415466,
+    "lateral_m": 0.100305415692474,
+    "vertical_m": 0.03612563364886348,
+    "yaw_deg": 75.39182195391021,
+    "orientation_deg": 75.39182195391021,
+    "position_3d_m": 0.10198556943949051
+  },
+  "p95": {
+    "longitudinal_m": 0.056049983363845236,
+    "lateral_m": 0.07427644206205387,
+    "vertical_m": 0.026558735062136813,
+    "yaw_deg": 34.26384084922599,
+    "orientation_deg": 34.26384084922599,
+    "position_3d_m": 0.08134355741033912
+  },
+  "drift_rate_m_per_s": 0.0033386504075499715,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:20.296689+00:00"
+}

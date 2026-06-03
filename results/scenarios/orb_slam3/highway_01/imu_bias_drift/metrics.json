@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "orb_slam3",
+  "sequence": "highway_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.2920071993166206,
+    "lateral_m": 0.2735646543140208,
+    "vertical_m": 0.1632083050513883,
+    "yaw_deg": 81.23441671464032,
+    "orientation_deg": 81.23441671464032,
+    "position_3d_m": 0.4321374496389237
+  },
+  "mean": {
+    "longitudinal_m": 0.23661110702617555,
+    "lateral_m": 0.22209217082244673,
+    "vertical_m": 0.12626639621293853,
+    "yaw_deg": 67.43708055335081,
+    "orientation_deg": 67.43708055335081,
+    "position_3d_m": 0.39710490876631643
+  },
+  "median": {
+    "longitudinal_m": 0.21647324229636825,
+    "lateral_m": 0.18205884911705292,
+    "vertical_m": 0.10133461553055917,
+    "yaw_deg": 63.397065575486344,
+    "orientation_deg": 63.397065575486344,
+    "position_3d_m": 0.3771127827395544
+  },
+  "max": {
+    "longitudinal_m": 0.8387360892243687,
+    "lateral_m": 0.7711205977441508,
+    "vertical_m": 0.4188601351873251,
+    "yaw_deg": 175.65688203481452,
+    "orientation_deg": 175.65688203481452,
+    "position_3d_m": 0.8965662584745177
+  },
+  "p95": {
+    "longitudinal_m": 0.5320377874717241,
+    "lateral_m": 0.5064012822644024,
+    "vertical_m": 0.30274405543002564,
+    "yaw_deg": 147.0701379270403,
+    "orientation_deg": 147.0701379270403,
+    "position_3d_m": 0.6928909463585264
+  },
+  "drift_rate_m_per_s": 0.0266277502964308,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:57.253042+00:00"
+}

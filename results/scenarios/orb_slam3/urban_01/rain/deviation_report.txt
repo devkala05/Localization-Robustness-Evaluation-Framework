@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : orb_slam3
+Sequence   : urban_01
+Scenario   : rain
+Run date   : 2026-06-03T10:01:43.904782+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.411   0.337   0.308   0.756   1.023  
+Lateral (m)      : 0.369   0.293   0.251   0.663   1.143  
+Vertical (m)     : 0.197   0.157   0.136   0.385   0.571  
+Yaw (deg)        : 95.142  81.677  81.133  166.743 177.455
+3D Position (m)  : 0.587   0.539   0.527   0.916   1.295  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.05039 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

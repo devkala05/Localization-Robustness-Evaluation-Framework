@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : lio_sam
+Sequence   : urban_01
+Scenario   : tunnel_transition
+Run date   : 2026-06-03T10:00:42.357164+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.257   0.208   0.173   0.483   0.808  
+Lateral (m)      : 0.211   0.165   0.135   0.400   0.559  
+Vertical (m)     : 0.216   0.179   0.166   0.401   0.634  
+Yaw (deg)        : 85.654  70.903  62.462  163.859 175.462
+3D Position (m)  : 0.396   0.361   0.372   0.668   0.871  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.04792 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

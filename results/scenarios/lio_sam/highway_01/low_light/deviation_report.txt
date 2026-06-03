@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : lio_sam
+Sequence   : highway_01
+Scenario   : low_light
+Run date   : 2026-06-03T10:00:51.212139+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.144   0.113   0.092   0.303   0.439  
+Lateral (m)      : 0.112   0.089   0.072   0.217   0.346  
+Vertical (m)     : 0.124   0.098   0.078   0.245   0.352  
+Yaw (deg)        : 63.717  51.678  43.796  119.830 167.764
+3D Position (m)  : 0.221   0.198   0.181   0.395   0.492  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.01089 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

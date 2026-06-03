@@ -1,0 +1,72 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_lio2",
+  "sequence": "urban_01",
+  "scenario": "tunnel_transition",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "tunnel_transition": {
+          "enabled": true,
+          "start_time": 20.0,
+          "end_time": 35.0,
+          "brightness_start": 1.0,
+          "brightness_end": 0.15
+        }
+      },
+      "lidar": {
+        "tunnel_transition": {
+          "enabled": false
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.27204955160275435,
+    "lateral_m": 0.1732065337205307,
+    "vertical_m": 0.24309029619969894,
+    "yaw_deg": 82.98518785440591,
+    "orientation_deg": 82.98518785440591,
+    "position_3d_m": 0.4038618005669742
+  },
+  "mean": {
+    "longitudinal_m": 0.21640100517366576,
+    "lateral_m": 0.13618076870378906,
+    "vertical_m": 0.19356075648816748,
+    "yaw_deg": 67.52041623749128,
+    "orientation_deg": 67.52041623749128,
+    "position_3d_m": 0.3596394725073576
+  },
+  "median": {
+    "longitudinal_m": 0.16985129598879856,
+    "lateral_m": 0.107736259920507,
+    "vertical_m": 0.15979728607061094,
+    "yaw_deg": 60.43067752577438,
+    "orientation_deg": 60.43067752577438,
+    "position_3d_m": 0.32938298244853537
+  },
+  "max": {
+    "longitudinal_m": 0.7268222797793086,
+    "lateral_m": 0.6632368429406289,
+    "vertical_m": 0.7676985226382608,
+    "yaw_deg": 179.90565529687254,
+    "orientation_deg": 179.90565529687254,
+    "position_3d_m": 0.9276045930072846
+  },
+  "p95": {
+    "longitudinal_m": 0.521711192870802,
+    "lateral_m": 0.3388136175763713,
+    "vertical_m": 0.459036920522652,
+    "yaw_deg": 161.13792492688657,
+    "orientation_deg": 161.13792492688657,
+    "position_3d_m": 0.6950392506212691
+  },
+  "drift_rate_m_per_s": 0.012674684540153773,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:23.479575+00:00"
+}

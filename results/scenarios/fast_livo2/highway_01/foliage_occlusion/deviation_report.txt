@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : fast_livo2
+Sequence   : highway_01
+Scenario   : foliage_occlusion
+Run date   : 2026-06-03T10:00:34.970223+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.226   0.182   0.158   0.407   0.709  
+Lateral (m)      : 0.199   0.159   0.132   0.363   0.531  
+Vertical (m)     : 0.139   0.111   0.097   0.260   0.368  
+Yaw (deg)        : 85.522  67.922  53.879  172.332 179.678
+3D Position (m)  : 0.332   0.306   0.307   0.525   0.711  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.02497 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

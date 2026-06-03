@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : lio_sam
+Sequence   : urban_01
+Scenario   : baseline
+Run date   : 2026-06-03T10:00:39.787692+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.040   0.032   0.026   0.075   0.109  
+Lateral (m)      : 0.035   0.028   0.023   0.072   0.097  
+Vertical (m)     : 0.015   0.013   0.011   0.028   0.042  
+Yaw (deg)        : 17.396  13.307  10.841  33.729  55.944 
+3D Position (m)  : 0.056   0.050   0.047   0.097   0.126  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.00206 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

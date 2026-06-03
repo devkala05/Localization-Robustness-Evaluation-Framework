@@ -1,0 +1,5 @@
+lio_sam on highway_01 in the fog scenario reached 0.478 m 3D RMSE, 0.164 m lateral RMSE, 0.329 m longitudinal RMSE, and 93.542 deg yaw RMSE. The clean baseline position RMSE was 0.053786 m, so the position degradation factor is 8.88x.
+
+The largest error component was longitudinal error at 0.329 m RMSE, while lateral error remained 0.164 m RMSE. This is physically plausible for the configured rain case because LiDAR point dropout, reflective ghost points, intensity scaling, camera rain streaks, and GPS dropout reduce scan consistency without creating a large sideways jump. Active perturbation groups were: camera, lidar.
+
+The run produced 110 real odometry poses over 10.90 seconds, with 0 tracking-loss events and a drift rate of 0.037 m/s. The recommended robustness improvement is to reject low-confidence rain returns using intensity/range consistency before scan matching and to increase reliance on IMU propagation during short windows of LiDAR degradation.

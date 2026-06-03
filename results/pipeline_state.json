@@ -1,0 +1,1684 @@
+{
+  "runs": [
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:20.287535+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:21.217018+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:21.217318+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:22.034859+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:22.035491+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:22.782465+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:22.782754+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:23.592321+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:23.592612+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:24.350385+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:24.350678+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:25.104934+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:25.105253+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:25.843853+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:25.844160+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:26.594367+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:26.594676+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:27.436353+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:27.436785+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:28.225818+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:28.226188+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:29.219843+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:29.220356+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:30.043588+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:30.044123+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:30.807836+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:30.808175+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:31.578623+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:31.579099+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:32.381156+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:32.381772+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:33.182298+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:33.182990+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:34.002077+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:34.002602+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:34.951099+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:34.952056+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:35.717571+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:35.718003+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:36.523871+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:36.524274+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:37.290979+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:37.291692+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:38.128133+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:38.128517+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:38.941612+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:38.942130+00:00"
+    },
+    {
+      "algorithm": "fast_livo2",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:39.770631+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:39.771354+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:40.573476+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:40.573884+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:41.514721+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:41.515476+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:42.341078+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:42.341703+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:43.175412+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:43.175983+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:44.023768+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:44.024252+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:44.921480+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:44.922043+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:45.898403+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:45.898923+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:46.745492+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:46.745885+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:47.804697+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:47.805565+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:48.730119+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:48.730675+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:49.543769+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:49.544452+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:50.380733+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:50.381418+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:51.197167+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:51.197647+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:51.985240+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:51.985978+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:52.820056+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:52.820682+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:53.922565+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:53.923210+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:54.782503+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:54.783124+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:55.605374+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:55.606035+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:56.515316+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:56.516214+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:57.388255+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:57.388902+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:58.209486+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:58.210002+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:59.032611+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:59.033085+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:00:59.982614+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:00:59.983058+00:00"
+    },
+    {
+      "algorithm": "lio_sam",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:00.758728+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:00.759388+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:01.581095+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:01.581751+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:02.391976+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:02.392531+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:03.203596+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:03.204118+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:04.019584+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:04.020171+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:04.829961+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:04.830490+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:05.758911+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:05.759490+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:06.580551+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:06.581063+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:07.364587+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:07.365076+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:08.220015+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:08.220570+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:09.045033+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:09.045625+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:09.853106+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:09.853824+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:10.688777+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:10.689409+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:11.640196+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:11.640758+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:12.420537+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:12.421061+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:13.224426+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:13.225019+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:14.042921+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:14.043550+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:14.872964+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:14.873615+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:15.708891+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:15.709834+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:16.525196+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:16.525696+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:17.516662+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:17.517264+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:18.348891+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:18.349544+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:19.188850+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:19.189650+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:19.997855+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:19.998395+00:00"
+    },
+    {
+      "algorithm": "glim",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:20.808089+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:20.808996+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:21.665093+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:21.665656+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:22.494335+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:22.494986+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:23.464054+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:23.464719+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:24.253011+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:24.253612+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:25.120941+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:25.121592+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:25.913201+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:25.913946+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:26.714315+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:26.715020+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:27.539066+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:27.539793+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:28.358220+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:28.358708+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:29.376956+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:29.377791+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:30.204853+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:30.205497+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:31.031511+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:31.032347+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:31.852012+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:31.852592+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:32.658990+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:32.659827+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:33.473078+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:33.473953+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:34.323106+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:34.323641+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:35.153776+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:35.154618+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:36.192471+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:36.193251+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:36.977295+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:36.977961+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:37.761221+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:37.761773+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:38.491361+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:38.491930+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:39.234584+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:39.235129+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:39.987403+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:39.987941+00:00"
+    },
+    {
+      "algorithm": "fast_lio2",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:40.726316+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:40.726831+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:41.577681+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:41.578497+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:42.338818+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:42.339469+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:43.120592+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:43.121128+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:43.887494+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:43.888379+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:44.684952+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:44.685619+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:45.441019+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:45.441778+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:46.226095+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:46.226664+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:47.125010+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:47.125596+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:47.891308+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:47.892069+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:48.673808+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:48.674561+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:49.468705+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:49.469262+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "urban_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:50.267917+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:50.268516+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "baseline",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:51.029117+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:51.030138+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:51.798939+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:51.799497+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "glare",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:52.702088+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:52.702695+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "tunnel_transition",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:53.437857+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:53.438452+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "rain",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:54.205976+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:54.206719+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "fog",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:54.958513+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:54.959368+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "foliage_occlusion",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:55.712972+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:55.713860+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "partial_failure",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:56.462924+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:56.463496+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:57.236484+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:57.237088+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "imu_bias_drift",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:58.107778+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:58.108402+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "combined_rain_low_light",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:58.882053+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "RUNNING",
+      "updated_at": "2026-06-03T10:01:58.882722+00:00"
+    },
+    {
+      "algorithm": "orb_slam3",
+      "sequence": "highway_01",
+      "scenario": "combined_fog_vibration",
+      "status": "DONE",
+      "updated_at": "2026-06-03T10:01:59.629921+00:00"
+    }
+  ]
+}

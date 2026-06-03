@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "glim",
+  "sequence": "highway_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.2377905678895582,
+    "lateral_m": 0.17555433957187652,
+    "vertical_m": 0.09121430995593788,
+    "yaw_deg": 82.44558238416451,
+    "orientation_deg": 82.44558238416451,
+    "position_3d_m": 0.3093278691946366
+  },
+  "mean": {
+    "longitudinal_m": 0.18881738767229572,
+    "lateral_m": 0.1347119540846367,
+    "vertical_m": 0.072906877608483,
+    "yaw_deg": 63.29004179200667,
+    "orientation_deg": 63.29004179200667,
+    "position_3d_m": 0.27605927189303314
+  },
+  "median": {
+    "longitudinal_m": 0.1549702249822988,
+    "lateral_m": 0.11385026091604483,
+    "vertical_m": 0.062369669671312175,
+    "yaw_deg": 46.71580230290408,
+    "orientation_deg": 46.71580230290408,
+    "position_3d_m": 0.24662830875691033
+  },
+  "max": {
+    "longitudinal_m": 0.7867907886418053,
+    "lateral_m": 0.4963040923818643,
+    "vertical_m": 0.36396850064076935,
+    "yaw_deg": 179.2801944218958,
+    "orientation_deg": 179.2801944218958,
+    "position_3d_m": 0.8294859350533687
+  },
+  "p95": {
+    "longitudinal_m": 0.4780215914248067,
+    "lateral_m": 0.34389369250906177,
+    "vertical_m": 0.15440881366608195,
+    "yaw_deg": 161.06545961501803,
+    "orientation_deg": 161.06545961501803,
+    "position_3d_m": 0.5626528746630073
+  },
+  "drift_rate_m_per_s": 0.03597363725053655,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:18.352758+00:00"
+}

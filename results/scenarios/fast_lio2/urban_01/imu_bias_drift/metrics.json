@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_lio2",
+  "sequence": "urban_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.2509077455316825,
+    "lateral_m": 0.24788725143832613,
+    "vertical_m": 0.11253841739718025,
+    "yaw_deg": 83.97430421814418,
+    "orientation_deg": 83.97430421814418,
+    "position_3d_m": 0.37022652739059825
+  },
+  "mean": {
+    "longitudinal_m": 0.20180777158298113,
+    "lateral_m": 0.19566903467423094,
+    "vertical_m": 0.08882103563200221,
+    "yaw_deg": 67.56902383482122,
+    "orientation_deg": 67.56902383482122,
+    "position_3d_m": 0.3391868838205247
+  },
+  "median": {
+    "longitudinal_m": 0.1638369404396613,
+    "lateral_m": 0.16583167194334555,
+    "vertical_m": 0.06777604584457364,
+    "yaw_deg": 56.110466439014665,
+    "orientation_deg": 56.110466439014665,
+    "position_3d_m": 0.3303789015723878
+  },
+  "max": {
+    "longitudinal_m": 0.6006607714154071,
+    "lateral_m": 0.8876149302000065,
+    "vertical_m": 0.3161679565885895,
+    "yaw_deg": 179.91905076787023,
+    "orientation_deg": 179.91905076787023,
+    "position_3d_m": 0.8953451486063143
+  },
+  "p95": {
+    "longitudinal_m": 0.5066410961620743,
+    "lateral_m": 0.43948274857862496,
+    "vertical_m": 0.2134611367589165,
+    "yaw_deg": 171.65211078261154,
+    "orientation_deg": 171.65211078261154,
+    "position_3d_m": 0.5748119687387956
+  },
+  "drift_rate_m_per_s": 0.014847438211709611,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:28.373681+00:00"
+}

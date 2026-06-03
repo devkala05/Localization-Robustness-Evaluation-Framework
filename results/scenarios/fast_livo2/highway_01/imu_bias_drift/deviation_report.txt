@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : fast_livo2
+Sequence   : highway_01
+Scenario   : imu_bias_drift
+Run date   : 2026-06-03T10:00:37.306662+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.175   0.140   0.121   0.345   0.459  
+Lateral (m)      : 0.159   0.122   0.099   0.317   0.467  
+Vertical (m)     : 0.156   0.121   0.107   0.310   0.489  
+Yaw (deg)        : 75.958  57.850  41.901  160.565 176.169
+3D Position (m)  : 0.283   0.255   0.238   0.490   0.644  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.03757 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

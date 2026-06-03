@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : glim
+Sequence   : highway_01
+Scenario   : combined_rain_low_light
+Run date   : 2026-06-03T10:01:19.205317+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.433   0.336   0.268   0.791   1.352  
+Lateral (m)      : 0.406   0.306   0.226   0.828   1.443  
+Vertical (m)     : 0.191   0.156   0.143   0.344   0.557  
+Yaw (deg)        : 89.726  75.395  67.984  160.793 178.788
+3D Position (m)  : 0.623   0.550   0.493   1.107   1.546  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.05619 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

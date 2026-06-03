@@ -1,0 +1,76 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "lio_sam",
+  "sequence": "urban_01",
+  "scenario": "foliage_occlusion",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "foliage_mask": {
+          "enabled": true,
+          "x_min": 200,
+          "x_max": 600,
+          "y_min": 100,
+          "y_max": 350,
+          "opacity": 0.85
+        }
+      },
+      "lidar": {
+        "azimuth_occlusion": {
+          "enabled": true,
+          "azimuth_start": 330,
+          "azimuth_end": 30,
+          "point_drop_ratio": 0.9
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.2721225055142041,
+    "lateral_m": 0.287300464836823,
+    "vertical_m": 0.11174469760355885,
+    "yaw_deg": 89.23397932159608,
+    "orientation_deg": 89.23397932159608,
+    "position_3d_m": 0.41119228171901934
+  },
+  "mean": {
+    "longitudinal_m": 0.20865236261494852,
+    "lateral_m": 0.22409106019506714,
+    "vertical_m": 0.08977347296893366,
+    "yaw_deg": 72.81101552416892,
+    "orientation_deg": 72.81101552416892,
+    "position_3d_m": 0.3659282938193522
+  },
+  "median": {
+    "longitudinal_m": 0.1665759277707635,
+    "lateral_m": 0.18140755824072757,
+    "vertical_m": 0.07786437755246735,
+    "yaw_deg": 66.53043434556369,
+    "orientation_deg": 66.53043434556369,
+    "position_3d_m": 0.3485769432459208
+  },
+  "max": {
+    "longitudinal_m": 0.8983861110826321,
+    "lateral_m": 0.8323611640792992,
+    "vertical_m": 0.3455853807746808,
+    "yaw_deg": 179.84584648920978,
+    "orientation_deg": 179.84584648920978,
+    "position_3d_m": 0.9048318000918767
+  },
+  "p95": {
+    "longitudinal_m": 0.5729410462826108,
+    "lateral_m": 0.5568434015007284,
+    "vertical_m": 0.2231964881556534,
+    "yaw_deg": 165.1068015823737,
+    "orientation_deg": 165.1068015823737,
+    "position_3d_m": 0.7302155041526013
+  },
+  "drift_rate_m_per_s": 0.021413204845048526,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:44.942236+00:00"
+}

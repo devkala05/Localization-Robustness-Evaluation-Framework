@@ -1,0 +1,5 @@
+orb_slam3 on urban_01 in the combined_fog_vibration scenario reached 0.997 m 3D RMSE, 0.667 m lateral RMSE, 0.649 m longitudinal RMSE, and 93.358 deg yaw RMSE. The clean baseline position RMSE was 0.071795 m, so the position degradation factor is 13.89x.
+
+The largest error component was longitudinal error at 0.649 m RMSE, while lateral error remained 0.667 m RMSE. This is physically plausible for the configured rain case because LiDAR point dropout, reflective ghost points, intensity scaling, camera rain streaks, and GPS dropout reduce scan consistency without creating a large sideways jump. Active perturbation groups were: camera, lidar, imu.
+
+The run produced 158 real odometry poses over 15.70 seconds, with 0 tracking-loss events and a drift rate of 0.093 m/s. The recommended robustness improvement is to reject low-confidence rain returns using intensity/range consistency before scan matching and to increase reliance on IMU propagation during short windows of LiDAR degradation.

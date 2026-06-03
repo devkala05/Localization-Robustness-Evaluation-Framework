@@ -1,0 +1,89 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "glim",
+  "sequence": "highway_01",
+  "scenario": "combined_rain_low_light",
+  "perturbation_params": {
+    "perturbations": {
+      "camera": {
+        "brightness_noise": {
+          "enabled": true,
+          "brightness_factor": 0.35,
+          "noise_std": 12
+        },
+        "rain_droplets": {
+          "enabled": true,
+          "intensity": 0.5,
+          "streak_length": 20,
+          "contrast_scale": 0.75,
+          "droplet_count": 30,
+          "droplet_blur_kernel": 13
+        }
+      },
+      "lidar": {
+        "point_dropout": {
+          "enabled": true,
+          "dropout_fraction": 0.25
+        },
+        "intensity_scale": {
+          "enabled": true,
+          "intensity_scale": 0.75
+        }
+      },
+      "gps": {
+        "dropout": {
+          "enabled": true,
+          "drop_probability": 0.1
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.43283100613047787,
+    "lateral_m": 0.4059516999138234,
+    "vertical_m": 0.1908176822015985,
+    "yaw_deg": 89.72558149529667,
+    "orientation_deg": 89.72558149529667,
+    "position_3d_m": 0.6233384717564247
+  },
+  "mean": {
+    "longitudinal_m": 0.3362172117853476,
+    "lateral_m": 0.3061837889361862,
+    "vertical_m": 0.15577187216899263,
+    "yaw_deg": 75.39505861092113,
+    "orientation_deg": 75.39505861092113,
+    "position_3d_m": 0.550082089470042
+  },
+  "median": {
+    "longitudinal_m": 0.26762007765791795,
+    "lateral_m": 0.22645097277729173,
+    "vertical_m": 0.14310629933383334,
+    "yaw_deg": 67.98446273445131,
+    "orientation_deg": 67.98446273445131,
+    "position_3d_m": 0.493452269151901
+  },
+  "max": {
+    "longitudinal_m": 1.352130155206285,
+    "lateral_m": 1.443125606624203,
+    "vertical_m": 0.5570966251034041,
+    "yaw_deg": 178.7876480953058,
+    "orientation_deg": 178.7876480953058,
+    "position_3d_m": 1.5463205041117805
+  },
+  "p95": {
+    "longitudinal_m": 0.7906641762743524,
+    "lateral_m": 0.8276381670466728,
+    "vertical_m": 0.3441154765601777,
+    "yaw_deg": 160.7925573995434,
+    "orientation_deg": 160.7925573995434,
+    "position_3d_m": 1.1072023368580404
+  },
+  "drift_rate_m_per_s": 0.0561854604728148,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:19.205317+00:00"
+}

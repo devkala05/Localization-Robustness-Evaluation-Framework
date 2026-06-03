@@ -5,5 +5,4 @@ __pycache__/
 data/raw/*
 data/converted/*
 data/sequences/*
-results/*
 !results/.gitkeep

@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : orb_slam3
+Sequence   : highway_01
+Scenario   : combined_fog_vibration
+Run date   : 2026-06-03T10:01:58.898804+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.652   0.535   0.510   1.329   1.444  
+Lateral (m)      : 0.617   0.492   0.418   1.231   1.545  
+Vertical (m)     : 0.334   0.267   0.203   0.676   0.854  
+Yaw (deg)        : 91.688  76.650  70.946  169.265 177.307
+3D Position (m)  : 0.958   0.868   0.833   1.602   1.972  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.01363 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

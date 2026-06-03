@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "highway_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.17487607721255938,
+    "lateral_m": 0.1585611661887693,
+    "vertical_m": 0.155942620028306,
+    "yaw_deg": 75.95764755670127,
+    "orientation_deg": 75.95764755670127,
+    "position_3d_m": 0.28291586478260317
+  },
+  "mean": {
+    "longitudinal_m": 0.14014401604014226,
+    "lateral_m": 0.12195015726663122,
+    "vertical_m": 0.12052836985644075,
+    "yaw_deg": 57.84988481634982,
+    "orientation_deg": 57.84988481634982,
+    "position_3d_m": 0.25545995677390143
+  },
+  "median": {
+    "longitudinal_m": 0.12054706851209918,
+    "lateral_m": 0.09854703489095315,
+    "vertical_m": 0.10671737390777566,
+    "yaw_deg": 41.900642428223364,
+    "orientation_deg": 41.900642428223364,
+    "position_3d_m": 0.23752656962969548
+  },
+  "max": {
+    "longitudinal_m": 0.4586142514900663,
+    "lateral_m": 0.46735261388855504,
+    "vertical_m": 0.4887516374373587,
+    "yaw_deg": 176.16870354075894,
+    "orientation_deg": 176.16870354075894,
+    "position_3d_m": 0.6438680807744488
+  },
+  "p95": {
+    "longitudinal_m": 0.3453212984280878,
+    "lateral_m": 0.31701215201223776,
+    "vertical_m": 0.3098972786628022,
+    "yaw_deg": 160.5648596284003,
+    "orientation_deg": 160.5648596284003,
+    "position_3d_m": 0.49017666902679813
+  },
+  "drift_rate_m_per_s": 0.03756707126405554,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:37.306662+00:00"
+}

@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : glim
+Sequence   : urban_01
+Scenario   : combined_fog_vibration
+Run date   : 2026-06-03T10:01:09.870937+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.442   0.353   0.319   0.891   1.213  
+Lateral (m)      : 0.235   0.191   0.165   0.431   0.658  
+Vertical (m)     : 0.440   0.353   0.305   0.866   1.131  
+Yaw (deg)        : 92.044  78.706  71.974  163.808 177.377
+3D Position (m)  : 0.667   0.608   0.557   1.152   1.479  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.04141 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

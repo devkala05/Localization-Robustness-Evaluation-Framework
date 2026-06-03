@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : fast_lio2
+Sequence   : highway_01
+Scenario   : glare
+Run date   : 2026-06-03T10:01:32.675940+00:00
+Duration   : 10.9 s | 110 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.216   0.175   0.160   0.430   0.561  
+Lateral (m)      : 0.099   0.080   0.064   0.193   0.228  
+Vertical (m)     : 0.203   0.163   0.144   0.394   0.625  
+Yaw (deg)        : 81.346  64.557  52.313  152.725 177.029
+3D Position (m)  : 0.312   0.288   0.267   0.501   0.699  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.01000 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_livo2",
+  "sequence": "urban_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 15.7,
+  "num_poses": 158,
+  "rmse": {
+    "longitudinal_m": 0.1919459190691435,
+    "lateral_m": 0.18213454720176186,
+    "vertical_m": 0.14009874022524016,
+    "yaw_deg": 81.2709843658387,
+    "orientation_deg": 81.2709843658387,
+    "position_3d_m": 0.2994058886267742
+  },
+  "mean": {
+    "longitudinal_m": 0.15670091148636922,
+    "lateral_m": 0.1488312476476927,
+    "vertical_m": 0.11149012970200922,
+    "yaw_deg": 67.03638349176235,
+    "orientation_deg": 67.03638349176235,
+    "position_3d_m": 0.2759002817007504
+  },
+  "median": {
+    "longitudinal_m": 0.13792990834410873,
+    "lateral_m": 0.13781010694003776,
+    "vertical_m": 0.08787133086543752,
+    "yaw_deg": 53.73731885775325,
+    "orientation_deg": 53.73731885775325,
+    "position_3d_m": 0.2703671525496172
+  },
+  "max": {
+    "longitudinal_m": 0.5259410004381777,
+    "lateral_m": 0.4701119447170231,
+    "vertical_m": 0.3586612973994567,
+    "yaw_deg": 176.41726278878528,
+    "orientation_deg": 176.41726278878528,
+    "position_3d_m": 0.6092647213859483
+  },
+  "p95": {
+    "longitudinal_m": 0.3852634983935576,
+    "lateral_m": 0.34160223906430487,
+    "vertical_m": 0.2789756499837098,
+    "yaw_deg": 152.64346203209297,
+    "orientation_deg": 152.64346203209297,
+    "position_3d_m": 0.4689997983294503
+  },
+  "drift_rate_m_per_s": 0.010465770430370327,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:00:27.453406+00:00"
+}

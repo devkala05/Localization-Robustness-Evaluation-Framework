@@ -1,0 +1,25 @@
+===========================================================
+LOCALIZATION DEVIATION REPORT
+===========================================================
+Algorithm  : fast_livo2
+Sequence   : urban_01
+Scenario   : tunnel_transition
+Run date   : 2026-06-03T10:00:22.798390+00:00
+Duration   : 15.7 s | 158 pose estimates
+===========================================================
+
+ERROR BREAKDOWN
+---------------
+                  RMSE    Mean    Median   P95     Max
+Longitudinal (m) : 0.227   0.180   0.158   0.454   0.612  
+Lateral (m)      : 0.179   0.144   0.112   0.337   0.505  
+Vertical (m)     : 0.166   0.131   0.115   0.355   0.453  
+Yaw (deg)        : 82.023  64.908  51.430  159.880 171.586
+3D Position (m)  : 0.333   0.299   0.273   0.582   0.828  
+
+TEMPORAL ANALYSIS
+-----------------
+Drift rate        : 0.00948 m/s
+Time to 5.0m error  : not reached
+Tracking losses   : 0
+===========================================================

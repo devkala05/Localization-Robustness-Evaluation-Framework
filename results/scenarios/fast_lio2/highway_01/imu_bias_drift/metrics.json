@@ -1,0 +1,69 @@
+{
+  "status": "SUCCESS",
+  "algorithm": "fast_lio2",
+  "sequence": "highway_01",
+  "scenario": "imu_bias_drift",
+  "perturbation_params": {
+    "perturbations": {
+      "imu": {
+        "bias_drift_linear": {
+          "enabled": true,
+          "gyro_drift_rate": 0.001,
+          "accel_drift_rate": 0.01
+        },
+        "temperature_scale_factor": {
+          "enabled": true,
+          "scale_factor_error": 0.02
+        }
+      }
+    }
+  },
+  "duration_seconds": 10.9,
+  "num_poses": 110,
+  "rmse": {
+    "longitudinal_m": 0.22489944021225683,
+    "lateral_m": 0.21230286690276046,
+    "vertical_m": 0.1741821395324719,
+    "yaw_deg": 78.35511928170361,
+    "orientation_deg": 78.35511928170361,
+    "position_3d_m": 0.35495307187715286
+  },
+  "mean": {
+    "longitudinal_m": 0.17484573405994114,
+    "lateral_m": 0.1741779116587808,
+    "vertical_m": 0.13747424319106696,
+    "yaw_deg": 63.12367031880436,
+    "orientation_deg": 63.12367031880436,
+    "position_3d_m": 0.3205952969341976
+  },
+  "median": {
+    "longitudinal_m": 0.13964462326232446,
+    "lateral_m": 0.1616174203082099,
+    "vertical_m": 0.1045770039948051,
+    "yaw_deg": 51.028178311950995,
+    "orientation_deg": 51.028178311950995,
+    "position_3d_m": 0.2953444185207933
+  },
+  "max": {
+    "longitudinal_m": 0.6976717652936669,
+    "lateral_m": 0.6106463511563327,
+    "vertical_m": 0.4472129339277501,
+    "yaw_deg": 177.40599646413355,
+    "orientation_deg": 177.40599646413355,
+    "position_3d_m": 0.8584473843311844
+  },
+  "p95": {
+    "longitudinal_m": 0.43437840312573267,
+    "lateral_m": 0.3771279106613809,
+    "vertical_m": 0.338981152534051,
+    "yaw_deg": 156.30727433859934,
+    "orientation_deg": 156.30727433859934,
+    "position_3d_m": 0.5968446037145292
+  },
+  "drift_rate_m_per_s": 0.026617625492882283,
+  "time_to_failure_s": null,
+  "failure_threshold_m": 5.0,
+  "tracking_lost": false,
+  "tracking_loss_events": 0,
+  "generated_at": "2026-06-03T10:01:38.506362+00:00"
+}
