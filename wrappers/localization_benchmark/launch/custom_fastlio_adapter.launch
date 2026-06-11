@@ -1,0 +1,31 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="run_id" default="1"/>
+  <arg name="perturbation_config"
+       default="$(find localization_benchmark)/config/perturbations/per_0.yaml"/>
+  <arg name="native_lidar_topic" default="/cloud_registered_raw"/>
+  <arg name="native_imu_topic" default="/livox/imu"/>
+  <arg name="native_camera_topic" default="/camera/right/image_raw"/>
+  <arg name="publish_camera" default="true"/>
+  <arg name="publish_camera_info" default="true"/>
+  <arg name="native_camera_info_topic" default="/camera/right/camera_info"/>
+  <arg name="camera_frame_id" default="camera_right"/>
+  <arg name="point_time_scale" default="1.0"/>
+
+  <node name="custom_fastlio_adapter"
+        pkg="localization_benchmark"
+        type="custom_fastlio_adapter.py"
+        output="screen">
+    <param name="run_id" value="$(arg run_id)"/>
+    <param name="perturbation_config" value="$(arg perturbation_config)"/>
+    <param name="native_lidar_topic" value="$(arg native_lidar_topic)"/>
+    <param name="native_imu_topic" value="$(arg native_imu_topic)"/>
+    <param name="native_camera_topic" value="$(arg native_camera_topic)"/>
+    <param name="publish_camera" value="$(arg publish_camera)"/>
+    <param name="publish_camera_info" value="$(arg publish_camera_info)"/>
+    <param name="native_camera_info_topic" value="$(arg native_camera_info_topic)"/>
+    <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
+    <param name="point_time_scale" value="$(arg point_time_scale)"/>
+  </node>
+</launch>

@@ -1,0 +1,19 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="run_visual" default="false"/>
+
+  <group>
+    <!-- Normalize LVI-SAM output names to the benchmark recorder/viewer. -->
+    <remap from="/lvi_sam/lidar/mapping/odometry" to="/lvi_sam/odometry/mapping"/>
+    <remap from="/lvi_sam/lidar/mapping/path"     to="/lvi_sam/mapping/path"/>
+
+    <include file="$(find lvi_sam)/launch/include/module_sam.launch">
+      <arg name="project" value="lvi_sam"/>
+      <arg name="run_visual" value="$(arg run_visual)"/>
+      <arg name="use_compressed_image_republish" value="false"/>
+      <arg name="lidar_param_file" value="$(find lvi_sam_urbannav)/config/lvisam_urbannav.yaml"/>
+      <arg name="vins_param_file" value="$(find lvi_sam)/config/params_camera.yaml"/>
+    </include>
+  </group>
+</launch>
