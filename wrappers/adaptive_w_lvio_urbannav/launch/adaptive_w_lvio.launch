@@ -1,0 +1,45 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="input_odom_topic" default="/Odometry"/>
+  <arg name="input_cloud_topic" default="/cloud_registered_raw"/>
+  <arg name="input_camera_topic" default="/camera/right/image_raw"/>
+  <arg name="input_imu_topic" default="/livox/imu"/>
+
+  <arg name="output_odom_topic" default="/adaptive_w_lvio/odometry/mapping"/>
+  <arg name="path_topic" default="/adaptive_w_lvio/mapping/path"/>
+  <arg name="cloud_out_topic" default="/adaptive_w_lvio/cloud_registered"/>
+  <arg name="debug_topic" default="/adaptive_w_lvio/debug/weights"/>
+
+  <arg name="frame_id" default="camera_init"/>
+  <arg name="child_frame_id" default="body"/>
+  <arg name="publish_tf" default="false"/>
+  <arg name="max_sensor_age" default="0.25"/>
+  <arg name="min_cloud_points" default="8000"/>
+  <arg name="pass_through_threshold" default="0.92"/>
+  <arg name="min_alpha" default="0.45"/>
+
+  <!-- Adaptive-W LVIO benchmark node. FAST-LIO2 provides the odometry frontend;
+       this node adds adaptive LVIO health weighting and publishes stable
+       benchmark/RViz topics under /adaptive_w_lvio. -->
+  <node name="adaptive_w_lvio_node"
+        pkg="adaptive_w_lvio_urbannav"
+        type="adaptive_w_lvio_node.py"
+        output="screen">
+    <param name="input_odom_topic" value="$(arg input_odom_topic)"/>
+    <param name="input_cloud_topic" value="$(arg input_cloud_topic)"/>
+    <param name="input_camera_topic" value="$(arg input_camera_topic)"/>
+    <param name="input_imu_topic" value="$(arg input_imu_topic)"/>
+    <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+    <param name="path_topic" value="$(arg path_topic)"/>
+    <param name="cloud_out_topic" value="$(arg cloud_out_topic)"/>
+    <param name="debug_topic" value="$(arg debug_topic)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="child_frame_id" value="$(arg child_frame_id)"/>
+    <param name="publish_tf" value="$(arg publish_tf)"/>
+    <param name="max_sensor_age" value="$(arg max_sensor_age)"/>
+    <param name="min_cloud_points" value="$(arg min_cloud_points)"/>
+    <param name="pass_through_threshold" value="$(arg pass_through_threshold)"/>
+    <param name="min_alpha" value="$(arg min_alpha)"/>
+  </node>
+</launch>

@@ -1,0 +1,149 @@
+algorithms:
+  fast_lio2:
+    display_name: FAST-LIO2
+    result_id: fast_lio2
+    ros: ros1
+    adapter: fastlio
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: fast_lio_urbannav fast_lio2_urbannav.launch
+    output_topic: /Odometry
+    path_topic: /path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    enabled: true
+  lvi_sam:
+    display_name: LVI-SAM
+    ros: ros1
+    adapter: standalone
+    enabled: false
+  lio_sam:
+    display_name: LIO-SAM
+    ros: ros1
+    adapter: pending
+    enabled: false
+  coin_lio:
+    display_name: COIN-LIO
+    ros: ros1
+    adapter: pending
+    enabled: false
+  glim:
+    display_name: GLIM
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false
+  dlio:
+    display_name: DLIO
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false
+  fast_livo2:
+    display_name: FAST-LIVO2
+    result_id: fast_livo2
+    ros: ros1
+    adapter: fastlio
+    build_packages:
+    - livox_ros_driver
+    - fast_livo
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - fast_livo2_wrapper
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: fast_livo2_wrapper fast_livo2.launch
+    output_topic: /fast_livo2/odometry
+    path_topic: /path
+    native_lidar_topic: /livox/lidar
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1000000.0
+    enabled: true
+  lri_lvio:
+    display_name: LRI-LVIO
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false
+  adaptive_w_lvio:
+    display_name: Adaptive-W LVIO
+    result_id: adaptive_w_lvio
+    ros: ros1
+    adapter: fastlio_frontend
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - adaptive_w_lvio_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: adaptive_w_lvio_urbannav full_pipeline_adap_w.launch
+    output_topic: /adaptive_w_lvio/odometry/mapping
+    path_topic: /adaptive_w_lvio/mapping/path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
+    enabled: true
+  rtab_map:
+    display_name: RTAB-Map
+    result_id: rtab_map
+    ros: ros1
+    adapter: fastlio_frontend
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - rtabmap_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false
+      _publish_camera_init_map:=true _publish_base_link_body:=true
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: rtabmap_urbannav full_pipeline_rtabmap.launch
+    output_topic: /rtabmap/odometry/mapping
+    path_topic: /rtabmap/mapping/path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    rviz_config: /root/catkin_ws/src/rtabmap_urbannav/config/rtabmap_urbannav.rviz
+    enabled: true
+  orb_slam3:
+    display_name: ORB-SLAM3
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false
+  openvins:
+    display_name: OpenVINS
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false
+  isaac_ros_vslam:
+    display_name: Isaac ROS VSLAM
+    ros: ros2
+    adapter: pending
+    enabled: false
+  vins_fusion:
+    display_name: VINS-Fusion
+    ros: ros1
+    adapter: pending
+    enabled: false
+  dpvo:
+    display_name: DPVO
+    ros: ros1_ros2
+    adapter: pending
+    enabled: false

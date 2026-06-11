@@ -1,0 +1,101 @@
+%YAML:1.0
+
+# Project
+project_name: "lvi_sam"
+
+#common parameters
+imu_topic: "/livox/imu"
+image_topic: "/camera/right/image_raw"
+point_cloud_topic: "lvi_sam/lidar/deskew/cloud_deskewed"
+
+# Lidar Params
+use_lidar: 1
+lidar_skip: 3
+align_camera_lidar_estimation: 1
+
+# lidar to camera extrinsic
+lidar_to_cam_tx: 0.05
+lidar_to_cam_ty: -0.07
+lidar_to_cam_tz: -0.07
+lidar_to_cam_rx: 0.0
+lidar_to_cam_ry: 0.0
+lidar_to_cam_rz: -0.04
+
+# camera model — ZED2 right camera is a PINHOLE (rectified, no distortion)
+model_type: PINHOLE
+camera_name: camera
+
+# ZED2 right camera resolution (native from UrbanNav bag)
+image_width: 672
+image_height: 376
+
+# ZED2 right camera pinhole intrinsics (UrbanNav-HK-TST calibration)
+projection_parameters:
+   fx: 527.2
+   fy: 527.2
+   cx: 335.5
+   cy: 187.5
+
+# ZED2 outputs rectified images — no distortion
+distortion_parameters:
+   k1: 0.0
+   k2: 0.0
+   p1: 0.0
+   p2: 0.0
+
+# IMU noise — UrbanNav HK-TST calibrated values (must match params_lidar.yaml)
+acc_n: 0.01119741      # accelerometer measurement noise std dev
+gyr_n: 0.01027090      # gyroscope measurement noise std dev
+acc_w: 1.175177e-04    # accelerometer bias random walk noise std dev
+gyr_w: 9.135538e-05    # gyroscope bias random walk noise std dev
+g_norm: 9.80511
+
+# Extrinsic parameter between IMU and Camera.
+estimate_extrinsic: 0
+#Rotation from camera frame to imu frame, imu^R_cam
+extrinsicRotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 0, 0, -1,
+           -1, 0, 0,
+           0, 1, 0]
+
+#Translation from camera frame to imu frame, imu^T_cam
+extrinsicTranslation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [0.006422381632411965, 0.019939800449065116, 0.03364235163589248]
+
+#feature tracker parameters
+max_cnt: 150
+min_dist: 20
+freq: 20
+F_threshold: 1.0
+show_track: 1
+equalize: 1
+fisheye: 0
+
+#optimization parameters
+max_solver_time: 0.035
+max_num_iterations: 10
+keyframe_parallax: 10.0
+
+#unsynchronization parameters
+estimate_td: 0
+td: 0
+
+#rolling shutter parameters
+rolling_shutter: 0
+rolling_shutter_tr: 0
+
+#loop closure parameters
+# Disabled — vocabulary binary not shipped with this package
+loop_closure: 0
+skip_time: 0.0
+skip_dist: 0.0
+debug_image: 0
+match_image_scale: 0.5
+vocabulary_file: "/config/brief_k10L6.bin"
+brief_pattern_file: "/config/brief_pattern.yml"

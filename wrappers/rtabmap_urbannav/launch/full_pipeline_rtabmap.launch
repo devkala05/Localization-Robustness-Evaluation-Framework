@@ -1,0 +1,17 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="launch_fastlio2" default="true"/>
+  <arg name="rtabmap_database_path" default="/data/output/rtabmap_urbannav.db"/>
+  <arg name="delete_db_on_start" default="true"/>
+
+  <!-- FAST-LIO2 frontend. The perturbation adapter and bag player are started
+       by run.sh/run_rtabmap.sh, matching the other benchmark algorithms. -->
+  <include if="$(arg launch_fastlio2)" file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch"/>
+
+  <!-- RTAB-Map backend consuming FAST-LIO2 odometry and cloud_registered_raw. -->
+  <include file="$(find rtabmap_urbannav)/launch/rtabmap_urbannav.launch">
+    <arg name="database_path" value="$(arg rtabmap_database_path)"/>
+    <arg name="delete_db_on_start" value="$(arg delete_db_on_start)"/>
+  </include>
+</launch>
