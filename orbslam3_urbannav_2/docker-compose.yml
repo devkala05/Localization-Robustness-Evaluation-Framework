@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+
+  roscore:
+    image: orbslam3-urbannav:latest
+    container_name: orbslam3_roscore
+    network_mode: host
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: roscore
+    restart: unless-stopped
+
+  wrapper:
+    image: orbslam3-urbannav:latest
+    container_name: orbslam3_wrapper
+    network_mode: host
+    depends_on: [roscore]
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data:/data:ro
+      - ./wrappers/orbslam3_urbannav:/root/catkin_ws/src/orbslam3_urbannav:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               roslaunch orbslam3_urbannav urbannav_wrapper.launch"
+
+  orbslam3:
+    image: orbslam3-urbannav:latest
+    container_name: orbslam3_node
+    network_mode: host
+    depends_on: [wrapper]
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+      - ROS_PACKAGE_PATH=/root/ORB_SLAM3/Examples_old/ROS
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data:/data
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               export ROS_PACKAGE_PATH=$${ROS_PACKAGE_PATH}:/root/ORB_SLAM3/Examples_old/ROS &&
+               sleep 5 &&
+               roslaunch orbslam3_urbannav orbslam3_urbannav.launch"
+
+  bag_player:
+    image: orbslam3-urbannav:latest
+    container_name: orbslam3_bag_player
+    network_mode: host
+    depends_on: [orbslam3]
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+    volumes:
+      - ./data:/data:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               sleep 12 &&
+               rosbag play --clock --rate 1.0
+                 /data/UrbanNav-HK_TST-20210517_sensors.bag
+                 --topics /zed2/camera/right/image_raw /zed2/camera/right/camera_info"
+
+  rviz:
+    image: orbslam3-urbannav:latest
+    container_name: orbslam3_rviz
+    network_mode: host
+    depends_on: [bag_player]
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./wrappers/orbslam3_urbannav/config:/config:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               sleep 8 &&
+               rviz -d /config/orbslam3_urbannav.rviz"

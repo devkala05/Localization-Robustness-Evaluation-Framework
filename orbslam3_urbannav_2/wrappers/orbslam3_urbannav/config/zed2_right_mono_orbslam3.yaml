@@ -1,0 +1,66 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# ORB-SLAM3 Monocular Camera Configuration
+# Dataset  : UrbanNav-HK-TST-20210517
+# Camera   : ZED2 Stereo — RIGHT sensor used as monocular input
+# Source   : zed2_intrinsics.yaml  (RIGHT_ZED2_CAMERA section)
+# Frame ID : camera_right  (matches TF tree in orbslam3_urbannav)
+#--------------------------------------------------------------------------------------------
+
+Camera.type: "PinHole"
+
+# ── Intrinsics (from zed2_intrinsics.yaml → RIGHT_ZED2_CAMERA) ─────────────
+Camera.fx: 264.2125
+Camera.fy: 264.155
+Camera.cx: 341.635
+Camera.cy: 183.993
+
+# ── Distortion  (k1, k2, p1, p2 — radial-tangential, OpenCV model) ─────────
+Camera.k1: -0.0423469
+Camera.k2:  0.0115525
+Camera.p1:  0.0
+Camera.p2:  0.0
+
+# ── Resolution ──────────────────────────────────────────────────────────────
+Camera.width:  672
+Camera.height: 376
+
+# ── Frame rate (ZED2 runs at ~15 Hz in UrbanNav bag) ───────────────────────
+Camera.fps: 15
+
+# ── Colour order (0=BGR OpenCV default; 1=RGB)
+# UrbanNav /zed2/camera/right/image_raw is bgr8 and the wrapper preserves it.
+Camera.RGB: 0
+
+# ── Depth threshold (not used in monocular mode) ────────────────────────────
+ThDepth: 40.0
+
+# ── Baseline × fx (stereo only, ignored in mono) ────────────────────────────
+Camera.bf: 0.0
+
+#--------------------------------------------------------------------------------------------
+# ORB Extractor Parameters
+# Tuned for ZED2 right @ 672×376 resolution in urban outdoor scenes
+#--------------------------------------------------------------------------------------------
+
+ORBextractor.nFeatures:    2000
+ORBextractor.scaleFactor:  1.2
+ORBextractor.nLevels:      8
+ORBextractor.iniThFAST:    12
+ORBextractor.minThFAST:    5
+
+#--------------------------------------------------------------------------------------------
+# Viewer
+#--------------------------------------------------------------------------------------------
+
+Viewer.KeyFrameSize:       0.05
+Viewer.KeyFrameLineWidth:  1
+Viewer.GraphLineWidth:     0.9
+Viewer.PointSize:          2
+Viewer.CameraSize:         0.08
+Viewer.CameraLineWidth:    3
+Viewer.ViewpointX:         0
+Viewer.ViewpointY:         -0.7
+Viewer.ViewpointZ:         -1.8
+Viewer.ViewpointF:         500
