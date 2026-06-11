@@ -1,0 +1,59 @@
+<!-- orbslam3_urbannav.launch
+     Launches native ORB-SLAM3 ROS nodes for UrbanNav.
+
+     mode:=mono    uses the right ZED2 camera with ORB_SLAM3/Mono.
+     mode:=stereo  uses the ZED2 stereo pair with ORB_SLAM3/Stereo.
+
+     ORB-SLAM3 is treated as a black box — only its vocabulary path
+     and camera config are supplied. No source modifications.
+
+     Native ORB-SLAM3 executables are launched through a tiny shell shim in
+     this package so manual runs do not depend on ROS_PACKAGE_PATH finding the
+     non-catkin ORB_SLAM3 example package.
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ── Paths (set inside the container) ────────────────────────────── -->
+  <arg name="orb_slam3_root"
+       default="$(optenv ORB_SLAM3_ROOT /root/ORB_SLAM3)"/>
+
+  <arg name="vocabulary"
+       default="$(arg orb_slam3_root)/Vocabulary/ORBvoc.txt"/>
+
+  <arg name="mode" default="mono"/>
+
+  <arg name="mono_camera_config"
+       default="$(find orbslam3_urbannav)/config/zed2_right_mono_orbslam3.yaml"/>
+
+  <arg name="stereo_camera_config"
+       default="$(find orbslam3_urbannav)/config/zed2_stereo_urbannav_swapped_orbslam3.yaml"/>
+
+  <arg name="stereo_do_rectify" default="false"/>
+
+  <!-- ── ORB-SLAM3 Mono ROS node ──────────────────────────────────────── -->
+  <group if="$(eval arg('mode') == 'mono')">
+    <node name="orbslam3_mono"
+          pkg="orbslam3_urbannav"
+          type="run_orbslam3_native.sh"
+          output="screen"
+          required="false"
+          args="Mono $(arg vocabulary) $(arg mono_camera_config)">
+      <remap from="/camera/image_raw" to="/camera/image_raw"/>
+    </node>
+  </group>
+
+  <!-- ── ORB-SLAM3 Stereo ROS node ────────────────────────────────────── -->
+  <group if="$(eval arg('mode') == 'stereo')">
+    <node name="orbslam3_stereo"
+          pkg="orbslam3_urbannav"
+          type="run_orbslam3_native.sh"
+          output="screen"
+          required="false"
+          args="Stereo $(arg vocabulary) $(arg stereo_camera_config) $(arg stereo_do_rectify)">
+      <remap from="/camera/left/image_raw" to="/camera/left/image_raw"/>
+      <remap from="/camera/right/image_raw" to="/camera/right/image_raw"/>
+    </node>
+  </group>
+
+</launch>

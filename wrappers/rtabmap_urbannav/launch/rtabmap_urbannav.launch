@@ -1,0 +1,76 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="database_path" default="/data/output/rtabmap_urbannav.db"/>
+  <arg name="delete_db_on_start" default="true"/>
+  <arg name="input_odom_topic" default="/Odometry"/>
+  <arg name="input_cloud_topic" default="/cloud_registered_raw"/>
+  <arg name="rtabmap_input_odom_topic" default="/rtabmap/input_odom"/>
+  <arg name="benchmark_odom_topic" default="/rtabmap/odometry/mapping"/>
+  <arg name="path_topic" default="/rtabmap/mapping/path"/>
+  <arg name="map_frame_id" default="map"/>
+  <arg name="odom_frame_id" default="odom"/>
+  <arg name="base_frame_id" default="base_link"/>
+  <arg name="publish_tf" default="true"/>
+  <arg name="apply_rtabmap_tf" default="true"/>
+
+  <!-- Convert FAST-LIO2 /Odometry into RTAB-Map's odom/base_link convention
+       and publish the benchmark odometry/path topics. -->
+  <node name="rtabmap_adapter_node"
+        pkg="rtabmap_urbannav"
+        type="rtabmap_adapter_node.py"
+        output="screen">
+    <param name="input_odom_topic" value="$(arg input_odom_topic)"/>
+    <param name="rtabmap_odom_topic" value="$(arg rtabmap_input_odom_topic)"/>
+    <param name="benchmark_odom_topic" value="$(arg benchmark_odom_topic)"/>
+    <param name="path_topic" value="$(arg path_topic)"/>
+    <param name="map_frame_id" value="$(arg map_frame_id)"/>
+    <param name="odom_frame_id" value="$(arg odom_frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="publish_tf" value="$(arg publish_tf)"/>
+    <param name="apply_rtabmap_tf" value="$(arg apply_rtabmap_tf)"/>
+  </node>
+
+  <!-- RTAB-Map graph/map node. It uses FAST-LIO2 odometry plus the perturbed
+       LiDAR cloud; no RGB/depth odometry is run here. -->
+  <node name="rtabmap"
+        pkg="rtabmap_ros"
+        type="rtabmap"
+        output="screen"
+        args="$(eval '--delete_db_on_start' if arg('delete_db_on_start') == 'true' else '')">
+
+    <param name="database_path" value="$(arg database_path)"/>
+    <param name="frame_id" value="$(arg base_frame_id)"/>
+    <param name="odom_frame_id" value="$(arg odom_frame_id)"/>
+    <param name="map_frame_id" value="$(arg map_frame_id)"/>
+    <param name="publish_tf" value="true"/>
+    <param name="subscribe_depth" value="false"/>
+    <param name="subscribe_rgb" value="false"/>
+    <param name="subscribe_rgbd" value="false"/>
+    <param name="subscribe_scan" value="false"/>
+    <param name="subscribe_scan_cloud" value="true"/>
+    <param name="approx_sync" value="false"/>
+    <param name="wait_for_transform_duration" value="0.3"/>
+    <param name="queue_size" value="30"/>
+
+    <!-- Keep RTAB-Map light enough for live rosbag playback. -->
+    <param name="Rtabmap/DetectionRate" value="2.0"/>
+    <param name="RGBD/NeighborLinkRefining" value="true"/>
+    <param name="RGBD/ProximityBySpace" value="true"/>
+    <param name="RGBD/ProximityMaxGraphDepth" value="50"/>
+    <param name="Grid/FromDepth" value="false"/>
+    <param name="Grid/FromScan" value="true"/>
+    <param name="Grid/3D" value="true"/>
+    <param name="Icp/PointToPlane" value="true"/>
+    <param name="Icp/MaxCorrespondenceDistance" value="1.0"/>
+    <param name="Icp/VoxelSize" value="0.4"/>
+    <param name="Icp/DownsamplingStep" value="2"/>
+    <param name="Mem/IncrementalMemory" value="true"/>
+    <param name="Mem/InitWMWithAllNodes" value="false"/>
+
+    <remap from="odom" to="$(arg rtabmap_input_odom_topic)"/>
+    <remap from="scan_cloud" to="$(arg input_cloud_topic)"/>
+    <remap from="cloud_map" to="/rtabmap/cloud_map"/>
+    <remap from="mapPath" to="/rtabmap/mapPath"/>
+  </node>
+</launch>

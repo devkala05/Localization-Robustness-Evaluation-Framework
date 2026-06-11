@@ -1,0 +1,31 @@
+<!-- rviz_visualizer.launch
+     Starts the ORB-SLAM3 UrbanNav RViz trajectory viewer.
+
+     The trajectory display reads:
+       /orbslam3/path      nav_msgs/Path
+       /orbslam3/odometry  nav_msgs/Odometry
+
+     These topics are produced by pose_republisher_node.py, which is already
+     started by urbannav_wrapper.launch. Set start_pose_republisher:=true only
+     when you are not running urbannav_wrapper.launch.
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="start_pose_republisher" default="false"/>
+  <arg name="rviz_config"
+       default="$(find orbslam3_urbannav)/config/orbslam3_urbannav.rviz"/>
+
+  <group if="$(arg start_pose_republisher)">
+    <node name="pose_republisher_node"
+          pkg="orbslam3_urbannav"
+          type="pose_republisher_node.py"
+          output="screen"/>
+  </group>
+
+  <node name="orbslam3_rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(arg rviz_config)"
+        output="screen"/>
+</launch>

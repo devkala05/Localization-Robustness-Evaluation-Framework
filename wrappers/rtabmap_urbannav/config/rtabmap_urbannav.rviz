@@ -1,0 +1,174 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Time
+    Name: Time
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 10
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Name: Grid
+      Plane: XY
+    - Class: rviz/Path
+      Color: 25; 255; 80
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: Ground Truth
+      Topic: /ground_truth_path
+    - Class: rviz/Odometry
+      Color: 255; 160; 20
+      Enabled: true
+      Keep: 1
+      Name: Ground Truth Car Pose
+      Position Tolerance: 0.05
+      Shape: Arrow
+      Topic: /ground_truth_odometry
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /benchmark/bag_clock_marker
+      Name: Bag Clock Text
+      Queue Size: 1
+    - Class: rviz/Path
+      Color: 40; 140; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: Baseline Path
+      Topic: /benchmark/baseline_path
+    - Class: rviz/Path
+      Color: 255; 80; 60
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: Selected Perturbed Path
+      Topic: /benchmark/selected_run_path
+    - Class: rviz/Path
+      Color: 255; 220; 30
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.05
+      Name: FAST-LIO2 Live Path
+      Topic: /path
+    - Class: rviz/Odometry
+      Color: 255; 180; 30
+      Enabled: true
+      Keep: 30
+      Name: FAST-LIO2 Live Odometry
+      Position Tolerance: 0.1
+      Shape: Arrow
+      Topic: /Odometry
+    - Class: rviz/Path
+      Color: 255; 220; 30
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.05
+      Name: LVI-SAM Live Path
+      Topic: /lvi_sam/mapping/path
+    - Class: rviz/Odometry
+      Color: 255; 180; 30
+      Enabled: true
+      Keep: 30
+      Name: LVI-SAM Live Odometry
+      Position Tolerance: 0.1
+      Shape: Arrow
+      Topic: /lvi_sam/odometry/mapping
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: Native Input LiDAR
+      Queue Size: 10
+      Size (Pixels): 3
+      Style: Points
+      Topic: /cloud_registered_raw
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: LVI-SAM Registered Cloud
+      Queue Size: 100
+      Size (Pixels): 3
+      Style: Points
+      Topic: /lvi_sam/lidar/mapping/cloud_registered
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: Registered Cloud
+      Queue Size: 10
+      Size (Pixels): 3
+      Style: Points
+      Topic: /cloud_registered
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: Raw Bag LiDAR
+      Queue Size: 10
+      Size (Pixels): 2
+      Style: Points
+      Topic: /velodyne_points
+    - Class: rviz/Path
+      Color: 0; 255; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: RTAB-Map Live Path
+      Topic: /rtabmap/mapping/path
+    - Class: rviz/Odometry
+      Color: 0; 255; 255
+      Enabled: true
+      Keep: 30
+      Name: RTAB-Map Live Odometry
+      Position Tolerance: 0.1
+      Shape: Arrow
+      Topic: /rtabmap/odometry/mapping
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: RTAB-Map Cloud Map
+      Queue Size: 10
+      Size (Pixels): 3
+      Style: Points
+      Topic: /rtabmap/cloud_map
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/right/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Right Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+  Enabled: true
+  Global Options:
+    Background Color: 28; 28; 30
+    Fixed Frame: map
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 140
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Pitch: 1.0
+      Target Frame: map
+      Yaw: 0.8
+Window Geometry:
+  Height: 900
+  Width: 1400

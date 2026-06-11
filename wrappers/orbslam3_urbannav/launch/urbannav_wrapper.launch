@@ -1,0 +1,68 @@
+<!-- urbannav_wrapper.launch  (orbslam3_urbannav)
+     Launches:
+       1. Static TF broadcaster (calibration transforms)
+       2. UrbanNav camera topic → ORB-SLAM3 topic converter
+       3. Pose republisher (ORB-SLAM3 output → /orbslam3/path, /orbslam3/odometry, TF)
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ── Input topics from UrbanNav rosbag ─────────────────────────────── -->
+  <arg name="left_camera_topic_in"  default="/zed2/camera/left/image_raw"/>
+  <arg name="right_camera_topic_in" default="/zed2/camera/right/image_raw"/>
+
+  <!-- ── Output topics for ORB-SLAM3 ──────────────────────────────────── -->
+  <arg name="left_camera_topic_out"  default="/camera/left/image_raw"/>
+  <arg name="right_camera_topic_out" default="/camera/right/image_raw"/>
+  <arg name="mono_camera_topic_out"  default="/camera/image_raw"/>
+
+  <!-- ── Frame IDs (must match TF tree) ───────────────────────────────── -->
+  <arg name="left_camera_frame_id"  default="camera_left"/>
+  <arg name="right_camera_frame_id" default="camera_right"/>
+  <arg name="stereo_swap_lr" default="true"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1. Static TF broadcaster
+          Publishes: map→odom, odom→body, camera_right→optical,
+                     body→velodyne (context), body→camera_left
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="tf_broadcaster_node"
+        pkg="orbslam3_urbannav"
+        type="tf_broadcaster_node.py"
+        output="screen"
+        required="true"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       2. Camera topic wrapper
+          /zed2/camera/left/image_raw  → /camera/left/image_raw
+          /zed2/camera/right/image_raw → /camera/right/image_raw
+          /zed2/camera/right/image_raw → /camera/image_raw
+          Patches frame_id to camera_left/camera_right
+          Preserves timestamps verbatim
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="orbslam3_wrapper_node"
+        pkg="orbslam3_urbannav"
+        type="orbslam3_wrapper_node.py"
+        output="screen"
+        required="true">
+    <param name="left_camera_topic_in"   value="$(arg left_camera_topic_in)"/>
+    <param name="right_camera_topic_in"  value="$(arg right_camera_topic_in)"/>
+    <param name="left_camera_topic_out"  value="$(arg left_camera_topic_out)"/>
+    <param name="right_camera_topic_out" value="$(arg right_camera_topic_out)"/>
+    <param name="mono_camera_topic_out"  value="$(arg mono_camera_topic_out)"/>
+    <param name="left_camera_frame_id"   value="$(arg left_camera_frame_id)"/>
+    <param name="right_camera_frame_id"  value="$(arg right_camera_frame_id)"/>
+    <param name="stereo_swap_lr"         value="$(arg stereo_swap_lr)"/>
+  </node>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       3. Pose republisher
+          /orb_slam3/camera_pose → /orbslam3/odometry + /orbslam3/path + TF
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="pose_republisher_node"
+        pkg="orbslam3_urbannav"
+        type="pose_republisher_node.py"
+        output="screen"
+        required="true"/>
+
+</launch>
