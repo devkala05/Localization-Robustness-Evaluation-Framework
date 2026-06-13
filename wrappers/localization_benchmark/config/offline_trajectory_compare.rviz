@@ -1,0 +1,102 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.55
+      Cell Size: 20
+      Class: rviz/Grid
+      Color: 120; 120; 125
+      Enabled: true
+      Name: Grid
+      Plane: XY
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /offline/trajectory_markers
+      Name: Offline Trajectories Colored
+      Queue Size: 10
+    - Class: rviz/Path
+      Color: 25; 255; 80
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.14
+      Name: Ground Truth Path
+      Topic: /ground_truth_path
+    - Class: rviz/Path
+      Color: 255; 184; 25
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: FAST-LIO2 Path
+      Topic: /offline/fast_lio2/path
+    - Class: rviz/Path
+      Color: 50; 140; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: LVI-SAM Path
+      Topic: /offline/lvi_sam/path
+    - Class: rviz/Path
+      Color: 255; 50; 50
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: FAST-LIVO2 Path
+      Topic: /offline/fast_livo2/path
+    - Class: rviz/Path
+      Color: 190; 90; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: RTAB-Map Path
+      Topic: /offline/rtab_map/path
+    - Class: rviz/Path
+      Color: 25; 230; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: Adaptive-W LVIO Path
+      Topic: /offline/adaptive_w_lvio/path
+    - Class: rviz/Path
+      Color: 255; 100; 215
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: ORB-SLAM3 Path
+      Topic: /offline/orb_slam3/path
+    - Class: rviz/Path
+      Color: 205; 255; 30
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: R3LIVE Path
+      Topic: /offline/r3live/path
+  Enabled: true
+  Global Options:
+    Background Color: 24; 24; 26
+    Fixed Frame: camera_init
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 180
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Pitch: 1.1
+      Target Frame: camera_init
+      Yaw: 0.8
+Window Geometry:
+  Height: 950
+  Width: 1500

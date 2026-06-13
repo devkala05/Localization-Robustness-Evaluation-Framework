@@ -1,0 +1,5 @@
+Localization robustness ranking
+Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
+
+1. per_0_lvi_sam_20260613_210626 score=23.380564 position_rmse_m=1.911515 position_max_m=4.740285 yaw_rmse_rad=2.146905 samples=296 gps=off:auto rtk=auto note=Visual subsystem (VINS) disabled by default on UrbanNav. LVI-SAM may use native GPS priors via /odometry/gps when --gps on; otherwise output is LiDAR-IMU only.
+2. per_0_lvi_sam_20260613_210851 score=58.552890 position_rmse_m=47.601260 position_max_m=117.490561 yaw_rmse_rad=1.095163 samples=148 gps=on:csv rtk=auto note=Visual subsystem (VINS) disabled by default on UrbanNav. LVI-SAM may use native GPS priors via /odometry/gps when --gps on; otherwise output is LiDAR-IMU only.

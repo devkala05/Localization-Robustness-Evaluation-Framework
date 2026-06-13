@@ -1,0 +1,49 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="run_id" default="1"/>
+  <arg name="perturbation_config"
+       default="$(find localization_benchmark)/config/perturbations/per_0.yaml"/>
+  <arg name="native_lidar_topic" default="/cloud_registered_raw"/>
+  <arg name="publish_livox_custom_msg" default="false"/>
+  <arg name="native_lidar_custom_topic" default="/livox/lidar_custom"/>
+  <arg name="native_imu_topic" default="/livox/imu"/>
+  <arg name="native_camera_topic" default="/camera/right/image_raw"/>
+  <arg name="publish_camera" default="true"/>
+  <arg name="publish_camera_info" default="true"/>
+  <arg name="native_camera_info_topic" default="/camera/right/camera_info"/>
+  <arg name="camera_frame_id" default="camera_right"/>
+  <arg name="point_time_scale" default="1.0"/>
+  <arg name="publish_left_camera" default="false"/>
+  <arg name="native_left_camera_topic" default="/camera/left/image_raw"/>
+  <arg name="native_mono_camera_topic" default=""/>
+  <arg name="native_left_camera_info_topic" default="/camera/left/camera_info"/>
+  <arg name="left_camera_frame_id" default="camera_left"/>
+  <arg name="custom_left_camera_topic" default="/mycar/camera/left/custom_image"/>
+  <arg name="stereo_swap_lr" default="false"/>
+
+  <node name="custom_fastlio_adapter"
+        pkg="localization_benchmark"
+        type="custom_fastlio_adapter.py"
+        output="screen">
+    <param name="run_id" value="$(arg run_id)"/>
+    <param name="perturbation_config" value="$(arg perturbation_config)"/>
+    <param name="native_lidar_topic" value="$(arg native_lidar_topic)"/>
+    <param name="publish_livox_custom_msg" value="$(arg publish_livox_custom_msg)"/>
+    <param name="native_lidar_custom_topic" value="$(arg native_lidar_custom_topic)"/>
+    <param name="native_imu_topic" value="$(arg native_imu_topic)"/>
+    <param name="native_camera_topic" value="$(arg native_camera_topic)"/>
+    <param name="publish_camera" value="$(arg publish_camera)"/>
+    <param name="publish_camera_info" value="$(arg publish_camera_info)"/>
+    <param name="native_camera_info_topic" value="$(arg native_camera_info_topic)"/>
+    <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
+    <param name="point_time_scale" value="$(arg point_time_scale)"/>
+    <param name="publish_left_camera" value="$(arg publish_left_camera)"/>
+    <param name="native_left_camera_topic" value="$(arg native_left_camera_topic)"/>
+    <param name="native_mono_camera_topic" value="$(arg native_mono_camera_topic)"/>
+    <param name="native_left_camera_info_topic" value="$(arg native_left_camera_info_topic)"/>
+    <param name="left_camera_frame_id" value="$(arg left_camera_frame_id)"/>
+    <param name="custom_left_camera_topic" value="$(arg custom_left_camera_topic)"/>
+    <param name="stereo_swap_lr" value="$(arg stereo_swap_lr)"/>
+  </node>
+</launch>

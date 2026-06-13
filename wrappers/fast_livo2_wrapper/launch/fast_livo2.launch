@@ -1,0 +1,115 @@
+<!-- fast_livo2.launch
+     Launches FAST-LIVO2 (fast_livo package) configured for the
+     UrbanNav-HK dataset:
+       LiDAR:   Velodyne VLP-16 (centre)
+       IMU:     Xsens MTi-G-710
+       Camera:  ZED2 right camera (672×376)
+
+     FAST-LIVO2 is treated as a strict black box.
+     This launch file ONLY:
+       1. Loads the config YAML (our wrapper provides this file).
+       2. Starts the fastlivo_mapping node.
+     Zero FAST-LIVO2 source code is modified.
+
+     Source: https://github.com/hku-mars/FAST-LIVO2
+     Node:   fastlivo_mapping  (package: fast_livo)
+
+     Expected subscriptions (from wrapper):
+       /livox/lidar              sensor_msgs/PointCloud2   ~10 Hz
+       /livox/imu                sensor_msgs/Imu           ~200 Hz
+       /camera/right/image_raw   sensor_msgs/Image         ~10 Hz
+
+     Expected publications:
+       /path                     nav_msgs/Path
+       /Odometry                 nav_msgs/Odometry
+       /cloud_registered         sensor_msgs/PointCloud2
+       /cloud_registered_body    sensor_msgs/PointCloud2
+       /tf                       (camera_init → body)
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- Path to FAST-LIVO2 config YAML (wrapper provides this) -->
+  <arg name="config_path"
+       default="$(find fast_livo2_wrapper)/config/fast_livo2_urbannav.yaml"/>
+
+  <!-- PCD map output -->
+  <arg name="pcd_save_en"  default="true"/>
+  <arg name="pcd_path"     default="/data/output/fast_livo2_map.pcd"/>
+  <arg name="img_en"       default="1"/>
+  <arg name="lidar_en"     default="1"/>
+  <arg name="imu_en"       default="true"/>
+  <arg name="imu_axes_fix" default="false"/>
+  <arg name="acc_cov"      default="0.5"/>
+  <arg name="gyr_cov"      default="0.3"/>
+  <arg name="b_acc_cov"    default="0.0001"/>
+  <arg name="b_gyr_cov"    default="0.0001"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       Load FAST-LIVO2 parameters from our YAML config.
+       FAST-LIVO2 reads its settings via ROS param server under:
+         common/, preprocess/, mapping/, camera/, publish/, pcd_save/
+       ══════════════════════════════════════════════════════════════════ -->
+  <rosparam command="load" file="$(arg config_path)"/>
+
+  <!-- Override PCD save path from launch arg -->
+  <param name="pcd_save/pcd_save_en" value="$(arg pcd_save_en)"/>
+  <param name="pcd_save/pcd_path"    value="$(arg pcd_path)"/>
+  <param name="common/img_en"        value="$(arg img_en)"/>
+  <param name="common/lidar_en"      value="$(arg lidar_en)"/>
+  <param name="imu/imu_en"           value="$(arg imu_en)"/>
+  <param name="imu/acc_cov"          value="$(arg acc_cov)"/>
+  <param name="imu/gyr_cov"          value="$(arg gyr_cov)"/>
+  <param name="imu/b_acc_cov"        value="$(arg b_acc_cov)"/>
+  <param name="imu/b_gyr_cov"        value="$(arg b_gyr_cov)"/>
+
+  <!--
+       Diagnostic axis fix for UrbanNav IMU/body convention.
+       Use when LiDAR-only works but LIO diverges. FAST-LIVO2 applies:
+         p_imu = R_li * p_lidar + P_li
+       This candidate maps ROS Velodyne axes (x forward, y left, z up)
+       into UrbanNav body/IMU axes (x right, y forward, z up).
+  -->
+  <group if="$(arg imu_axes_fix)">
+    <rosparam param="mapping/extrinsic_R">[0, -1, 0, 1, 0, 0, 0, 0, 1]</rosparam>
+    <rosparam param="extrin_calib/extrinsic_R">[0, -1, 0, 1, 0, 0, 0, 0, 1]</rosparam>
+  </group>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       FAST-LIVO2 mapping node (black-box binary — no modifications)
+       Package:  fast_livo  (cloned from hku-mars/FAST-LIVO2)
+       Node:     fastlivo_mapping
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="laserMapping"
+        pkg="fast_livo"
+        type="fastlivo_mapping"
+        output="screen"
+        required="true">
+
+    <!-- Traceability: store config path in rosparam -->
+    <param name="config_path" value="$(arg config_path)"/>
+
+    <!-- Topic remaps: wrapper publishes on these; FAST-LIVO2 subscribes.
+         Explicit remaps here are belt-and-braces; the YAML lid_topic/imu_topic
+         already route correctly. -->
+    <remap from="/livox/lidar"             to="/livox/lidar"/>
+    <remap from="/livox/imu"              to="/livox/imu"/>
+    <remap from="/camera/right/image_raw" to="/camera/right/image_raw"/>
+    <!-- Suppress native dynamic TF; benchmark StandardOutput publishes camera_init -> body. -->
+    <remap from="/tf" to="/native/fast_livo2/tf"/>
+    <remap from="/tf_static" to="/native/fast_livo2/tf_static"/>
+
+  </node>
+
+  <!-- Stable benchmark odometry topic. Handles FAST-LIVO2 builds that publish
+       either /Odometry or /aft_mapped_to_init without changing upstream code. -->
+  <node name="fastlivo2_odometry_alias"
+        pkg="fast_livo2_wrapper"
+        type="odometry_alias_node.py"
+        output="screen">
+    <param name="preferred_topic" value="/Odometry"/>
+    <param name="fallback_topic" value="/aft_mapped_to_init"/>
+    <param name="output_topic" value="/fast_livo2/odometry"/>
+  </node>
+
+</launch>

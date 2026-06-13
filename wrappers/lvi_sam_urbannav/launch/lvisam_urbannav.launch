@@ -1,0 +1,16 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="run_visual" default="false"/>
+
+  <group>
+    <!-- Keep native LVI-SAM LiDAR mapping topic names so ./run/eval record the real algorithm output. -->
+    <include file="$(find lvi_sam)/launch/include/module_sam.launch">
+      <arg name="project" value="lvi_sam"/>
+      <arg name="run_visual" value="$(arg run_visual)"/>
+      <arg name="use_compressed_image_republish" value="false"/>
+      <arg name="lidar_param_file" value="$(find lvi_sam_urbannav)/config/lvisam_urbannav.yaml"/>
+      <arg name="vins_param_file" value="$(find lvi_sam)/config/params_camera.yaml"/>
+    </include>
+  </group>
+</launch>

@@ -1,0 +1,64 @@
+# velodyne_urbannav.yaml
+# ============================================================
+# Fast-LIO2 configuration for UrbanNav-HK-TST-20210517 dataset
+#
+# Sensor:  UrbanNav center Velodyne (centre LiDAR)
+# IMU:     Xsens MTi-G-710
+# Body frame = IMU frame
+#
+# All extrinsic values derived from extrinsic.yaml:
+#   CENTER_LiDAR_T_IMU (translation only, identity rotation)
+# All IMU noise values from xsens_imu_param.yaml
+# ============================================================
+
+common:
+    lid_topic:   "/cloud_registered_raw"    # wrapper output (UrbanNav /velodyne_points)
+    imu_topic:   "/livox/imu"               # wrapper output (UrbanNav /imu/data)
+    time_sync_en: false                     # hardware-synchronised bag
+    
+    # Point format — Velodyne LiDAR uses XYZIRT fields
+    # (x, y, z, intensity, ring, time)
+    # Fast-LIO2 will auto-detect from PointCloud2 field names
+
+preprocess:
+    lidar_type:   2     # 2 = Velodyne  (1=Livox, 2=Velodyne, 3=Ouster, 4=L-CAS)
+    scan_line:    32    # UrbanNav center /velodyne_points uses rings 0..31
+    blind:        0.5   # ignore points closer than 0.5 m
+    time_scale:   1.0   # UrbanNav /velodyne_points point time is already seconds
+    point_filter_num: 3 # keep every Nth point (reduce density for speed)
+
+mapping:
+    acc_cov:       0.01119741      # avg-axis acc_n from xsens_imu_param.yaml
+    gyr_cov:       0.01027090      # avg-axis gyr_n from xsens_imu_param.yaml
+    b_acc_cov:     1.175177e-04    # avg-axis acc_w (bias random walk)
+    b_gyr_cov:     9.135538e-05    # avg-axis gyr_w (bias random walk)
+
+    fov_degree:    360.0           # Velodyne is 360° horizontal
+    det_range:     80.0            # detection range (m)
+
+    extrinsic_est_en: false        # extrinsics are known from calibration
+
+    # Extrinsic: body (IMU) → LiDAR
+    # From CENTER_LiDAR_T_IMU in extrinsic.yaml (pure Z translation)
+    # FAST-LIO2 uses p_imu = R * p_lidar + T. Reference FAST-LIVO2 wrapper uses +0.28 m here.
+    extrinsic_T:   [ 0.0, 0.0, 0.28 ]
+
+    extrinsic_R:   [ 1, 0, 0,
+                     0, 1, 0,
+                     0, 0, 1 ]
+
+publish:
+    path_en:         true
+    scan_publish_en: true           # publish current scan
+    dense_publish_en: false         # publish dense map (heavy)
+    scan_bodyframe_pub_en: true     # publish scan in body frame
+
+    # Output topics (Fast-LIO2 default names — do not change)
+    # /cloud_registered   — registered point cloud in world frame
+    # /Odometry           — odometry (nav_msgs/Odometry)
+    # /path               — trajectory path
+
+pcd_save:
+    pcd_save_en:  false
+    interval:     -1               # -1 = save on shutdown only
+    pcd_path:     "/data/output/fast_lio2_map.pcd"

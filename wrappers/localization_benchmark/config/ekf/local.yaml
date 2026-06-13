@@ -1,0 +1,4 @@
+# Reserved for robot_localization local EKF. Current benchmark uses native local odometry.
+frequency: 30
+sensor_timeout: 0.2
+two_d_mode: false

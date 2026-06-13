@@ -1,0 +1,6 @@
+Localization robustness ranking
+Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
+
+1. per_0_fast_livo2_20260613_204444 score=0.020773 position_rmse_m=0.017036 position_max_m=0.021030 yaw_rmse_rad=0.000374 samples=21 gps=on:csv rtk=auto note=FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global fusion.
+2. per_0_fast_livo2_20260613_204028 score=24.272813 position_rmse_m=2.532682 position_max_m=6.982850 yaw_rmse_rad=2.174013 samples=886 gps=off:auto rtk=auto note=FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global fusion.
+3. per_0_fast_livo2_20260613_204257 score=56.947825 position_rmse_m=45.356655 position_max_m=115.752125 yaw_rmse_rad=1.159117 samples=443 gps=on:csv rtk=auto note=FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global fusion.

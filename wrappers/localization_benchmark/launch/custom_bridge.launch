@@ -1,0 +1,12 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="dataset" default="urbannav_hk_tst_20210517"/>
+
+  <node name="urbannav_custom_bridge"
+        pkg="localization_benchmark"
+        type="urbannav_custom_bridge.py"
+        output="screen">
+    <param name="dataset" value="$(arg dataset)"/>
+  </node>
+</launch>

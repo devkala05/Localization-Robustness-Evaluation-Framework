@@ -1,0 +1,7 @@
+Localization robustness ranking
+Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
+
+1. per_0_adaptive_w_lvio_20260613_194952 score=23.617381 position_rmse_m=1.916337 position_max_m=4.858757 yaw_rmse_rad=2.170104 samples=592 gps=off:auto rtk=auto note=Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.
+2. per_0_adaptive_w_lvio_20260613_200617 score=57.612024 position_rmse_m=46.751258 position_max_m=117.016396 yaw_rmse_rad=1.086077 samples=296 gps=on:csv rtk=auto note=Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.
+3. per_0_adaptive_w_lvio_20260613_201606 score=57.612186 position_rmse_m=46.751400 position_max_m=117.016485 yaw_rmse_rad=1.086079 samples=296 gps=on:csv rtk=auto note=Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.
+4. per_0_adaptive_w_lvio_20260613_201758 score=57.612186 position_rmse_m=46.751400 position_max_m=117.016485 yaw_rmse_rad=1.086079 samples=296 gps=on:csv rtk=auto note=Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.

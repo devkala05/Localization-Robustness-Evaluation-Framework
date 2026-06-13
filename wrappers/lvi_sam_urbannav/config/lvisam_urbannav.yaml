@@ -1,0 +1,102 @@
+# LVI-SAM LiDAR-IMU parameters for UrbanNav HK-TST 2021-05-17.
+# IMPORTANT: LVI-SAM C++ reads /PROJECT_NAME first, then reads params under
+# <PROJECT_NAME>/..., so this global key must exist or the nodes silently use
+# the default namespace "sam" and subscribe to points_raw/imu_correct.
+PROJECT_NAME: "lvi_sam"
+robot_id: "urbannav"
+
+lvi_sam:
+  # Topics produced by localization_benchmark/custom_fastlio_adapter.py
+  pointCloudTopic: "/cloud_registered_raw"
+  imuTopic: "/livox/imu"
+  odomTopic: "/lvi_sam/lidar/odometry/imu"
+  gpsTopic: "/odometry/gps"
+
+  # UrbanNav centre UrbanNav center Velodyne cloud fields: x y z intensity ring time
+  sensor: velodyne
+  N_SCAN: 32
+  Horizon_SCAN: 1800
+  timeField: "time"
+  # UrbanNav /velodyne_points point time field is already seconds; do not rescale.
+  pointTimeScale: 1.0
+  downsampleRate: 1
+  lidarMinRange: 1.0
+  lidarMaxRange: 1000.0
+
+  # GPS is optional. When ./run --gps on is used, the common GPS layer publishes
+  # /odometry/gps for LVI-SAM/LIO-SAM-style native GPS factors.
+  useImuHeadingInitialization: false
+  useGpsElevation: false
+  gpsCovThreshold: 2.0
+  poseCovThreshold: 25.0
+
+  # IMU noise — UrbanNav HK-TST calibrated values
+  imuAccNoise: 0.01119741
+  imuGyrNoise: 0.01027090
+  imuAccBiasN: 1.175177e-04
+  imuGyrBiasN: 9.135538e-05
+  imuGravity: 9.80511
+  imuRPYWeight: 0.01
+
+  # LiDAR <-> IMU extrinsics used by LVI-SAM lidar_odometry/utility.h
+  # Centre LiDAR is about +0.28m in the LiDAR frame relative to IMU, so IMU<-LiDAR
+  # translation is kept as original working project setting.
+  extrinsicTrans: [0.0, 0.0, -0.28]
+  extrinsicRot: [1, 0, 0,
+                 0, 1, 0,
+                 0, 0, 1]
+  extrinsicRPY: [1, 0, 0,
+                 0, 1, 0,
+                 0, 0, 1]
+
+  # LOAM feature extraction
+  edgeThreshold: 1.0
+  surfThreshold: 0.1
+  edgeFeatureMinValidNum: 10
+  surfFeatureMinValidNum: 100
+
+  # Voxel filters
+  odometrySurfLeafSize: 0.4
+  mappingCornerLeafSize: 0.2
+  mappingSurfLeafSize: 0.4
+
+  # Motion constraints for road driving.  Leaving these at 1000 lets a bad
+  # scan match push the local vehicle pose far out of RViz.
+  z_tollerance: 10.0
+  rotation_tollerance: 1.4
+
+  # CPU / mapping
+  numberOfCores: 2
+  mappingProcessInterval: 0.15
+
+  # Local map
+  surroundingkeyframeAddingDistThreshold: 1.0
+  surroundingkeyframeAddingAngleThreshold: 0.2
+  surroundingKeyframeDensity: 2.0
+  surroundingKeyframeSearchRadius: 50.0
+
+  # Loop closure disabled because visual vocabulary/assets are not shipped here
+  loopClosureEnableFlag: false
+  loopClosureFrequency: 1.0
+  surroundingKeyframeSize: 25
+  historyKeyframeSearchRadius: 20.0
+  historyKeyframeSearchTimeDiff: 30.0
+  historyKeyframeSearchNum: 25
+  historyKeyframeFitnessScore: 0.3
+
+  # Visualization/map export
+  globalMapVisualizationSearchRadius: 1000.0
+  globalMapVisualizationPoseDensity: 10.0
+  globalMapVisualizationLeafSize: 1.0
+  savePCD: false
+  savePCDDirectory: "/data/output/lvisam_map/"
+
+  # Camera values retained for optional visual nodes, but default launch disables
+  # visual VINS because it repeatedly reboots on this bag/config and blocks useful
+  # LiDAR-IMU benchmarking output.
+  imgTopic: "/camera/right/image_raw"
+  fx: 264.2125
+  fy: 264.155
+  cx: 341.635
+  cy: 183.993
+  distCoeffs: [0.0, 0.0, 0.0, 0.0]

@@ -1,0 +1,38 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="mode" default="$(optenv ORB_MODE stereo)"/>
+  <arg name="world_frame_id" default="camera_init"/>
+  <arg name="child_frame_id" default="body"/>
+  <arg name="output_odom_topic" default="/orbslam3/odometry/mapping"/>
+  <arg name="output_path_topic" default="/orbslam3/mapping/path"/>
+  <arg name="stereo_do_rectify" default="$(optenv ORB_STEREO_DO_RECTIFY true)"/>
+  <arg name="normalize_to_start" default="true"/>
+  <arg name="max_interframe_translation" default="5.0"/>
+  <arg name="max_speed_mps" default="45.0"/>
+
+  <!-- Native ORB-SLAM3 node. Input images are produced by custom_fastlio_adapter:
+       stereo: /camera/left/image_raw + /camera/right/image_raw
+       mono:   /camera/image_raw -->
+  <include file="$(find orbslam3_urbannav)/launch/orbslam3_urbannav.launch">
+    <arg name="mode" value="$(arg mode)"/>
+    <arg name="stereo_do_rectify" value="$(arg stereo_do_rectify)"/>
+  </include>
+
+  <node name="orbslam3_pose_republisher_node"
+        pkg="orbslam3_urbannav"
+        type="pose_republisher_node.py"
+        output="screen">
+    <param name="world_frame_id" value="$(arg world_frame_id)"/>
+    <param name="child_frame_id" value="$(arg child_frame_id)"/>
+    <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+    <param name="output_path_topic" value="$(arg output_path_topic)"/>
+    <param name="normalize_to_start" value="$(arg normalize_to_start)"/>
+    <param name="max_interframe_translation" value="$(arg max_interframe_translation)"/>
+    <param name="max_speed_mps" value="$(arg max_speed_mps)"/>
+    <param name="use_camera_to_body_extrinsic" value="true"/>
+    <!-- Dynamic camera_init->body TF is published by standard_output_republisher.
+         Keep this node odometry/path-only to avoid TF_REPEATED_DATA duplicate TFs. -->
+    <param name="publish_tf" value="false"/>
+  </node>
+</launch>
