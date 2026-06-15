@@ -1,0 +1,16 @@
+services:
+  e2o_eval:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: e2o-localization-eval:noetic
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - E2O_EVAL_ROOT=/workspace/e2o_eval
+    volumes:
+      - .:/workspace/e2o_eval
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    stdin_open: true
+    tty: true

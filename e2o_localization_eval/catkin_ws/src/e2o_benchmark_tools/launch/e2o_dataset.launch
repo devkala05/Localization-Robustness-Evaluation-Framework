@@ -1,0 +1,46 @@
+<launch>
+  <!-- Main dataset launch. The bag filename is passed in from ./run.sh. -->
+  <arg name="bag" default="" />
+  <arg name="rate" default="1.0" />
+  <arg name="pause" default="false" />
+  <arg name="loop" default="false" />
+  <arg name="use_rviz" default="true" />
+  <arg name="publish_gt" default="false" />
+  <arg name="gt_tum" default="" />
+  <arg name="play_bag" default="true" />
+
+  <param name="use_sim_time" value="true" />
+
+  <node pkg="e2o_benchmark_tools" type="static_tf_from_yaml.py" name="e2o_static_tf" output="screen">
+    <param name="yaml_path" value="$(env E2O_EVAL_ROOT)/config/calibration/e2o/static_transforms.yaml" />
+  </node>
+
+  <node pkg="e2o_benchmark_tools" type="camera_info_sync_publisher.py" name="front_camera_info" output="screen">
+    <param name="image_topic" value="/camera/color/image_raw" />
+    <param name="camera_info_topic" value="/camera/color/camera_info" />
+    <param name="camera_info_yaml" value="$(env E2O_EVAL_ROOT)/config/calibration/e2o/front_camera_info.yaml" />
+    <param name="frame_id" value="camera_color_optical_frame" />
+  </node>
+
+  <node pkg="e2o_benchmark_tools" type="topic_health_monitor.py" name="topic_health_monitor" output="screen" />
+
+  <group if="$(arg publish_gt)">
+    <node pkg="e2o_benchmark_tools" type="ground_truth_publisher.py" name="ground_truth_publisher" output="screen">
+      <param name="tum_file" value="$(arg gt_tum)" />
+      <param name="odom_topic" value="/ground_truth/odom" />
+      <param name="path_topic" value="/ground_truth/path" />
+      <param name="world_frame" value="map" />
+      <param name="child_frame" value="base_link" />
+      <param name="rate" value="20.0" />
+      <param name="timed_playback" value="true" />
+      <param name="broadcast_tf" value="true" />
+    </node>
+  </group>
+
+  <node if="$(arg use_rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(env E2O_EVAL_ROOT)/rviz/e2o_dataset.rviz" output="screen" />
+
+  <group if="$(arg play_bag)">
+    <node pkg="rosbag" type="play" name="play_bag" required="true"
+          args="--clock -r $(arg rate) $(arg bag)" />
+  </group>
+</launch>

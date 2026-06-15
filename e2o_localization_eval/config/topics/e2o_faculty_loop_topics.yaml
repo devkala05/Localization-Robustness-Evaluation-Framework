@@ -1,0 +1,75 @@
+dataset: e2o_faculty_loop
+sequence_hint: any_bag_in_data_folder
+description: >-
+  e2o platform mapping/ORB-SLAM dataset recorded on 2024-06-12 10:14:00
+  around New Faculty Residence and Old Faculty Residence. The bag filename is
+  intentionally not fixed; scripts auto-detect a .bag file under data/ or accept --bag.
+metadata:
+  purpose: [mapping, orb_slam]
+  recorded_at: "2024-06-12T10:14:00+05:30"
+  platform: e2o
+  duration_s: 571.0
+  size_gb: 30.79
+  location: "New Faculty Residence, Old Faculty Residence"
+  conditions:
+    time: morning
+    traffic: none
+    vegetation: moderate
+    inclined_planes: false
+    loop_closure: "two loops around old and new faculty buildings"
+  source_link_hint: "http://192.168.17.46:5000/sharing/B0C5iTFO0"
+
+raw_topics:
+  camera_front:
+    name: /camera/color/image_raw
+    type: sensor_msgs/Image
+    frame_id: camera_color_optical_frame
+    count_hint: 11968
+  lidar_left:
+    name: /lidar102/velodyne_points
+    type: sensor_msgs/PointCloud2
+    frame_id: velodyne
+    count_hint: 5663
+  lidar_middle:
+    name: /lidar103/velodyne_points
+    type: sensor_msgs/PointCloud2
+    frame_id: velodyne
+    count_hint: 5663
+  lidar_right:
+    name: /lidar104/velodyne_points
+    type: sensor_msgs/PointCloud2
+    frame_id: velodyne
+    count_hint: 5663
+  lidar_merged:
+    name: /merged/velodyne_points
+    type: sensor_msgs/PointCloud2
+    frame_id: velodyne103
+    count_hint: 5663
+
+standard_topics:
+  camera_front_image: /camera/color/image_raw
+  camera_front_info: /camera/color/camera_info
+  lidar_merged: /merged/velodyne_points
+  ground_truth_odometry: /ground_truth/odom
+  ground_truth_path: /ground_truth/path
+  algorithm_odometry: /localization/odometry
+  algorithm_path: /localization/path
+
+ground_truth:
+  # The known metadata lists camera and LiDAR topics only. If your bag contains a
+  # hidden pose/odom/gps/tf topic, ./run.sh gt will extract it. Otherwise add a
+  # real TUM reference file manually here.
+  default_tum_dir: data/ground_truth
+  publish_odom_topic: /ground_truth/odom
+  publish_path_topic: /ground_truth/path
+  world_frame: map
+  child_frame: base_link_gt
+
+algorithm_contract:
+  inputs:
+    monocular_camera: /camera/color/image_raw
+    camera_info: /camera/color/camera_info
+    lidar_merged: /merged/velodyne_points
+  expected_outputs:
+    odometry: /localization/odometry
+    path: /localization/path

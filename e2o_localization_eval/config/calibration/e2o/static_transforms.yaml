@@ -1,0 +1,49 @@
+# Static TFs for visualization/adapters. Review frame conventions before final scoring.
+world_frame: map
+base_frame: base_link
+sensor_origin_frame: velodyne103
+transforms:
+  - parent: base_link
+    child: velodyne103
+    translation: [0.0, 0.0, 0.0]
+    rotation_matrix:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+  - parent: velodyne103
+    child: velodyne
+    translation: [0.0, 0.0, 0.0]
+    rotation_matrix:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+  - parent: velodyne103
+    child: camera_color_optical_frame
+    translation: [0.07383026, -0.53581120, -0.31010858]
+    rotation_matrix:
+      - [-0.18256836, -0.98306216, -0.01604916]
+      - [0.11110754, -0.00440978, -0.99379861]
+      - [0.97689503, -0.18321936, 0.11003070]
+  - parent: velodyne103
+    child: back_camera
+    translation: [0.03984588, 0.00124226, -0.86056437]
+    rotation_matrix:
+      - [0.17384671, 0.98332405, 0.05339597]
+      - [0.43509918, -0.02805495, -0.89994534]
+      - [-0.88343988, 0.17968508, -0.43272075]
+  - parent: velodyne103
+    child: lidar102
+    # Inverse of supplied lidar102_to_lidar103 is used here so parent->child follows TF direction.
+    translation: [-0.347398, -0.367267, -0.001954]
+    rotation_matrix:
+      - [0.939229, -0.183642, -0.290041]
+      - [0.114115, 0.963858, -0.240741]
+      - [0.323769, 0.193013, 0.926240]
+  - parent: velodyne103
+    child: lidar104
+    # Inverse of supplied lidar104_to_lidar103 is used here so parent->child follows TF direction.
+    translation: [-0.356630, 0.375189, -0.043648]
+    rotation_matrix:
+      - [0.936284, -0.198318, -0.289899]
+      - [0.272688, 0.930633, 0.244057]
+      - [0.221389, -0.307559, 0.925416]

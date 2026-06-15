@@ -1,0 +1,39 @@
+project: e2o_faculty_loop_localization_eval
+ros_distro: noetic
+dataset:
+  name: e2o_faculty_loop
+  bag_policy: "auto-detect a single *.bag under data/ or pass --bag"
+  topics_config: config/topics/e2o_faculty_loop_topics.yaml
+  calibration_dir: config/calibration/e2o
+  duration_s: 571.0
+  raw_topics:
+    camera_front: /camera/color/image_raw
+    lidar_left: /lidar102/velodyne_points
+    lidar_middle: /lidar103/velodyne_points
+    lidar_right: /lidar104/velodyne_points
+    lidar_merged: /merged/velodyne_points
+ground_truth:
+  extraction:
+    mode: auto_candidates_then_user_selected_topic
+    supported_types:
+      - nav_msgs/Odometry
+      - geometry_msgs/PoseStamped
+      - geometry_msgs/PoseWithCovarianceStamped
+      - nav_msgs/Path
+      - sensor_msgs/NavSatFix
+      - tf2_msgs/TFMessage
+  publish:
+    tum_topic_odom: /ground_truth/odom
+    tum_topic_path: /ground_truth/path
+algorithms:
+  orb_slam3:
+    enabled_by_default: false
+    note: "Adapter script provided; clone/build ORB-SLAM3 separately or mount an existing build."
+    config: config/calibration/e2o/front_camera_orb_slam3.yaml
+    input_topic: /camera/color/image_raw
+    output_topic: /localization/odometry
+  future_algorithms:
+    - fast_lio2_lidar_only_requires_adapter_or_imu
+    - glim_lidar_only
+    - lio_sam_requires_imu_and_optional_gps
+    - vins_fusion_requires_camera_and_imu

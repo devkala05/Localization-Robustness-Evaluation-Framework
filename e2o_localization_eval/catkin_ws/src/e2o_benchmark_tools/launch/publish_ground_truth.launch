@@ -1,0 +1,13 @@
+<launch>
+  <arg name="gt_tum" default="" />
+  <arg name="rate" default="20.0" />
+  <param name="use_sim_time" value="true" />
+  <node pkg="e2o_benchmark_tools" type="ground_truth_publisher.py" name="ground_truth_publisher" output="screen">
+    <param name="tum_file" value="$(arg gt_tum)" />
+    <param name="odom_topic" value="/ground_truth/odom" />
+    <param name="path_topic" value="/ground_truth/path" />
+    <param name="world_frame" value="map" />
+    <param name="child_frame" value="base_link_gt" />
+    <param name="rate" value="$(arg rate)" />
+  </node>
+</launch>

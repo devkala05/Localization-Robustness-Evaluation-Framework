@@ -1,0 +1,44 @@
+%YAML:1.0
+# ORB-SLAM3 monocular config for the e2o front camera.
+# Dataset topic: /camera/color/image_raw
+# Calibration source: supplied sensor_caliberation_data.txt
+# Verify width/height from your actual rosbag image header before final metrics.
+
+File.version: "1.0"
+Camera.type: "PinHole"
+
+Camera.fx: 668.02585977
+Camera.fy: 658.80930843
+Camera.cx: 657.26752359
+Camera.cy: 363.16409155
+
+Camera.k1: -0.05078581
+Camera.k2: 0.08456123
+Camera.p1: -0.00046157
+Camera.p2: 0.00656211
+Camera.k3: -0.03406049
+
+# Principal point suggests 1280x720/1280x768-ish. Change after checking:
+#   ./run.sh inspect
+Camera.width: 1280
+Camera.height: 720
+Camera.fps: 20.96
+Camera.RGB: 1
+
+# Conservative ORB defaults for outdoor campus loop.
+ORBextractor.nFeatures: 1600
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0

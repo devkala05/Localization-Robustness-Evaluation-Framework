@@ -1,0 +1,11 @@
+.git
+catkin_ws/build
+catkin_ws/devel
+catkin_ws/logs
+data/**/*.bag
+data/raw/*
+data/outputs/*
+data/ground_truth/*
+*.zip
+__pycache__
+*.pyc

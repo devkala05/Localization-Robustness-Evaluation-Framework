@@ -1,0 +1,10 @@
+<launch>
+  <arg name="topic" default="/localization/odometry" />
+  <arg name="message_type" default="nav_msgs/Odometry" />
+  <arg name="output" default="/workspace/e2o_eval/data/outputs/algorithm_trajectory.tum" />
+  <node pkg="e2o_benchmark_tools" type="odom_pose_to_tum.py" name="odom_pose_to_tum" output="screen">
+    <param name="topic" value="$(arg topic)" />
+    <param name="message_type" value="$(arg message_type)" />
+    <param name="output" value="$(arg output)" />
+  </node>
+</launch>
