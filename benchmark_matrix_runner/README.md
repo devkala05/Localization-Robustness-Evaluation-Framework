@@ -1,74 +1,94 @@
 # Benchmark Matrix Runner
 
-This folder is standalone. Put `benchmark_matrix_runner/` inside your existing codebase root. It does **not** modify the codebase.
+Put this folder inside the original codebase root. It does **not** modify your codebase.
 
 ```bash
-cd localisation_benchmark_code/benchmark_matrix_runner
-chmod +x *.sh
+cp -r benchmark_matrix_runner /path/to/localisation_benchmark_code/
+cd /path/to/localisation_benchmark_code/benchmark_matrix_runner
+chmod +x run_all.sh
 ```
 
-Run all 7 algorithms, all perturbations 0-6, GPS off + on:
+## Important behavior
+
+- Builds **once per algorithm only**.
+- Does **not rebuild** when perturbation or GPS mode changes.
+- No build timeout by default.
+- No run timeout by default.
+- It waits for each run to finish before starting the next one.
+- If the run script returns but a matching Docker container is still running, it keeps waiting.
+- Logs are saved under:
+
+```text
+data/batch_runs/<timestamp>/logs/
+data/batch_runs/<timestamp>/summary.tsv
+```
+
+## Run all algos, all perturbations, GPS off + on
 
 ```bash
 ./run_all.sh
 ```
 
-Run selected algorithms:
+Default algos:
+
+```text
+fastlio2,lvisam,fastlivo2,rtabmap,adaptive_w_lvio,orbslam3,r3live
+```
+
+## Selected algos
 
 ```bash
 ./run_all.sh --algos fastlio2,lvisam,rtabmap,r3live
 ```
 
-Run selected perturbations:
+## Selected perturbations
 
 ```bash
 ./run_all.sh --algos r3live --per 0-6
-./run_all.sh --algos lvisam --per 0,2,4
+./run_all.sh --algos r3live --per 0,2,5
 ```
 
-Run GPS off only or GPS on only:
+## GPS modes
 
 ```bash
+./run_all.sh --gps both
 ./run_all.sh --gps off
 ./run_all.sh --gps on
 ```
 
-Skip builds if images are already built:
+## Skip build when already built
 
 ```bash
-./run_all.sh --no-build --algos fastlio2,lvisam --per 0-6 --gps both
+./run_all.sh --no-build --algos lvisam,rtabmap --per 0-6 --gps both
 ```
 
-One run only:
+## Force no-cache build once per algo
 
 ```bash
-./run_one.sh r3live 0 off
-./run_one.sh lvisam 3 on
+./run_all.sh --build-no-cache --algos r3live --per 0 --gps off
 ```
 
-Default behavior:
+## Time behavior
 
-- Builds each selected algorithm once first.
-- Runs every selected `algo × perturbation × gps` combination sequentially.
-- Passes `--eval` by default.
-- Passes `--r3live-vio true` for R3LIVE by default.
-- Waits at least 20 minutes per run by default.
-- Kills the run/container if it exceeds 30 minutes by default.
-- Continues to the next run even if one fails.
-- Logs go to:
+Default:
 
 ```text
-benchmark_matrix_runner/logs/<timestamp>/
+min-run-min = 20
+max-run-min = 0
 ```
 
-Main summary file:
+`max-run-min=0` means no hard timeout. It will not kill a long build or run.
 
-```text
-benchmark_matrix_runner/logs/<timestamp>/summary.tsv
-```
-
-Useful options:
+To add a hard timeout only when you really want it:
 
 ```bash
-./run_all.sh --help
+./run_all.sh --max-run-min 60
+```
+
+## Add extra args to every run
+
+Example if your codebase supports headless runs:
+
+```bash
+./run_all.sh --extra-run-args "--headless"
 ```
