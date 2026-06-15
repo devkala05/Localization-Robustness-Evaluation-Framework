@@ -7,6 +7,7 @@ import os
 from bisect import bisect_left
 
 import yaml
+import numpy as np
 
 
 WGS84_A = 6378137.0
@@ -50,54 +51,110 @@ def rotate_xy(x, y, yaw_offset_rad):
     return c * x - ss * y, ss * x + c * y
 
 
+def quaternion_yaw(qx, qy, qz, qw):
+    return math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+
+
+def normalize_angle(angle):
+    return math.atan2(math.sin(angle), math.cos(angle))
+
+
 def load_ground_truth(path, yaw_offset_deg=0.0):
-    raw = []
+    """Auto-detect UrbanNav INS text (20+ columns) or TUM (8 columns)."""
+    rows = []
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         for line in handle:
-            parts = line.split()
-            if len(parts) < 20:
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
+            parts = line.split()
             try:
-                raw.append({
-                    "stamp": float(parts[0]),
-                    "lat": dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5])),
-                    "lon": dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8])),
-                    "h": float(parts[9]),
-                    "heading": float(parts[18]),
-                })
+                if len(parts) == 8:
+                    vals = [float(v) for v in parts]
+                    if all(math.isfinite(v) for v in vals):
+                        rows.append({"format": "tum", "stamp": vals[0], "x": vals[1], "y": vals[2], "z": vals[3],
+                                     "yaw": quaternion_yaw(vals[4], vals[5], vals[6], vals[7])})
+                elif len(parts) >= 20:
+                    rows.append({"format": "urbannav", "stamp": float(parts[0]),
+                                 "lat": dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5])),
+                                 "lon": dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8])),
+                                 "h": float(parts[9]), "heading": float(parts[18])})
             except ValueError:
-                pass
-    if not raw:
+                continue
+    if not rows:
         return []
-    ref = raw[0]
+    rows.sort(key=lambda r: r["stamp"])
+    yaw_offset_rad = math.radians(yaw_offset_deg)
+    if rows[0]["format"] == "tum":
+        rows = [r for r in rows if r["format"] == "tum"]
+        ref = rows[0]
+        rotate = -ref["yaw"] + yaw_offset_rad
+        out = []
+        for row in rows:
+            x, y = rotate_xy(row["x"] - ref["x"], row["y"] - ref["y"], rotate)
+            out.append({"stamp": row["stamp"], "x": x, "y": y, "z": row["z"] - ref["z"],
+                        "yaw": normalize_angle(row["yaw"] - ref["yaw"] + yaw_offset_rad)})
+        return out
+
+    rows = [r for r in rows if r["format"] == "urbannav"]
+    ref = rows[0]
     ref_ecef = ecef_from_lla(ref["lat"], ref["lon"], ref["h"])
     heading = math.radians(ref["heading"])
-    forward_e = math.sin(heading)
-    forward_n = math.cos(heading)
-    right_e = math.cos(heading)
-    right_n = -math.sin(heading)
-    yaw_offset_rad = math.radians(yaw_offset_deg)
+    forward_e, forward_n = math.sin(heading), math.cos(heading)
+    right_e, right_n = math.cos(heading), -math.sin(heading)
     out = []
-    for row in raw:
+    for row in rows:
         ecef = ecef_from_lla(row["lat"], row["lon"], row["h"])
-        east, north, up = enu_from_ecef_delta(
-            ecef[0] - ref_ecef[0],
-            ecef[1] - ref_ecef[1],
-            ecef[2] - ref_ecef[2],
-            ref["lat"],
-            ref["lon"],
-        )
-        x = east * right_e + north * right_n
-        y = east * forward_e + north * forward_n
-        x, y = rotate_xy(x, y, yaw_offset_rad)
-        out.append({
-            "stamp": row["stamp"],
-            "x": x,
-            "y": y,
-            "z": up,
-            "yaw": math.radians(row["heading"] - ref["heading"] + yaw_offset_deg),
-        })
+        east, north, up = enu_from_ecef_delta(ecef[0]-ref_ecef[0], ecef[1]-ref_ecef[1], ecef[2]-ref_ecef[2], ref["lat"], ref["lon"])
+        x, y = rotate_xy(east * right_e + north * right_n, east * forward_e + north * forward_n, yaw_offset_rad)
+        out.append({"stamp": row["stamp"], "x": x, "y": y, "z": up,
+                    "yaw": normalize_angle(math.radians(row["heading"] - ref["heading"]) + yaw_offset_rad)})
     return out
+
+
+def align_trajectory(samples, gt, mode="none", max_dt=0.75):
+    """Align estimate to GT in XY. sim2 also estimates monocular scale."""
+    mode = (mode or "none").lower()
+    if mode == "none" or not samples or not gt:
+        return samples, {"mode": mode, "scale": 1.0, "rotation_rad": 0.0, "translation_xy": [0.0, 0.0]}
+    if mode not in ("se2", "sim2"):
+        raise ValueError("alignment must be none, se2 or sim2")
+    stamps = [g["stamp"] for g in gt]
+    pairs = []
+    for sample in samples:
+        ref = nearest(sample, gt, stamps)
+        if ref is not None and abs(ref["stamp"] - sample["stamp"]) <= max_dt:
+            pairs.append((sample, ref))
+    if len(pairs) < 3:
+        return samples, {"mode": mode, "applied": False, "reason": "fewer than 3 timestamp pairs", "pairs": len(pairs)}
+    src = np.asarray([[a["x"], a["y"]] for a, _ in pairs], dtype=float)
+    dst = np.asarray([[b["x"], b["y"]] for _, b in pairs], dtype=float)
+    mu_src, mu_dst = src.mean(axis=0), dst.mean(axis=0)
+    src_c, dst_c = src - mu_src, dst - mu_dst
+    cov = dst_c.T @ src_c / len(src)
+    U, singular, Vt = np.linalg.svd(cov)
+    correction = np.eye(2)
+    if np.linalg.det(U @ Vt) < 0:
+        correction[-1, -1] = -1.0
+    R = U @ correction @ Vt
+    scale = 1.0
+    if mode == "sim2":
+        variance = np.mean(np.sum(src_c * src_c, axis=1))
+        scale = float(np.trace(np.diag(singular) @ correction) / max(variance, 1e-12))
+    trans = mu_dst - scale * (R @ mu_src)
+    rot = math.atan2(R[1, 0], R[0, 0])
+    mean_src_z = sum(a["z"] for a, _ in pairs) / len(pairs)
+    mean_dst_z = sum(b["z"] for _, b in pairs) / len(pairs)
+    z_shift = mean_dst_z - scale * mean_src_z
+    out = []
+    for sample in samples:
+        xy = scale * (R @ np.asarray([sample["x"], sample["y"]])) + trans
+        row = dict(sample)
+        row.update({"x": float(xy[0]), "y": float(xy[1]), "z": float(scale * sample["z"] + z_shift),
+                    "yaw": normalize_angle(sample.get("yaw", 0.0) + rot)})
+        out.append(row)
+    return out, {"mode": mode, "applied": True, "pairs": len(pairs), "scale": scale,
+                 "rotation_rad": rot, "translation_xy": [float(trans[0]), float(trans[1])], "z_shift": float(z_shift)}
 
 
 def load_trajectory(path):
@@ -409,11 +466,13 @@ def main():
     parser.add_argument("--gps-mode", default=os.environ.get("GPS_ENABLE", "off"))
     parser.add_argument("--gps-source", default=os.environ.get("GPS_SOURCE", "none"))
     parser.add_argument("--rtk-mode", default=os.environ.get("RTK_MODE", "auto"))
+    parser.add_argument("--alignment", choices=["none", "se2", "sim2"], default=os.environ.get("ALGO_EVAL_ALIGNMENT", "none"))
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
     gt = load_ground_truth(args.gt, args.gt_yaw_offset_deg)
-    run = load_trajectory(args.run_csv)
+    run_raw = load_trajectory(args.run_csv)
+    run, alignment = align_trajectory(run_raw, gt, args.alignment)
     baseline = load_trajectory(args.baseline_csv) if args.baseline_csv else []
     segments = load_yaml_list(args.segments, "segments")
     perturbations = load_yaml_list(args.perturbations, "perturbations")
@@ -423,6 +482,7 @@ def main():
         "gps_mode": args.gps_mode,
         "gps_source": args.gps_source,
         "rtk_mode": args.rtk_mode,
+        "alignment": alignment,
         "overall": metrics_for(run, gt),
         "segments": {},
         "perturbation_windows": {},
@@ -514,7 +574,8 @@ def main():
             handle.write(f"Algorithm note: {report['algorithm_note']}\n\n")
         handle.write(f"GPS mode: {report.get('gps_mode', 'off')}\n")
         handle.write(f"GPS source: {report.get('gps_source', 'none')}\n")
-        handle.write(f"RTK mode: {report.get('rtk_mode', 'auto')}\n\n")
+        handle.write(f"RTK mode: {report.get('rtk_mode', 'auto')}\n")
+        handle.write(f"Trajectory alignment: {report.get('alignment', {})}\n\n")
         handle.write(f"Samples compared: {overall.get('samples', 0)}\n")
         handle.write(f"Robustness score, lower is better: {format_metric(report.get('robustness_score_lower_is_better'))}\n")
         handle.write(f"Overall position RMSE: {format_metric(overall.get('position_rmse_m'), ' m')}\n")

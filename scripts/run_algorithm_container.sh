@@ -6,7 +6,7 @@ ALGO=""; PER=""; MODE=""; EVALUATE="false"; EVAL_DURATION="0"
 SKIP_RUNTIME_BUILD="${SKIP_RUNTIME_BUILD:-true}"
 DOCKER_CPUS="${DOCKER_CPUS:-}"; DOCKER_MEMORY="${DOCKER_MEMORY:-}"
 BAG_RATE="${BAG_RATE:-0.35}"; GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}"
-ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL:-true}"; R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL:-false}"
+ORB_MODE="${ORB_MODE:-mono}"; STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL:-true}"; R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL:-false}"
 usage(){ echo "Internal runner. Use ./run --help"; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -35,7 +35,7 @@ case "${ALGO}" in
 esac
 if [ -n "${CONTAINER_NAME:-}" ]; then CONTAINER="${CONTAINER_NAME}"; elif [ "${MODE}" = "per" ]; then CONTAINER="${ALGO}_run_${PER}"; else CONTAINER="${ALGO}_shell"; fi
 if [ -z "${DISPLAY:-}" ] && [ -S /tmp/.X11-unix/X1 ]; then export DISPLAY=:1; fi
-mkdir -p "${SCRIPT_DIR}/data/results/${RESULT_DIR}" "${SCRIPT_DIR}/data/output"
+mkdir -p "${SCRIPT_DIR}/data/results/${DATASET_ID:-e2o}/${RESULT_DIR}" "${SCRIPT_DIR}/data/output"
 chmod +x "${SCRIPT_DIR}"/scripts/*.sh 2>/dev/null || true
 chmod +x "${SCRIPT_DIR}"/wrappers/localization_benchmark/scripts/*.py 2>/dev/null || true
 chmod +x "${SCRIPT_DIR}"/wrappers/fast-lio_urbannav/scripts/*.py 2>/dev/null || true
@@ -48,7 +48,7 @@ RESOURCE_ARGS=(); [ -n "${DOCKER_CPUS}" ] && RESOURCE_ARGS+=(--cpus="${DOCKER_CP
 TTY_ARGS=(); [ -t 0 ] && TTY_ARGS=(-it)
 xhost +local:docker >/dev/null 2>&1 || true
 docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
-echo "[run] algorithm=${DISPLAY_NAME} key=${ALGO} case=${MODE}${PER:+:per_${PER}} gps=${GPS_ENABLE:-off} eval=${EVALUATE}"
+echo "[run] dataset=${DATASET_ID:-e2o} algorithm=${DISPLAY_NAME} key=${ALGO} case=${MODE}${PER:+:per_${PER}} gps=${GPS_ENABLE:-off} eval=${EVALUATE}"
 echo "[run] image=${IMAGE_NAME} container=${CONTAINER} bag_rate=${BAG_RATE} duration=${EVAL_DURATION}s"
 exec docker run "${TTY_ARGS[@]}" \
   --name "${CONTAINER}" --network host --privileged "${RESOURCE_ARGS[@]}" \
@@ -61,6 +61,15 @@ exec docker run "${TTY_ARGS[@]}" \
   -e STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL}" -e R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL}" \
   -e BAG_PATH_OVERRIDE="${BAG_PATH_OVERRIDE:-}" -e GT_PATH_OVERRIDE="${GT_PATH_OVERRIDE:-}" \
   -e ORB_MODE="${ORB_MODE}" -e ORB_SLAM3_ROOT="/root/ORB_SLAM3" \
+  -e DATASET_ID="${DATASET_ID:-e2o}" -e DATASET_DISPLAY="${DATASET_DISPLAY:-E2O}" -e DATASET_LABEL="${DATASET_LABEL:-e2o}" \
+  -e DATASET_DEFAULT_BAG="${DATASET_DEFAULT_BAG:-}" -e DATASET_DEFAULT_GT="${DATASET_DEFAULT_GT:-}" -e DATASET_GT_FORMAT="${DATASET_GT_FORMAT:-auto}" \
+  -e DATASET_WORLD_FRAME="${DATASET_WORLD_FRAME:-camera_init}" -e DATASET_BODY_FRAME="${DATASET_BODY_FRAME:-body}" \
+  -e DATASET_LIDAR_FRAME="${DATASET_LIDAR_FRAME:-velodyne}" -e DATASET_IMU_FRAME="${DATASET_IMU_FRAME:-body}" -e DATASET_CAMERA_FRAME="${DATASET_CAMERA_FRAME:-camera_right}" \
+  -e DATASET_SOURCE_LIDAR_TOPIC="${DATASET_SOURCE_LIDAR_TOPIC:-}" -e DATASET_SOURCE_IMU_TOPIC="${DATASET_SOURCE_IMU_TOPIC:-}" \
+  -e DATASET_SOURCE_CAMERA_TOPIC="${DATASET_SOURCE_CAMERA_TOPIC:-}" -e DATASET_SOURCE_LEFT_CAMERA_TOPIC="${DATASET_SOURCE_LEFT_CAMERA_TOPIC:-}" \
+  -e DATASET_GPS_TOPIC="${DATASET_GPS_TOPIC:-}" -e DATASET_CAMERA_INFO_YAML="${DATASET_CAMERA_INFO_YAML:-}" -e DATASET_STATIC_TF_YAML="${DATASET_STATIC_TF_YAML:-}" \
+  -e DATASET_BAG_TOPICS="${DATASET_BAG_TOPICS:-}" -e DATASET_POINT_TIME_FIELD="${DATASET_POINT_TIME_FIELD:-time}" -e DATASET_POINT_TIME_UNIT="${DATASET_POINT_TIME_UNIT:-auto}" \
+  -e DATASET_PERTURBATIONS_DIR="${DATASET_PERTURBATIONS_DIR:-}" -e DATASET_SEGMENTS_YAML="${DATASET_SEGMENTS_YAML:-}" \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v "${SCRIPT_DIR}/data:/data" -v "${SCRIPT_DIR}:/workspace" \
   -v "${SCRIPT_DIR}/wrappers/custom_localization_msgs:/root/catkin_ws/src/custom_localization_msgs" \
   -v "${SCRIPT_DIR}/wrappers/localization_benchmark:/root/catkin_ws/src/localization_benchmark" \

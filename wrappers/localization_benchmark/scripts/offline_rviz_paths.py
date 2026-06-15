@@ -159,36 +159,61 @@ def load_csv_trajectory(path: str) -> List[dict]:
     return rows
 
 
+def quaternion_yaw(qx: float, qy: float, qz: float, qw: float) -> float:
+    return math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+
+
+def yaw_quaternion(yaw: float) -> Tuple[float, float, float, float]:
+    return 0.0, 0.0, math.sin(0.5 * yaw), math.cos(0.5 * yaw)
+
+
 def load_ground_truth(path: str, yaw_offset_deg: float = 0.0) -> List[dict]:
+    """Read UrbanNav INS text or E2O TUM and normalize to the initial body frame."""
     path = resolve_path(path)
     if not os.path.isfile(path):
         return []
     raw = []
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         for line in handle:
-            parts = line.split()
-            if len(parts) < 20:
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
+            parts = line.split()
             try:
-                raw.append({
-                    "stamp": float(parts[0]),
-                    "lat": dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5])),
-                    "lon": dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8])),
-                    "h": float(parts[9]),
-                    "heading": float(parts[18]),
-                })
+                if len(parts) == 8:
+                    v = [float(x) for x in parts]
+                    raw.append({"format": "tum", "stamp": v[0], "x": v[1], "y": v[2], "z": v[3],
+                                "yaw": quaternion_yaw(v[4], v[5], v[6], v[7])})
+                elif len(parts) >= 20:
+                    raw.append({"format": "urbannav", "stamp": float(parts[0]),
+                                "lat": dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5])),
+                                "lon": dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8])),
+                                "h": float(parts[9]), "heading": float(parts[18])})
             except ValueError:
                 continue
     if not raw:
         return []
+    raw.sort(key=lambda r: r["stamp"])
+    yaw_offset_rad = math.radians(yaw_offset_deg)
+    if raw[0]["format"] == "tum":
+        raw = [r for r in raw if r["format"] == "tum"]
+        ref = raw[0]
+        angle = -ref["yaw"] + yaw_offset_rad
+        out = []
+        for row in raw:
+            x, y = rotate_xy(row["x"] - ref["x"], row["y"] - ref["y"], angle)
+            yaw = math.atan2(math.sin(row["yaw"] - ref["yaw"] + yaw_offset_rad),
+                             math.cos(row["yaw"] - ref["yaw"] + yaw_offset_rad))
+            qx, qy, qz, qw = yaw_quaternion(yaw)
+            out.append({"stamp": row["stamp"], "x": x, "y": y, "z": row["z"] - ref["z"],
+                        "qx": qx, "qy": qy, "qz": qz, "qw": qw})
+        return out
+    raw = [r for r in raw if r["format"] == "urbannav"]
     ref = raw[0]
     ref_ecef = ecef_from_lla(ref["lat"], ref["lon"], ref["h"])
     heading = math.radians(ref["heading"])
-    forward_e = math.sin(heading)
-    forward_n = math.cos(heading)
-    right_e = math.cos(heading)
-    right_n = -math.sin(heading)
-    yaw_offset_rad = math.radians(yaw_offset_deg)
+    forward_e, forward_n = math.sin(heading), math.cos(heading)
+    right_e, right_n = math.cos(heading), -math.sin(heading)
     out = []
     for row in raw:
         ecef = ecef_from_lla(row["lat"], row["lon"], row["h"])
@@ -198,9 +223,9 @@ def load_ground_truth(path: str, yaw_offset_deg: float = 0.0) -> List[dict]:
         x = east * right_e + north * right_n
         y = east * forward_e + north * forward_n
         x, y = rotate_xy(x, y, yaw_offset_rad)
-        out.append({"stamp": row["stamp"], "x": x, "y": y, "z": up, "qx": 0.0, "qy": 0.0, "qz": 0.0, "qw": 1.0})
+        out.append({"stamp": row["stamp"], "x": x, "y": y, "z": up,
+                    "qx": 0.0, "qy": 0.0, "qz": 0.0, "qw": 1.0})
     return out
-
 
 def downsample(rows: Sequence[dict], max_points: int) -> List[dict]:
     if max_points <= 0 or len(rows) <= max_points:
@@ -330,17 +355,23 @@ def build_marker_array(trajs: Dict[str, List[dict]], gt: List[dict], frame_id: s
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Publish saved UrbanNav benchmark trajectories into RViz")
+    parser = argparse.ArgumentParser(description="Publish saved benchmark trajectories into RViz")
     parser.add_argument("--per", type=int, required=True, help="Perturbation/run id, e.g. 0")
     parser.add_argument("--algo", default="all", help="all or comma-separated names")
-    parser.add_argument("--results-root", default="/data/results", help="Results root containing <algo>/per_N/trajectory.csv")
-    parser.add_argument("--gt", default="/data/UrbanNav_TST_GT_raw.txt", help="UrbanNav GT text file")
+    parser.add_argument("--dataset", choices=("e2o", "urbannav"), default=os.environ.get("DATASET", "e2o"))
+    parser.add_argument("--results-root", default="", help="Results root containing <algo>/per_N/trajectory.csv")
+    parser.add_argument("--gt", default="", help="UrbanNav INS text or E2O TUM ground truth")
     parser.add_argument("--frame-id", default="camera_init")
     parser.add_argument("--yaw-offset-deg", type=float, default=float(os.environ.get("GT_YAW_OFFSET_DEG", "0.0")))
     parser.add_argument("--rate", type=float, default=2.0)
     parser.add_argument("--max-points", type=int, default=12000)
     parser.add_argument("--line-width", type=float, default=0.35)
     args = parser.parse_args()
+    if not args.results_root:
+        args.results_root = "/data/results/{}".format(args.dataset)
+    if not args.gt:
+        args.gt = ("/data/e2o/ground_truth/one_full_loop_gt.tum"
+                   if args.dataset == "e2o" else "/data/UrbanNav_TST_GT_raw.txt")
 
     rospy.init_node("offline_trajectory_rviz", anonymous=False)
 

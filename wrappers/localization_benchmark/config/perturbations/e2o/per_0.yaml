@@ -1,0 +1,4 @@
+name: no_perturbation
+description: Exact dataset playback. No perturbations are applied. Timestamps adapted to E2O GT start; verify against the
+  actual bag clock.
+perturbations: []

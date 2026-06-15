@@ -1,0 +1,58 @@
+datasets:
+  urbannav:
+    display_name: UrbanNav HK TST 2021-05-17
+    dataset_label: urbannav_hk_tst_20210517
+    default_bag: /data/UrbanNav-HK_TST-20210517_sensors.bag
+    default_gt: /data/UrbanNav_TST_GT_raw.txt
+    gt_format: urbannav_ins
+    world_frame: camera_init
+    body_frame: body
+    lidar_frame: velodyne
+    imu_frame: body
+    camera_frame: camera_right
+    source_lidar_topic: /velodyne_points
+    source_imu_topic: /imu/data
+    source_camera_topic: /zed2/camera/right/image_raw
+    source_left_camera_topic: /zed2/camera/left/image_raw
+    gps_topic: ''
+    camera_width: 672
+    camera_height: 376
+    camera_info_yaml: ''
+    static_tf_yaml: ''
+    bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
+    orb_default_mode: stereo
+    stereo_swap_default: true
+    point_time_field: time
+    scan_lines_assumed: 32
+    perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations
+    segments_yaml: /root/catkin_ws/src/localization_benchmark/config/road_segments.yaml
+    point_time_unit: s
+  e2o:
+    display_name: E2O Faculty Loop 2024-06-12
+    dataset_label: e2o_faculty_loop
+    default_bag: /data/e2o/raw/one_full_loop.bag
+    default_gt: /data/e2o/ground_truth/one_full_loop_gt.tum
+    gt_format: tum
+    world_frame: camera_init
+    body_frame: body
+    lidar_frame: velodyne
+    imu_frame: body
+    camera_frame: camera_right
+    source_lidar_topic: /lidar103/velodyne_points
+    source_imu_topic: /mavros/imu/data
+    source_camera_topic: /camera/color/image_raw
+    source_left_camera_topic: ''
+    gps_topic: /mavros/global_position/global
+    camera_width: 1280
+    camera_height: 720
+    camera_info_yaml: /root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+    static_tf_yaml: /root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+    bag_topics: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+      /mavros/global_position/global
+    orb_default_mode: mono
+    stereo_swap_default: false
+    point_time_field: time
+    scan_lines_assumed: 64
+    perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations/e2o
+    segments_yaml: /root/catkin_ws/src/localization_benchmark/config/datasets/e2o/road_segments.yaml
+    point_time_unit: s

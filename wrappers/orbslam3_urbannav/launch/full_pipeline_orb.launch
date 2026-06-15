@@ -7,6 +7,9 @@
   <arg name="output_odom_topic" default="/orbslam3/odometry/mapping"/>
   <arg name="output_path_topic" default="/orbslam3/mapping/path"/>
   <arg name="stereo_do_rectify" default="$(optenv ORB_STEREO_DO_RECTIFY true)"/>
+  <arg name="mono_camera_config" default="$(find orbslam3_urbannav)/config/zed2_right_mono_orbslam3.yaml"/>
+  <arg name="stereo_camera_config" default="$(find orbslam3_urbannav)/config/zed2_stereo_urbannav_swapped_orbslam3.yaml"/>
+  <arg name="camera_extrinsic_yaml" default=""/>
   <arg name="normalize_to_start" default="true"/>
   <arg name="max_interframe_translation" default="5.0"/>
   <arg name="max_speed_mps" default="45.0"/>
@@ -17,6 +20,8 @@
   <include file="$(find orbslam3_urbannav)/launch/orbslam3_urbannav.launch">
     <arg name="mode" value="$(arg mode)"/>
     <arg name="stereo_do_rectify" value="$(arg stereo_do_rectify)"/>
+    <arg name="mono_camera_config" value="$(arg mono_camera_config)"/>
+    <arg name="stereo_camera_config" value="$(arg stereo_camera_config)"/>
   </include>
 
   <node name="orbslam3_pose_republisher_node"
@@ -31,6 +36,7 @@
     <param name="max_interframe_translation" value="$(arg max_interframe_translation)"/>
     <param name="max_speed_mps" value="$(arg max_speed_mps)"/>
     <param name="use_camera_to_body_extrinsic" value="true"/>
+    <param name="camera_extrinsic_yaml" value="$(arg camera_extrinsic_yaml)"/>
     <!-- Dynamic camera_init->body TF is published by standard_output_republisher.
          Keep this node odometry/path-only to avoid TF_REPEATED_DATA duplicate TFs. -->
     <param name="publish_tf" value="false"/>

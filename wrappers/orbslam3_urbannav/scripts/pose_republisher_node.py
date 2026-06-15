@@ -30,6 +30,7 @@ import numpy as np
 import rospy
 import tf2_ros
 import transforms3d
+import yaml
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry, Path
 from std_msgs.msg import String
@@ -55,6 +56,33 @@ def invert_rigid(T: np.ndarray) -> np.ndarray:
     Ti[:3, :3] = R.T
     Ti[:3, 3] = -(R.T @ t)
     return Ti
+
+
+def rotation_matrix_from_item(item):
+    if "rotation_matrix" in item:
+        return np.asarray(item["rotation_matrix"], dtype=float)
+    q = item.get("quaternion", [0.0, 0.0, 0.0, 1.0])  # xyzw
+    return transforms3d.quaternions.quat2mat([q[3], q[0], q[1], q[2]])
+
+
+def load_camera_body_extrinsic(path: str, body_frame="body", camera_frame="camera_right") -> np.ndarray:
+    """Return T_camera_body from the generic dataset static-TF YAML.
+
+    The YAML stores a ROS parent=body, child=camera pose T_body_camera. ORB
+    publishes T_world_camera, so the legacy conversion requires its inverse,
+    T_camera_body.
+    """
+    if not path:
+        return RIGHT_CAMERA_T_IMU.copy()
+    with open(path, "r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    for item in data.get("transforms", []):
+        if item.get("parent") == body_frame and item.get("child") == camera_frame:
+            T_body_camera = np.eye(4)
+            T_body_camera[:3, :3] = rotation_matrix_from_item(item)
+            T_body_camera[:3, 3] = np.asarray(item.get("translation", [0, 0, 0]), dtype=float)
+            return invert_rigid(T_body_camera)
+    raise ValueError("No %s -> %s transform in %s" % (body_frame, camera_frame, path))
 
 
 def pose_to_mat(pose: gm.Pose) -> np.ndarray:
@@ -97,6 +125,13 @@ class PoseRepublisher:
         self.max_interframe_translation = float(rospy.get_param("~max_interframe_translation", 5.0))
         self.max_speed_mps = float(rospy.get_param("~max_speed_mps", 45.0))
         self.use_camera_to_body_extrinsic = rospy.get_param("~use_camera_to_body_extrinsic", True)
+        self.camera_extrinsic_yaml = rospy.get_param("~camera_extrinsic_yaml", "")
+        try:
+            self.camera_T_body = load_camera_body_extrinsic(
+                self.camera_extrinsic_yaml, self.child_frame_id, "camera_right"
+            )
+        except Exception as exc:
+            raise rospy.ROSInitException("Failed camera/body extrinsic: %s" % exc)
 
         self._pub_odom = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=50)
         self._pub_path = rospy.Publisher(self.output_path_topic, Path, queue_size=10)
@@ -133,11 +168,12 @@ class PoseRepublisher:
             self.max_interframe_translation,
             self.max_speed_mps,
         )
+        rospy.loginfo("[ORB-SLAM3 PoseRepublisher] camera_extrinsic=%s", self.camera_extrinsic_yaml or "UrbanNav built-in")
 
     def _convert_camera_pose_to_body(self, msg: PoseStamped) -> np.ndarray:
         T_world_camera = pose_to_mat(msg.pose)
         if self.use_camera_to_body_extrinsic:
-            T_world_body = T_world_camera @ invert_rigid(RIGHT_CAMERA_T_IMU)
+            T_world_body = T_world_camera @ invert_rigid(self.camera_T_body)
         else:
             T_world_body = T_world_camera
 

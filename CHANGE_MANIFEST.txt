@@ -1,0 +1,73 @@
+E2O ADAPTATION CHANGE MANIFEST
+Generated: 2026-06-15
+
+NEW TOP-LEVEL FILES
+- build.sh
+- run.sh
+- inspect_bag.sh
+- E2O_ADAPTATION.md
+- CHANGE_MANIFEST.txt
+
+MODIFIED TOP-LEVEL FILES
+- README.md
+- RUN_README.md
+- run
+- plot.sh
+- build_fastlio2.sh
+
+NEW DATASET/VALIDATION SCRIPTS
+- scripts/dataset_config.py
+- scripts/inspect_dataset_bag.py
+
+MODIFIED PIPELINE SCRIPTS
+- scripts/algorithm_config.py
+- scripts/container_build_check.sh
+- scripts/container_run_per.sh
+- scripts/container_run_summary.sh
+- scripts/container_visualise.sh
+- scripts/run_algorithm_container.sh
+
+NEW E2O DATASET CONTRACT
+- wrappers/localization_benchmark/config/datasets.yaml
+- wrappers/localization_benchmark/config/datasets/e2o/assumptions.yaml
+- wrappers/localization_benchmark/config/datasets/e2o/e2o_sensor_calibration.yaml
+- wrappers/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+- wrappers/localization_benchmark/config/datasets/e2o/road_segments.yaml
+- wrappers/localization_benchmark/config/datasets/e2o/sensor_calibration_data.txt
+- wrappers/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+- wrappers/localization_benchmark/config/perturbations/e2o/per_0.yaml ... per_6.yaml
+- data/e2o/ground_truth/one_full_loop_gt.tum
+- data/e2o/raw/.gitkeep
+- data/e2o/README.md
+
+NEW ALGORITHM CONFIGS
+- wrappers/fast-lio_urbannav/config/velodyne_e2o.yaml
+- wrappers/lvi_sam_urbannav/config/lvisam_e2o.yaml
+- wrappers/fast_livo2_wrapper/config/fast_livo2_e2o.yaml
+- wrappers/orbslam3_urbannav/config/front_camera_e2o_orbslam3.yaml
+- wrappers/r3live_urbannav/config/r3live_e2o.yaml
+
+MODIFIED SHARED ADAPTER/EVALUATION FILES
+- wrappers/localization_benchmark/CMakeLists.txt
+- wrappers/localization_benchmark/config/algorithms.yaml
+- wrappers/localization_benchmark/config/benchmark_paths.rviz
+- wrappers/localization_benchmark/launch/custom_bridge.launch
+- wrappers/localization_benchmark/launch/custom_fastlio_adapter.launch
+- wrappers/localization_benchmark/scripts/urbannav_custom_bridge.py
+- wrappers/localization_benchmark/scripts/custom_fastlio_adapter.py
+- wrappers/localization_benchmark/scripts/evaluate_run.py
+- wrappers/localization_benchmark/scripts/trajectory_analysis.py
+- wrappers/localization_benchmark/scripts/offline_rviz_paths.py
+- wrappers/localization_benchmark/scripts/dataset_tf_broadcaster.py (new)
+- wrappers/fast-lio_urbannav/scripts/ground_truth_path_node.py
+
+MODIFIED ALGORITHM LAUNCH/WRAPPER FILES
+- wrappers/adaptive_w_lvio_urbannav/launch/full_pipeline_adaptive_w_lvio.launch
+- wrappers/lvi_sam_urbannav/launch/lvisam_urbannav.launch
+- wrappers/orbslam3_urbannav/launch/full_pipeline_orb.launch
+- wrappers/orbslam3_urbannav/scripts/pose_republisher_node.py
+- wrappers/r3live_urbannav/launch/r3live_urbannav.launch
+- wrappers/rtabmap_urbannav/launch/full_pipeline_rtabmap.launch
+
+PACKAGING NOTE
+Generated UrbanNav result CSV/PNG folders from the source archive are not duplicated in this clean deliverable. The result/output directory structure is retained and new runs populate data/results/<dataset>/...

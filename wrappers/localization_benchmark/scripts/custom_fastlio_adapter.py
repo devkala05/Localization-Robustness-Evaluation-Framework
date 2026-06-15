@@ -30,6 +30,33 @@ except ImportError:
     CvBridge = None
 
 
+
+def load_camera_info_yaml(path):
+    """Load a standard ROS camera_calibration YAML into plain arrays."""
+    if not path:
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle) or {}
+        def values(key, default):
+            value = data.get(key, default)
+            if isinstance(value, dict):
+                value = value.get("data", default)
+            return [float(v) for v in value]
+        return {
+            "width": int(data.get("image_width", 0) or 0),
+            "height": int(data.get("image_height", 0) or 0),
+            "distortion_model": data.get("distortion_model", "plumb_bob"),
+            "D": values("distortion_coefficients", []),
+            "K": values("camera_matrix", [0.0] * 9),
+            "R": values("rectification_matrix", [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]),
+            "P": values("projection_matrix", [0.0] * 12),
+        }
+    except Exception as exc:
+        rospy.logerr("[CustomFastLioAdapter] failed to load camera_info_yaml=%s: %s", path, exc)
+        return None
+
+
 def patched_header(header, frame_id):
     out = Header()
     out.seq = header.seq
@@ -120,14 +147,25 @@ class CustomFastLioAdapter:
         self.publish_camera = rospy.get_param("~publish_camera", True)
         self.publish_camera_info = rospy.get_param("~publish_camera_info", True)
         self.camera_frame_id = rospy.get_param("~camera_frame_id", "camera_right")
-        # FAST-LIVO2 native Velodyne parser expects per-point time in microseconds.
-        # UrbanNav /velodyne_points stores the FLOAT32 time field in seconds.
-        # Keep default 1.0 for FAST-LIO2; set 1000000.0 for FAST-LIVO2 via algorithms.yaml.
+        self.native_lidar_frame_id = rospy.get_param("~native_lidar_frame_id", "velodyne")
+        self.native_imu_frame_id = rospy.get_param("~native_imu_frame_id", "body")
+        self.point_time_field = rospy.get_param("~point_time_field", "time")
+        self.point_time_unit = str(rospy.get_param("~point_time_unit", "auto")).strip().lower()
+        if self.point_time_unit not in ("auto", "s", "ms", "us", "ns"):
+            rospy.logwarn("[CustomFastLioAdapter] invalid point_time_unit=%s; using auto", self.point_time_unit)
+            self.point_time_unit = "auto"
+        self.camera_info_template = load_camera_info_yaml(rospy.get_param("~camera_info_yaml", ""))
+        self.left_camera_info_template = load_camera_info_yaml(rospy.get_param("~left_camera_info_yaml", ""))
+        # point_time_scale is the target number of time units per second:
+        # 1.0 for FAST-LIO/LVI-SAM seconds, 1e6 for FAST-LIVO2 microseconds.
+        # point_time_unit describes the source bag field and may be auto-detected.
         self.point_time_scale = float(rospy.get_param("~point_time_scale", 1.0))
         self._point_time_checked = False
         self._point_time_offset = None
         self._point_time_struct = None
-        self._point_time_convert = False
+        self._point_time_factor = 1.0
+        self._resolved_point_time_unit = None
+        self._livox_time_logged = False
 
         self.native_lidar_topic = rospy.get_param("~native_lidar_topic", "/cloud_registered_raw")
         self.lidar_pub = rospy.Publisher(
@@ -227,12 +265,12 @@ class CustomFastLioAdapter:
         active = self.config.active_for("lidar", stamp)
         if not active:
             out = msg.cloud
-            out.header = patched_header(msg.header, "velodyne")
+            out.header = patched_header(msg.header, self.native_lidar_frame_id)
             self.publish_lidar_outputs(out)
             return
 
         out = copy.deepcopy(msg.cloud)
-        out.header = patched_header(msg.header, "velodyne")
+        out.header = patched_header(msg.header, self.native_lidar_frame_id)
         label = []
         for perturbation in active:
             ptype = perturbation.get("type")
@@ -261,18 +299,41 @@ class CustomFastLioAdapter:
         if self.publish_livox_custom_msg and self.livox_custom_pub is not None:
             self.livox_custom_pub.publish(self.pointcloud2_to_livox_custom(cloud))
 
+    @staticmethod
+    def _guess_point_time_unit(max_abs):
+        # A spinning scan is normally <=0.2 s. The boundaries intentionally leave
+        # headroom for slower bags while distinguishing common s/ms/us/ns encodings.
+        if max_abs <= 1.0:
+            return "s"
+        if max_abs <= 1.0e3:
+            return "ms"
+        if max_abs <= 1.0e6:
+            return "us"
+        return "ns"
+
+    @staticmethod
+    def _seconds_per_unit(unit):
+        return {"s": 1.0, "ms": 1.0e-3, "us": 1.0e-6, "ns": 1.0e-9}[unit]
+
+    def _resolve_point_time_unit(self, max_abs):
+        if self.point_time_unit == "auto":
+            return self._guess_point_time_unit(max_abs)
+        return self.point_time_unit
+
     def pointcloud2_to_livox_custom(self, cloud):
         msg = LivoxCustomMsg()
-        msg.header = patched_header(cloud.header, "velodyne")
+        msg.header = patched_header(cloud.header, self.native_lidar_frame_id)
         # livox_ros_driver CustomMsg uses nanosecond timebase and uint32 ns offsets.
         msg.timebase = int(cloud.header.stamp.to_nsec())
         msg.lidar_id = 1
         msg.rsvd = [0, 0, 0]
 
         field_names = [f.name for f in cloud.fields]
-        read_fields = [n for n in ("x", "y", "z", "intensity", "ring", "time") if n in field_names]
+        read_fields = [n for n in ("x", "y", "z", "intensity", "ring", self.point_time_field) if n in field_names]
         idx = {name: i for i, name in enumerate(read_fields)}
         points = []
+        raw_times = []
+        max_abs_time = 0.0
         for p in pc2.read_points(cloud, field_names=read_fields, skip_nans=True):
             pt = LivoxCustomPoint()
             pt.x = float(p[idx["x"]])
@@ -282,39 +343,45 @@ class CustomFastLioAdapter:
             pt.reflectivity = int(max(0, min(255, round(intensity))))
             pt.tag = 0
             pt.line = int(max(0, min(255, int(p[idx["ring"]])))) if "ring" in idx else 0
-            if "time" in idx:
-                # UrbanNav Velodyne time is relative seconds inside scan. Livox CustomPoint
-                # offset_time is uint32 nanoseconds relative to CustomMsg.timebase.
-                pt.offset_time = int(max(0, min(4294967295, round(float(p[idx["time"]]) * 1.0e9))))
-            else:
-                pt.offset_time = 0
+            raw_time = float(p[idx[self.point_time_field]]) if self.point_time_field in idx else 0.0
+            raw_times.append(raw_time)
+            max_abs_time = max(max_abs_time, abs(raw_time))
             points.append(pt)
+
+        unit = self._resolve_point_time_unit(max_abs_time)
+        to_ns = self._seconds_per_unit(unit) * 1.0e9
+        for pt, raw_time in zip(points, raw_times):
+            pt.offset_time = int(max(0, min(4294967295, round(raw_time * to_ns))))
+        if not self._livox_time_logged:
+            self._livox_time_logged = True
+            rospy.loginfo(
+                "[CustomFastLioAdapter] Livox CustomMsg time conversion source_unit=%s configured=%s max_sample=%.6g factor_to_ns=%.6g",
+                unit, self.point_time_unit, max_abs_time, to_ns,
+            )
         msg.points = points
         msg.point_num = len(points)
         return msg
 
     def scale_point_time_if_needed(self, cloud):
-        """Scale Velodyne per-point relative time exactly once when required.
+        """Convert the source PointCloud2 time field into target algorithm units.
 
-        UrbanNav stores the PointCloud2 FLOAT32 `time` field in seconds. FAST-LIVO2,
-        FAST-LIVO, and R3LIVE Velodyne readers expect microseconds, so their registry
-        entries set point_time_scale=1e6. This function samples the incoming field first and
-        only scales when it still looks seconds-like (<=1.0). If another bridge has
-        already converted to microseconds, the values are larger and are forwarded
-        unchanged to avoid nanosecond-level double scaling.
+        The registry expresses target units as units-per-second: 1 for FAST-LIO2 and
+        LVI-SAM, 1e6 for FAST-LIVO2. The dataset registry expresses source units as
+        s/ms/us/ns or auto. Conversion happens once per cloud without changing field
+        layout, so the black-box parser still sees its original PointCloud2 schema.
         """
-        if abs(self.point_time_scale - 1.0) < 1e-12:
-            return cloud
         if not self._point_time_checked:
             self._point_time_checked = True
             for field in cloud.fields:
-                if field.name == "time" and field.datatype == 7:  # PointField.FLOAT32
+                if field.name == self.point_time_field and field.datatype == 7:  # PointField.FLOAT32
                     self._point_time_offset = field.offset
                     self._point_time_struct = struct.Struct(">f" if cloud.is_bigendian else "<f")
                     break
             if self._point_time_offset is None:
-                rospy.logwarn("[CustomFastLioAdapter] point_time_scale=%.3g requested but no FLOAT32 'time' field found", self.point_time_scale)
-                self._point_time_convert = False
+                rospy.logwarn(
+                    "[CustomFastLioAdapter] no FLOAT32 '%s' field; cannot normalize per-point time",
+                    self.point_time_field,
+                )
             else:
                 data = cloud.data
                 point_count = cloud.width * cloud.height
@@ -329,20 +396,14 @@ class CustomFastLioAdapter:
                         if len(samples) >= 32:
                             break
                 max_sample = max(samples) if samples else 0.0
-                self._point_time_convert = max_sample <= 1.0
-                if self._point_time_convert:
-                    rospy.loginfo(
-                        "[CustomFastLioAdapter] Converting Velodyne point time seconds -> target units by scale %.3g (max sample %.6g)",
-                        self.point_time_scale,
-                        max_sample,
-                    )
-                else:
-                    rospy.loginfo(
-                        "[CustomFastLioAdapter] Point time already appears converted (max sample %.6g); not applying scale %.3g",
-                        max_sample,
-                        self.point_time_scale,
-                    )
-        if self._point_time_offset is None or not self._point_time_convert:
+                unit = self._resolve_point_time_unit(max_sample)
+                self._resolved_point_time_unit = unit
+                self._point_time_factor = self.point_time_scale * self._seconds_per_unit(unit)
+                rospy.loginfo(
+                    "[CustomFastLioAdapter] PointCloud2 time source_unit=%s configured=%s max_sample=%.6g target_units_per_second=%.6g factor=%.6g",
+                    unit, self.point_time_unit, max_sample, self.point_time_scale, self._point_time_factor,
+                )
+        if self._point_time_offset is None or abs(self._point_time_factor - 1.0) < 1.0e-12:
             return cloud
         out = copy.deepcopy(cloud)
         data = bytearray(out.data)
@@ -351,8 +412,8 @@ class CustomFastLioAdapter:
             off = idx * out.point_step + self._point_time_offset
             if off + 4 > len(data):
                 break
-            t = self._point_time_struct.unpack_from(data, off)[0]
-            self._point_time_struct.pack_into(data, off, t * self.point_time_scale)
+            value = self._point_time_struct.unpack_from(data, off)[0]
+            self._point_time_struct.pack_into(data, off, value * self._point_time_factor)
         out.data = bytes(data)
         return out
 
@@ -394,12 +455,12 @@ class CustomFastLioAdapter:
         active = self.config.active_for("imu", stamp)
         if not active:
             out = msg.imu
-            out.header = patched_header(msg.header, "body")
+            out.header = patched_header(msg.header, self.native_imu_frame_id)
             self.imu_pub.publish(out)
             return
 
         out = copy.deepcopy(msg.imu)
-        out.header = patched_header(msg.header, "body")
+        out.header = patched_header(msg.header, self.native_imu_frame_id)
         for perturbation in active:
             ptype = perturbation.get("type")
             if ptype == "sensor_off":
@@ -534,22 +595,31 @@ class CustomFastLioAdapter:
             return
         if pub is None:
             pub = self.camera_info_pub
+        template = self.left_camera_info_template if intrinsics == "left" else self.camera_info_template
         info = CameraInfo()
         info.header = header
-        info.width = width or 672
-        info.height = height or 376
-        info.distortion_model = "plumb_bob"
-        if intrinsics == "left":
-            info.D = [-0.0442856, 0.0133574, 0.0, 0.0, 0.0]
-            fx, fy, cx, cy = 264.9425, 264.79, 334.3975, 183.162
-            tx = 0.0
+        if template:
+            info.width = int(width or template["width"])
+            info.height = int(height or template["height"])
+            info.distortion_model = template["distortion_model"]
+            info.D = template["D"]
+            info.K = template["K"]
+            info.R = template["R"]
+            info.P = template["P"]
         else:
-            info.D = [-0.0423469, 0.0115525, 0.0, 0.0, 0.0]
-            fx, fy, cx, cy = 264.2125, 264.155, 341.635, 183.993
-            tx = -31.6942764475
-        info.K = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]
-        info.R = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
-        info.P = [fx, 0.0, cx, tx, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0]
+            # Backward-compatible UrbanNav/ZED2 defaults.
+            info.width = width or 672
+            info.height = height or 376
+            info.distortion_model = "plumb_bob"
+            if intrinsics == "left":
+                info.D = [-0.0442856, 0.0133574, 0.0, 0.0, 0.0]
+                fx, fy, cx, cy, tx = 264.9425, 264.79, 334.3975, 183.162, 0.0
+            else:
+                info.D = [-0.0423469, 0.0115525, 0.0, 0.0, 0.0]
+                fx, fy, cx, cy, tx = 264.2125, 264.155, 341.635, 183.993, -31.6942764475
+            info.K = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]
+            info.R = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+            info.P = [fx, 0.0, cx, tx, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0]
         pub.publish(info)
 
     def apply_low_light(self, image, perturbation):

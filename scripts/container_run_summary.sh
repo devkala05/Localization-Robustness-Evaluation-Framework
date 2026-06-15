@@ -19,27 +19,31 @@ fi
 
 SETUP="source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash"
 ROS_ENV="export ROS_MASTER_URI=${ROS_MASTER_URI_VALUE} && export ROS_HOSTNAME=localhost"
-BAG_PATH="/data/UrbanNav-HK_TST-20210517_sensors.bag"
-GT_PATH="/data/UrbanNav_TST_GT_raw.txt"
-CONFIG_PATH="/root/catkin_ws/src/localization_benchmark/config/perturbations/per_${PER}.yaml"
-SEGMENTS_PATH="/root/catkin_ws/src/localization_benchmark/config/road_segments.yaml"
 ALGO_CONFIG="/root/catkin_ws/src/localization_benchmark/config/algorithms.yaml"
-eval "$(python3 /workspace/scripts/algorithm_config.py --config "${ALGO_CONFIG}" --algo "${ALGO}")"
+DATASET_CONFIG="/root/catkin_ws/src/localization_benchmark/config/datasets.yaml"
+DATASET_ID="${DATASET_ID:-e2o}"
+if [ -z "${DATASET_DEFAULT_BAG:-}" ]; then
+    eval "$(python3 /workspace/scripts/dataset_config.py --config "${DATASET_CONFIG}" --dataset "${DATASET_ID}")"
+fi
+eval "$(python3 /workspace/scripts/algorithm_config.py --config "${ALGO_CONFIG}" --algo "${ALGO}" --dataset "${DATASET_ID}")"
+BAG_PATH="${BAG_PATH_OVERRIDE:-${DATASET_DEFAULT_BAG}}"
+GT_PATH="${GT_PATH_OVERRIDE:-${DATASET_DEFAULT_GT}}"
+CONFIG_PATH="${DATASET_PERTURBATIONS_DIR}/per_${PER}.yaml"
+SEGMENTS_PATH="${DATASET_SEGMENTS_YAML}"
 
 if [ -z "${ALGO_LAUNCH}" ] || [ -z "${ALGO_OUTPUT_TOPIC}" ]; then
     echo "ERROR: ${ALGO_ID} must define launch and output_topic in ${ALGO_CONFIG}"
     exit 2
 fi
 
-RESULTS_ROOT="/data/results/${ALGO_RESULT_ID}"
+DATASET_RESULTS_ROOT="/data/results/${DATASET_ID}"
+RESULTS_ROOT="${DATASET_RESULTS_ROOT}/${ALGO_RESULT_ID}"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 RESULT_DIR="${RESULTS_ROOT}/per_${PER}_${ALGO_RESULT_ID}_${STAMP}"
 LATEST_DIR="${RESULTS_ROOT}/per_${PER}"
 CSV_PATH="${RESULT_DIR}/trajectory.csv"
 BASELINE_CSV="${RESULTS_ROOT}/per_0/trajectory.csv"
 RVIZ_CONFIG="${ALGO_RVIZ_CONFIG:-/root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz}"
-BAG_PATH="${BAG_PATH_OVERRIDE:-${BAG_PATH}}"
-GT_PATH="${GT_PATH_OVERRIDE:-${GT_PATH}}"
 GPS_ENABLE="${GPS_ENABLE:-off}"
 GPS_SOURCE="${GPS_SOURCE:-auto}"
 GPS_FILE="${GPS_FILE:-}"
@@ -60,7 +64,7 @@ cleanup() {
     done
     pkill -TERM -f "rviz|roslaunch|rosrun|roscore|rosmaster|rosout" >/dev/null 2>&1
     if [ -n "${HOST_UID:-}" ] && [ -n "${HOST_GID:-}" ] && [ -d "${RESULT_DIR:-}" ]; then
-        chown -R "${HOST_UID}:${HOST_GID}" "${RESULT_DIR}" "${LATEST_DIR}" "${RESULTS_ROOT}/robustness_ranking.txt" >/dev/null 2>&1
+        chown -R "${HOST_UID}:${HOST_GID}" "${RESULT_DIR}" "${LATEST_DIR}" "${DATASET_RESULTS_ROOT}/robustness_ranking.txt" >/dev/null 2>&1
     fi
 }
 trap cleanup EXIT
@@ -99,7 +103,7 @@ if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
     ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} rtabmap_database_path:=${RTABMAP_DATABASE_PATH} delete_db_on_start:=true"
 fi
 
-echo "[benchmark] mode=summary algo=${ALGO_DISPLAY} key=${ALGO_ID} case=per_${PER}"
+echo "[benchmark] dataset=${DATASET_DISPLAY} mode=summary algo=${ALGO_DISPLAY} key=${ALGO_ID} case=per_${PER}"
 echo "[benchmark] output=${RESULT_DIR}"
 echo "[benchmark] topics native=${ALGO_OUTPUT_TOPIC} selected=${ALGO_SELECTED_OUTPUT_TOPIC}"
 echo "[benchmark] gps=${GPS_BOOL} source=${GPS_SOURCE} file=${GPS_FILE:-none}"
@@ -117,10 +121,10 @@ rosparam set /use_sim_time true
 bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_TF_COMMAND}" &
 PIDS+=("$!")
 
-bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch" &
+bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch dataset:=${DATASET_LABEL} source_lidar_topic:=${DATASET_SOURCE_LIDAR_TOPIC} source_imu_topic:=${DATASET_SOURCE_IMU_TOPIC} source_camera_topic:=${DATASET_SOURCE_CAMERA_TOPIC} source_left_camera_topic:=${DATASET_SOURCE_LEFT_CAMERA_TOPIC}" &
 PIDS+=("$!")
 
-bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_ADAPTER_LAUNCH} run_id:=${PER} perturbation_config:=${CONFIG_PATH} native_lidar_topic:=${ALGO_NATIVE_LIDAR_TOPIC} native_imu_topic:=${ALGO_NATIVE_IMU_TOPIC} native_camera_topic:=${ALGO_NATIVE_CAMERA_TOPIC} point_time_scale:=${ALGO_POINT_TIME_SCALE} ${ALGO_ADAPTER_ARGS}" &
+bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_ADAPTER_LAUNCH} run_id:=${PER} perturbation_config:=${CONFIG_PATH} native_lidar_topic:=${ALGO_NATIVE_LIDAR_TOPIC} native_lidar_frame_id:=${DATASET_LIDAR_FRAME} native_imu_topic:=${ALGO_NATIVE_IMU_TOPIC} native_imu_frame_id:=${DATASET_IMU_FRAME} native_camera_topic:=${ALGO_NATIVE_CAMERA_TOPIC} camera_frame_id:=${DATASET_CAMERA_FRAME} camera_info_yaml:=${DATASET_CAMERA_INFO_YAML} point_time_scale:=${ALGO_POINT_TIME_SCALE} point_time_field:=${DATASET_POINT_TIME_FIELD} point_time_unit:=${DATASET_POINT_TIME_UNIT:-auto} ${ALGO_ADAPTER_ARGS}" &
 PIDS+=("$!")
 
 bash -lc "${SETUP} && ${ROS_ENV} && roslaunch ${ALGO_LAUNCH} ${ALGO_LAUNCH_ARGS}" &
@@ -133,7 +137,7 @@ if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
     STD_PUBLISH_TF=false
 fi
 
-bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=body" &
+bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=${DATASET_BODY_FRAME}" &
 PIDS+=("$!")
 
 bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_provider.launch gps_enable:=${GPS_BOOL} gps_source:=${GPS_SOURCE} gps_file:=${GPS_FILE} gps_topic:=${GPS_TOPIC} gps_required:=${GPS_REQUIRED}" &
@@ -145,14 +149,14 @@ PIDS+=("$!")
 bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark record_output.launch algorithm:=${ALGO_RESULT_ID} run_id:=${PER} source_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} csv_path:=${CSV_PATH}" &
 PIDS+=("$!")
 
-bash -lc "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=camera_init _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG:-0.0} _publish_full_path:=true" &
+bash -lc "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=${DATASET_WORLD_FRAME} _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG:-0.0} _publish_full_path:=true" &
 PIDS+=("$!")
 
-bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark bag_clock_marker.py _frame_id:=camera_init" &
+bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark bag_clock_marker.py _frame_id:=${DATASET_WORLD_FRAME}" &
 PIDS+=("$!")
 
 if [ -f "${BASELINE_CSV}" ]; then
-    bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=camera_init" &
+    bash -lc "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=${DATASET_WORLD_FRAME}" &
     PIDS+=("$!")
 fi
 
@@ -167,7 +171,17 @@ if [ "${DURATION}" != "0" ]; then
     BAG_DURATION_ARGS=(--duration="${DURATION}")
 fi
 
-echo "[benchmark] playing_rosbag bag=${BAG_PATH} rate=${BAG_RATE:-0.35}"
+if [ "${DATASET_ID}" = "e2o" ]; then
+    case "${ALGO_ID}" in
+      orbslam3) ALGO_BAG_TOPICS="${DATASET_SOURCE_CAMERA_TOPIC}" ;;
+      fastlivo2|r3live|adaptive_w_lvio) ALGO_BAG_TOPICS="${DATASET_SOURCE_LIDAR_TOPIC} ${DATASET_SOURCE_IMU_TOPIC} ${DATASET_SOURCE_CAMERA_TOPIC}" ;;
+      *) ALGO_BAG_TOPICS="${DATASET_SOURCE_LIDAR_TOPIC} ${DATASET_SOURCE_IMU_TOPIC}" ;;
+    esac
+fi
+if [ "${GPS_BOOL}" = "true" ] && [ "${GPS_SOURCE}" = "topic" ] && [ -n "${GPS_TOPIC}" ]; then
+    ALGO_BAG_TOPICS="${ALGO_BAG_TOPICS} ${GPS_TOPIC}"
+fi
+echo "[benchmark] playing_rosbag bag=${BAG_PATH} rate=${BAG_RATE:-0.35} topics=${ALGO_BAG_TOPICS}"
 bash -lc "${SETUP} && ${ROS_ENV} && rosbag play --clock --rate ${BAG_RATE:-0.35} ${BAG_DURATION_ARGS[*]} ${BAG_PATH} --topics ${ALGO_BAG_TOPICS}"
 
 echo "[benchmark] bag_finished evaluating=true"
@@ -189,21 +203,22 @@ rosrun localization_benchmark evaluate_run.py \
     --gps-mode "${GPS_ENABLE}" \
     --gps-source "${GPS_SOURCE}" \
     --rtk-mode "${RTK_MODE:-auto}" \
+    --alignment "${ALGO_EVAL_ALIGNMENT:-none}" \
     "${BASELINE_ARGS[@]}" \
     --segments "${SEGMENTS_PATH}" \
     --perturbations "${CONFIG_PATH}" \
     --out-dir "${RESULT_DIR}"
 
 rosrun localization_benchmark summarize_robustness.py \
-    --results-root "${RESULTS_ROOT}" \
-    --out "${RESULTS_ROOT}/robustness_ranking.txt"
+    --results-root "${DATASET_RESULTS_ROOT}" \
+    --out "${DATASET_RESULTS_ROOT}/robustness_ranking.txt"
 
 if [ -n "${HOST_UID:-}" ] && [ -n "${HOST_GID:-}" ]; then
-    chown -R "${HOST_UID}:${HOST_GID}" "${RESULT_DIR}" "${LATEST_DIR}" "${RESULTS_ROOT}/robustness_ranking.txt" >/dev/null 2>&1 || true
+    chown -R "${HOST_UID}:${HOST_GID}" "${RESULT_DIR}" "${LATEST_DIR}" "${DATASET_RESULTS_ROOT}/robustness_ranking.txt" >/dev/null 2>&1 || true
 fi
 
 echo "[benchmark] summary_complete"
 echo "[benchmark] csv=${CSV_PATH}"
 echo "[benchmark] analysis=${RESULT_DIR}/analysis.txt"
 echo "[benchmark] result_dir=${RESULT_DIR}"
-echo "[benchmark] ranking=${RESULTS_ROOT}/robustness_ranking.txt"
+echo "[benchmark] ranking=${DATASET_RESULTS_ROOT}/robustness_ranking.txt"

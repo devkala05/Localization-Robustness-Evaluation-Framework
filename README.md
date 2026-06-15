@@ -1,37 +1,64 @@
-# UrbanNav Localization Benchmark
+# Localization Robustness Evaluation Framework — UrbanNav + E2O
 
-Research-grade ROS1/Noetic Docker benchmark for UrbanNav-HK TST localization under perturbations.
+ROS1 Noetic/Docker benchmark for seven localization integrations under repeatable sensor perturbations. The original UrbanNav workflow is preserved, and the same framework can now run the E2O Faculty Loop dataset through a minimally invasive adapter layer.
 
-## Build
+## Algorithms
 
-```bash
-./build_fastlio2.sh
-./build_lvisam.sh
-./build_fastlivo2.sh
-./build_rtabmap.sh
-./build_adaptive_w_lvio.sh
-./build_orbslam3.sh
-./build_r3live.sh
+```text
+fastlio2  lvisam  fastlivo2  rtabmap  adaptive_w_lvio  orbslam3  r3live
 ```
 
-## Run
+## E2O setup
 
-```bash
-./run --algo <name> --per <0..6> --gps off --eval --duration 30
-./run --algo <name> --per <0..6> --gps on  --eval --duration 30
+Place the external bag here:
+
+```text
+data/e2o/raw/one_full_loop.bag
 ```
 
-Canonical names: `fastlio2`, `lvisam`, `fastlivo2`, `rtabmap`, `adaptive_w_lvio`, `orbslam3`, `r3live`.
+The supplied TUM reference is already located at:
 
-GPS-on defaults to `data/gnss/urbannav_tst_gnss.csv`.
+```text
+data/e2o/ground_truth/one_full_loop_gt.tum
+```
 
-## TF policy
+Build all images or one image:
 
-Single dynamic TF authority: `standard_output_republisher.py` publishes `camera_init -> body`. Algorithm-native dynamic TF is disabled or remapped. Static calibration publishes `map -> camera_init` and `body -> sensors/gnss_antenna`.
+```bash
+./build.sh all
+./build.sh fastlio2
+```
 
-## Output contract
+Inspect the actual bag before running algorithms:
 
-Every algorithm publishes:
+```bash
+./inspect_bag.sh --dataset e2o --strict
+```
+
+Run an interactive baseline:
+
+```bash
+./run.sh --dataset e2o --algo fastlio2 --per 0 --gps off
+```
+
+Run and evaluate a complete bag or a short smoke test:
+
+```bash
+./run.sh --dataset e2o --algo fastlio2 --per 0 --gps off --eval
+./run.sh --dataset e2o --algo fastlio2 --per 0 --gps off --eval --duration 60
+```
+
+Repeat by changing `--algo`. E2O defaults to `/lidar103/velodyne_points`, `/mavros/imu/data`, and `/camera/color/image_raw`.
+
+## UrbanNav compatibility
+
+```bash
+./run.sh --dataset urbannav --algo fastlio2 --per 0 --gps off --eval
+```
+
+## Standard output contract
+
+Every integration publishes:
 
 ```text
 /<algo>/odometry/local
@@ -40,3 +67,14 @@ Every algorithm publishes:
 /<algo>/path/output
 /<algo>/status
 ```
+
+Results are separated by dataset:
+
+```text
+data/results/e2o/<algorithm>/...
+data/results/urbannav/<algorithm>/...
+```
+
+## Calibration warning
+
+The E2O archive contains front-camera intrinsics and lidar103↔camera calibration, but not a verified IMU↔LiDAR transform, IMU noise model, point-time convention, or independent survey-grade ground truth. Identity/zero values are explicitly marked provisional. Read [E2O_ADAPTATION.md](E2O_ADAPTATION.md) before interpreting benchmark scores.

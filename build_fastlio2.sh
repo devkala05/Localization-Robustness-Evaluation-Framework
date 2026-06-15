@@ -4,8 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="fastlio2-urbannav:latest"
 CONTAINER_NAME="fastlio2_build_check"
-BAG_PATH="${SCRIPT_DIR}/data/UrbanNav-HK_TST-20210517_sensors.bag"
-GT_PATH="${SCRIPT_DIR}/data/UrbanNav_TST_GT_raw.txt"
 CACHE_FLAG=""
 
 if [[ "${1:-}" == "--no-cache" ]]; then
@@ -16,18 +14,6 @@ command -v docker >/dev/null || {
     echo "ERROR: docker is not installed or not in PATH."
     exit 1
 }
-
-if [ ! -f "${BAG_PATH}" ]; then
-    echo "ERROR: missing dataset bag: ${BAG_PATH}"
-    echo "Put UrbanNav-HK_TST-20210517_sensors.bag in ./data."
-    exit 1
-fi
-
-if [ ! -f "${GT_PATH}" ]; then
-    echo "ERROR: missing ground truth file: ${GT_PATH}"
-    echo "Put UrbanNav_TST_GT_raw.txt in ./data."
-    exit 1
-fi
 
 chmod +x "${SCRIPT_DIR}"/scripts/*.sh
 mkdir -p "${SCRIPT_DIR}/.catkin_cache/build" "${SCRIPT_DIR}/.catkin_cache/devel" "${SCRIPT_DIR}/.catkin_cache/logs"

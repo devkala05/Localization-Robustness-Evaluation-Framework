@@ -13,7 +13,12 @@ if ! [[ "${PER}" =~ ^[0-6]$ ]]; then
 fi
 
 ALGO_CONFIG="/root/catkin_ws/src/localization_benchmark/config/algorithms.yaml"
-eval "$(python3 /workspace/scripts/algorithm_config.py --config "${ALGO_CONFIG}" --algo "${ALGO}")"
+DATASET_CONFIG="/root/catkin_ws/src/localization_benchmark/config/datasets.yaml"
+DATASET_ID="${DATASET_ID:-e2o}"
+if [ -z "${DATASET_DEFAULT_BAG:-}" ]; then
+    eval "$(python3 /workspace/scripts/dataset_config.py --config "${DATASET_CONFIG}" --dataset "${DATASET_ID}")"
+fi
+eval "$(python3 /workspace/scripts/algorithm_config.py --config "${ALGO_CONFIG}" --algo "${ALGO}" --dataset "${DATASET_ID}")"
 
 if [ -z "${ALGO_LAUNCH}" ] || [ -z "${ALGO_OUTPUT_TOPIC}" ]; then
     echo "ERROR: ${ALGO_ID} must define launch and output_topic in ${ALGO_CONFIG}"
@@ -23,13 +28,14 @@ fi
 SESSION="${ALGO_RESULT_ID}_per_${PER}"
 SETUP="source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash"
 ROS_ENV="export ROS_MASTER_URI=${ROS_MASTER_URI_VALUE} && export ROS_HOSTNAME=localhost"
-BAG_PATH="${BAG_PATH_OVERRIDE:-/data/UrbanNav-HK_TST-20210517_sensors.bag}"
+BAG_PATH="${BAG_PATH_OVERRIDE:-${DATASET_DEFAULT_BAG}}"
 BAG_RATE="${BAG_RATE:-0.5}"
 GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}"
-GT_PATH="${GT_PATH_OVERRIDE:-/data/UrbanNav_TST_GT_raw.txt}"
-CONFIG_PATH="/root/catkin_ws/src/localization_benchmark/config/perturbations/per_${PER}.yaml"
-RESULT_DIR="/data/results/${ALGO_RESULT_ID}/per_${PER}"
-BASELINE_CSV="/data/results/${ALGO_RESULT_ID}/per_0/trajectory.csv"
+GT_PATH="${GT_PATH_OVERRIDE:-${DATASET_DEFAULT_GT}}"
+CONFIG_PATH="${DATASET_PERTURBATIONS_DIR}/per_${PER}.yaml"
+RESULTS_ROOT="/data/results/${DATASET_ID}"
+RESULT_DIR="${RESULTS_ROOT}/${ALGO_RESULT_ID}/per_${PER}"
+BASELINE_CSV="${RESULTS_ROOT}/${ALGO_RESULT_ID}/per_0/trajectory.csv"
 RVIZ_CONFIG="${ALGO_RVIZ_CONFIG:-/root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz}"
 GPS_ENABLE="${GPS_ENABLE:-off}"
 GPS_SOURCE="${GPS_SOURCE:-auto}"
@@ -96,10 +102,10 @@ TF_PANE="$(tmux split-window -h -t "${ROSCORE_PANE}" -P -F "#{pane_id}")"
 tmux send-keys -t "${TF_PANE}" "${SETUP} && ${ROS_ENV} && ${ALGO_TF_COMMAND}" Enter
 
 BRIDGE_PANE="$(tmux split-window -v -t "${ROSCORE_PANE}" -P -F "#{pane_id}")"
-tmux send-keys -t "${BRIDGE_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch" Enter
+tmux send-keys -t "${BRIDGE_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch dataset:=${DATASET_LABEL} source_lidar_topic:=${DATASET_SOURCE_LIDAR_TOPIC} source_imu_topic:=${DATASET_SOURCE_IMU_TOPIC} source_camera_topic:=${DATASET_SOURCE_CAMERA_TOPIC} source_left_camera_topic:=${DATASET_SOURCE_LEFT_CAMERA_TOPIC}" Enter
 
 ADAPTER_PANE="$(tmux split-window -v -t "${TF_PANE}" -P -F "#{pane_id}")"
-tmux send-keys -t "${ADAPTER_PANE}" "${SETUP} && ${ROS_ENV} && ${ALGO_ADAPTER_LAUNCH} run_id:=${PER} perturbation_config:=${CONFIG_PATH} native_lidar_topic:=${ALGO_NATIVE_LIDAR_TOPIC} native_imu_topic:=${ALGO_NATIVE_IMU_TOPIC} native_camera_topic:=${ALGO_NATIVE_CAMERA_TOPIC} point_time_scale:=${ALGO_POINT_TIME_SCALE} ${ALGO_ADAPTER_ARGS}" Enter
+tmux send-keys -t "${ADAPTER_PANE}" "${SETUP} && ${ROS_ENV} && ${ALGO_ADAPTER_LAUNCH} run_id:=${PER} perturbation_config:=${CONFIG_PATH} native_lidar_topic:=${ALGO_NATIVE_LIDAR_TOPIC} native_lidar_frame_id:=${DATASET_LIDAR_FRAME} native_imu_topic:=${ALGO_NATIVE_IMU_TOPIC} native_imu_frame_id:=${DATASET_IMU_FRAME} native_camera_topic:=${ALGO_NATIVE_CAMERA_TOPIC} camera_frame_id:=${DATASET_CAMERA_FRAME} camera_info_yaml:=${DATASET_CAMERA_INFO_YAML} point_time_scale:=${ALGO_POINT_TIME_SCALE} point_time_field:=${DATASET_POINT_TIME_FIELD} point_time_unit:=${DATASET_POINT_TIME_UNIT:-auto} ${ALGO_ADAPTER_ARGS}" Enter
 
 ALGO_PANE="$(tmux new-window -t "${SESSION}" -n "algo" -P -F "#{pane_id}")"
 tmux send-keys -t "${ALGO_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch ${ALGO_LAUNCH} ${ALGO_LAUNCH_ARGS}" Enter
@@ -111,7 +117,7 @@ STD_PUBLISH_TF=true
 if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
     STD_PUBLISH_TF=false
 fi
-tmux send-keys -t "${STD_PANE}" "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=body" Enter
+tmux send-keys -t "${STD_PANE}" "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=${DATASET_BODY_FRAME}" Enter
 
 GPS_PANE="$(tmux split-window -v -t "${STD_PANE}" -P -F "#{pane_id}")"
 tmux send-keys -t "${GPS_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_provider.launch gps_enable:=${GPS_BOOL} gps_source:=${GPS_SOURCE} gps_file:=${GPS_FILE} gps_topic:=${GPS_TOPIC} gps_required:=${GPS_REQUIRED} && true" Enter
@@ -121,6 +127,16 @@ tmux send-keys -t "${SELECT_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localiza
 RECORDER_PANE="$(tmux split-window -h -t "${SELECT_PANE}" -P -F "#{pane_id}")"
 tmux send-keys -t "${RECORDER_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark record_output.launch algorithm:=${ALGO_RESULT_ID} run_id:=${PER} source_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} csv_path:=${RESULT_DIR}/trajectory.csv" Enter
 
+if [ "${DATASET_ID}" = "e2o" ]; then
+    case "${ALGO_ID}" in
+      orbslam3) ALGO_BAG_TOPICS="${DATASET_SOURCE_CAMERA_TOPIC}" ;;
+      fastlivo2|r3live|adaptive_w_lvio) ALGO_BAG_TOPICS="${DATASET_SOURCE_LIDAR_TOPIC} ${DATASET_SOURCE_IMU_TOPIC} ${DATASET_SOURCE_CAMERA_TOPIC}" ;;
+      *) ALGO_BAG_TOPICS="${DATASET_SOURCE_LIDAR_TOPIC} ${DATASET_SOURCE_IMU_TOPIC}" ;;
+    esac
+fi
+if [ "${GPS_BOOL}" = "true" ] && [ "${GPS_SOURCE}" = "topic" ] && [ -n "${GPS_TOPIC}" ]; then
+    ALGO_BAG_TOPICS="${ALGO_BAG_TOPICS} ${GPS_TOPIC}"
+fi
 BAG_PANE="$(tmux new-window -t "${SESSION}" -n "bag" -P -F "#{pane_id}")"
 tmux send-keys -t "${BAG_PANE}" "${SETUP} && ${ROS_ENV} && echo 'Waiting 8s for bridge, adapter, algorithm, output selector, recorder, and RViz...' && echo 'Press Space here to pause/resume rosbag.' && sleep 8 && rosbag play --clock --rate ${BAG_RATE} ${BAG_PATH} --topics ${ALGO_BAG_TOPICS}" Enter
 
@@ -128,10 +144,10 @@ STATUS_PANE="$(tmux new-window -t "${SESSION}" -n "status" -P -F "#{pane_id}")"
 tmux send-keys -t "${STATUS_PANE}" "${SETUP} && ${ROS_ENV} && watch -n 2 'echo RESULT; [ -f ${RESULT_DIR}/trajectory.csv ] && wc -l ${RESULT_DIR}/trajectory.csv || true; echo; echo LOCAL ${ALGO_LOCAL_ODOM_TOPIC}; echo OUTPUT ${ALGO_SELECTED_OUTPUT_TOPIC}; echo GPS ${GPS_BOOL} ${GPS_SOURCE}; echo; echo TOPICS; rostopic list | egrep \"velodyne_points|mycar|cloud_registered|livox|Odometry|odometry|path$|camera/right|camera/image|ground_truth|gps\" || true; echo; echo RATES; timeout 1 rostopic hz ${ALGO_NATIVE_LIDAR_TOPIC} ${ALGO_NATIVE_IMU_TOPIC} ${ALGO_LOCAL_ODOM_TOPIC} ${ALGO_SELECTED_OUTPUT_TOPIC} /camera/right/image_raw /camera/image_raw /gps/fix 2>/dev/null || true'" Enter
 
 RVIZ_PANE="$(tmux new-window -t "${SESSION}" -n "rviz" -P -F "#{pane_id}")"
-tmux send-keys -t "${RVIZ_PANE}" "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=camera_init _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG} _publish_full_path:=true & rosrun localization_benchmark bag_clock_marker.py _frame_id:=camera_init & rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=camera_init & rosrun localization_benchmark path_from_csv.py _csv_path:=${RESULT_DIR}/trajectory.csv _topic:=/benchmark/selected_run_path _frame_id:=camera_init & LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe rviz -d ${RVIZ_CONFIG}" Enter
+tmux send-keys -t "${RVIZ_PANE}" "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=${DATASET_WORLD_FRAME} _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG} _publish_full_path:=true & rosrun localization_benchmark bag_clock_marker.py _frame_id:=${DATASET_WORLD_FRAME} & rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=${DATASET_WORLD_FRAME} & rosrun localization_benchmark path_from_csv.py _csv_path:=${RESULT_DIR}/trajectory.csv _topic:=/benchmark/selected_run_path _frame_id:=${DATASET_WORLD_FRAME} & LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe rviz -d ${RVIZ_CONFIG}" Enter
 
 tmux select-window -t "${SESSION}:5"
-echo "[benchmark] mode=interactive algo=${ALGO_DISPLAY} key=${ALGO_ID} case=per_${PER}"
+echo "[benchmark] dataset=${DATASET_DISPLAY} mode=interactive algo=${ALGO_DISPLAY} key=${ALGO_ID} case=per_${PER}"
 echo "[benchmark] launch=roslaunch ${ALGO_LAUNCH} ${ALGO_LAUNCH_ARGS}"
 echo "[benchmark] topics native=${ALGO_OUTPUT_TOPIC} selected=${ALGO_SELECTED_OUTPUT_TOPIC}"
 echo "[benchmark] gps=${GPS_BOOL} source=${GPS_SOURCE} file=${GPS_FILE:-none}"

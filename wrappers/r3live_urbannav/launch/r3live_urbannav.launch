@@ -9,6 +9,7 @@
 <launch>
   <param name="use_sim_time" value="true"/>
   <arg name="config_path" default="$(find r3live_urbannav)/config/r3live_urbannav.yaml"/>
+  <arg name="fastlio_config_path" default="$(find fast_lio_urbannav)/config/velodyne_urbannav.yaml"/>
   <arg name="run_visual" default="false"/>
   <arg name="enable_fastlio_fallback" default="true"/>
   <arg name="pcd_save_en" default="false"/>
@@ -21,7 +22,9 @@
 
   <!-- Proven UrbanNav LiDAR-IMU frontend used as R3LIVE LIO-first fallback. -->
   <group if="$(arg enable_fastlio_fallback)">
-    <include file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch"/>
+    <include file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch">
+      <arg name="config_path" value="$(arg fastlio_config_path)"/>
+    </include>
   </group>
 
   <!-- Native upstream R3LIVE process. Stable role tries LiDAR front-end first,

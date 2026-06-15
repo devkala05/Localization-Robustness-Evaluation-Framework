@@ -30,7 +30,20 @@ algorithms:
     gps_strategy: external_fusion
     adapter_args: ''
     launch_args: ''
-    notes: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
+    notes: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared
+      external loose/global fusion.
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        launch_args: config_path:=/root/catkin_ws/src/fast_lio_urbannav/config/velodyne_e2o.yaml
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data
+        evaluation_alignment: none
+        notes: 'E2O: lidar103 + MAVROS IMU through adapter; identity IMU-lidar extrinsic
+          is provisional.'
+    evaluation_alignment: none
   lvi_sam:
     display_name: LVI-SAM
     result_id: lvi_sam
@@ -44,7 +57,8 @@ algorithms:
     - fast_lio_urbannav
     - lvi_sam_urbannav
     build_jobs: 4
-    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false _publish_camera_init_map:=true _publish_base_link_body:=true
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false
+      _publish_camera_init_map:=true _publish_base_link_body:=true
     adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
     launch: lvi_sam_urbannav lvisam_urbannav.launch
     output_topic: /lvi_sam/lidar/mapping/odometry
@@ -54,7 +68,9 @@ algorithms:
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz
-    notes: Visual subsystem (VINS) disabled by default on UrbanNav. LVI-SAM may use native GPS priors via /odometry/gps when --gps on; otherwise output is LiDAR-IMU only.
+    notes: Visual subsystem (VINS) disabled by default on UrbanNav. LVI-SAM may use
+      native GPS priors via /odometry/gps when --gps on; otherwise output is LiDAR-IMU
+      only.
     standard_topic_ns: lvisam
     local_odom_topic: /lvisam/odometry/local
     local_path_topic: /lvisam/path/local
@@ -65,6 +81,19 @@ algorithms:
     gps_strategy: native_lvisam_gps_prior_with_external_fallback
     adapter_args: ''
     launch_args: ''
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+          _publish_camera_init_map:=true _publish_base_link_body:=true
+        launch_args: lidar_param_file:=/root/catkin_ws/src/lvi_sam_urbannav/config/lvisam_e2o.yaml
+          run_visual:=false
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data
+        evaluation_alignment: none
+        notes: 'E2O: LiDAR-IMU mode; LVI-SAM visual subsystem stays disabled by default.'
+    evaluation_alignment: none
   fast_livo2:
     display_name: FAST-LIVO2
     result_id: fast_livo2
@@ -88,7 +117,8 @@ algorithms:
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1000000.0
     enabled: true
-    notes: FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global fusion.
+    notes: FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter
+      path. --gps on uses shared external loose/global fusion.
     standard_topic_ns: fastlivo2
     local_odom_topic: /fastlivo2/odometry/local
     local_path_topic: /fastlivo2/path/local
@@ -99,6 +129,19 @@ algorithms:
     gps_strategy: external_fusion
     adapter_args: ''
     launch_args: ''
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        launch_args: config_path:=/root/catkin_ws/src/fast_livo2_wrapper/config/fast_livo2_e2o.yaml
+          imu_axes_fix:=false
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+        evaluation_alignment: none
+        notes: 'E2O: calibrated lidar103-to-front-camera transform; provisional identity
+          IMU-lidar transform.'
+    evaluation_alignment: none
   rtab_map:
     display_name: RTAB-Map
     result_id: rtab_map
@@ -112,9 +155,8 @@ algorithms:
     - fast_lio_urbannav
     - rtabmap_urbannav
     build_jobs: 4
-    # RTAB-Map consumes scan clouds in body frame and odometry in camera_init frame.
-    # Publish only static UrbanNav sensor TFs plus map->camera_init; no odom/base_link tree.
-    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=true _publish_camera_init_map:=false _publish_base_link_body:=false
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=true
+      _publish_camera_init_map:=false _publish_base_link_body:=false
     adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
     launch: rtabmap_urbannav full_pipeline_rtabmap.launch
     output_topic: /rtabmap/odometry/mapping
@@ -135,7 +177,20 @@ algorithms:
     gps_strategy: rtabmap_global_pose_prior_or_external_fusion
     adapter_args: ''
     launch_args: ''
-    notes: RTAB-Map uses FAST-LIO2 odometry frontend. GPS mode publishes /rtabmap/global_pose priors when enabled and keeps external fused output as fallback.
+    notes: RTAB-Map uses FAST-LIO2 odometry frontend. GPS mode publishes /rtabmap/global_pose
+      priors when enabled and keeps external fused output as fallback.
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+          _publish_map_odom:=true
+        launch_args: fastlio_config_path:=/root/catkin_ws/src/fast_lio_urbannav/config/velodyne_e2o.yaml
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data
+        evaluation_alignment: none
+        notes: 'E2O: RTAB-Map backend uses the adapted FAST-LIO2 frontend.'
+    evaluation_alignment: none
   adaptive_w_lvio:
     display_name: Adaptive-W LVIO
     result_id: adaptive_w_lvio
@@ -160,7 +215,8 @@ algorithms:
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
     enabled: true
-    notes: Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.
+    notes: Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition
+      estimator. --gps on fuses after the smoothing relay.
     standard_topic_ns: adaptive_w_lvio
     local_odom_topic: /adaptive_w_lvio/odometry/local
     local_path_topic: /adaptive_w_lvio/path/local
@@ -171,6 +227,18 @@ algorithms:
     gps_strategy: external_fusion
     adapter_args: ''
     launch_args: ''
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        launch_args: fastlio_config_path:=/root/catkin_ws/src/fast_lio_urbannav/config/velodyne_e2o.yaml
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+        evaluation_alignment: none
+        notes: 'E2O: existing smoothing relay over adapted FAST-LIO2 output; not the
+          paper estimator.'
+    evaluation_alignment: none
   orb_slam3:
     display_name: ORB-SLAM3
     result_id: orb_slam3
@@ -182,8 +250,12 @@ algorithms:
     - fast_lio_urbannav
     - orbslam3_urbannav
     build_jobs: 4
-    tf_command: rosrun orbslam3_urbannav tf_broadcaster_node.py _world_frame_id:=camera_init _camera_frame_id:=camera_right
-    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch publish_left_camera:=true stereo_swap_lr:=true native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
+    tf_command: rosrun orbslam3_urbannav tf_broadcaster_node.py _world_frame_id:=camera_init
+      _camera_frame_id:=camera_right
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+      publish_left_camera:=true stereo_swap_lr:=true native_camera_topic:=/camera/right/image_raw
+      native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info
+      native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
     launch: orbslam3_urbannav full_pipeline_orb.launch
     output_topic: /orbslam3/odometry/mapping
     path_topic: /orbslam3/mapping/path
@@ -203,9 +275,27 @@ algorithms:
     status_topic: /orbslam3/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: publish_left_camera:=true stereo_swap_lr:=${STEREO_SWAP_BOOL:-true} native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
+    adapter_args: publish_left_camera:=true stereo_swap_lr:=${STEREO_SWAP_BOOL:-true}
+      native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw
+      native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info
+      native_mono_camera_topic:=/camera/image_raw
     launch_args: ''
-    notes: ORB-SLAM3 default is stereo. --gps on uses conservative external fusion on the corrected body odometry output.
+    notes: ORB-SLAM3 default is stereo. --gps on uses conservative external fusion
+      on the corrected body odometry output.
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time publish_left_camera:=false stereo_swap_lr:=false
+          native_camera_topic:=/camera/right/image_raw native_mono_camera_topic:=/camera/image_raw
+        launch_args: mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/front_camera_e2o_orbslam3.yaml
+          camera_extrinsic_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        bag_topics: /camera/color/image_raw
+        evaluation_alignment: sim2
+        notes: E2O has one camera, so ORB-SLAM3 runs monocular. Evaluation uses 2-D
+          similarity alignment because monocular scale is unobservable.
+    evaluation_alignment: none
   r3live:
     display_name: R3LIVE
     result_id: r3live
@@ -219,8 +309,9 @@ algorithms:
     - fast_lio_urbannav
     - r3live_urbannav
     build_jobs: 4
-    tf_command: "true"
-    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch native_mono_camera_topic:=/camera/image_raw
+    tf_command: 'true'
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+      native_mono_camera_topic:=/camera/image_raw
     launch: r3live_urbannav r3live_urbannav.launch
     output_topic: /r3live/odometry/mapping
     path_topic: /r3live/mapping/path
@@ -231,7 +322,9 @@ algorithms:
     bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
     rviz_config: /root/catkin_ws/src/r3live_urbannav/config/r3live_urbannav.rviz
     enabled: true
-    notes: R3LIVE on UrbanNav defaults to stable LIO-first mode. Visual/RGB mapping is experimental for spinning LiDAR; FAST-LIO2 fallback is enabled so benchmark output does not silently stay empty.
+    notes: R3LIVE on UrbanNav defaults to stable LIO-first mode. Visual/RGB mapping
+      is experimental for spinning LiDAR; FAST-LIO2 fallback is enabled so benchmark
+      output does not silently stay empty.
     standard_topic_ns: r3live
     local_odom_topic: /r3live/odometry/local
     local_path_topic: /r3live/path/local
@@ -242,3 +335,18 @@ algorithms:
     gps_strategy: external_fusion
     adapter_args: ''
     launch_args: enable_fastlio_fallback:=true run_visual:=${R3LIVE_RUN_VISUAL:-false}
+    dataset_overrides:
+      e2o:
+        tf_command: rosrun localization_benchmark dataset_tf_broadcaster.py _config_path:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/static_transforms.yaml
+        adapter_args: camera_info_yaml:=/root/catkin_ws/src/localization_benchmark/config/datasets/e2o/front_camera_info.yaml
+          native_lidar_frame_id:=velodyne native_imu_frame_id:=body camera_frame_id:=camera_right
+          point_time_field:=time native_mono_camera_topic:=/camera/image_raw publish_livox_custom_msg:=true
+          native_lidar_custom_topic:=/livox/lidar_custom
+        launch_args: config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml
+          fastlio_config_path:=/root/catkin_ws/src/fast_lio_urbannav/config/velodyne_e2o.yaml
+          enable_fastlio_fallback:=true run_visual:=${R3LIVE_RUN_VISUAL:-false}
+        bag_topics: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+        evaluation_alignment: none
+        notes: E2O native visual mode is optional; stable mode retains the framework
+          FAST-LIO fallback.
+    evaluation_alignment: none

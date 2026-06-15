@@ -114,7 +114,7 @@ Visualization Manager:
       Queue Size: 10
       Size (Pixels): 2
       Style: Points
-      Topic: /velodyne_points
+      Topic: /cloud_registered_raw
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera/right/image_raw

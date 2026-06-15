@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline trajectory plotting and robustness analysis for the UrbanNav benchmark.
+"""Offline trajectory plotting and robustness analysis for UrbanNav and E2O.
 
 This script intentionally has no ROS dependency. It reads saved trajectory.csv files from
 /data/results or ./data/results and compares them with the UrbanNav GT text file.
@@ -127,56 +127,56 @@ def normalize_angle(angle: float) -> float:
     return math.atan2(math.sin(angle), math.cos(angle))
 
 
+def quaternion_yaw(qx: float, qy: float, qz: float, qw: float) -> float:
+    return math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+
+
 def load_ground_truth(path: str, yaw_offset_deg: float = 0.0) -> List[dict]:
+    """Read either the original UrbanNav INS text or an 8-column TUM file."""
     path = abs_from_root(path)
     if not os.path.isfile(path):
         return []
     raw = []
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         for line in handle:
-            parts = line.split()
-            if len(parts) < 20:
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
+            parts = line.split()
             try:
-                raw.append({
-                    "stamp": float(parts[0]),
-                    "lat": dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5])),
-                    "lon": dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8])),
-                    "h": float(parts[9]),
-                    "heading": float(parts[18]),
-                })
+                if len(parts) == 8:
+                    vals = [float(v) for v in parts]
+                    raw.append({"format":"tum", "stamp":vals[0], "x":vals[1], "y":vals[2], "z":vals[3],
+                                "yaw":quaternion_yaw(vals[4],vals[5],vals[6],vals[7])})
+                elif len(parts) >= 20:
+                    raw.append({"format":"urbannav", "stamp":float(parts[0]),
+                                "lat":dms_to_deg(float(parts[3]),float(parts[4]),float(parts[5])),
+                                "lon":dms_to_deg(float(parts[6]),float(parts[7]),float(parts[8])),
+                                "h":float(parts[9]), "heading":float(parts[18])})
             except ValueError:
                 continue
     if not raw:
         return []
-    ref = raw[0]
-    ref_ecef = ecef_from_lla(ref["lat"], ref["lon"], ref["h"])
-    heading = math.radians(ref["heading"])
-    forward_e = math.sin(heading)
-    forward_n = math.cos(heading)
-    right_e = math.cos(heading)
-    right_n = -math.sin(heading)
-    yaw_offset_rad = math.radians(yaw_offset_deg)
-    out = []
-    for row in raw:
-        ecef = ecef_from_lla(row["lat"], row["lon"], row["h"])
-        east, north, up = enu_from_ecef_delta(
-            ecef[0] - ref_ecef[0],
-            ecef[1] - ref_ecef[1],
-            ecef[2] - ref_ecef[2],
-            ref["lat"],
-            ref["lon"],
-        )
-        x = east * right_e + north * right_n
-        y = east * forward_e + north * forward_n
-        x, y = rotate_xy(x, y, yaw_offset_rad)
-        out.append({
-            "stamp": row["stamp"],
-            "x": x,
-            "y": y,
-            "z": up,
-            "yaw": normalize_angle(math.radians(row["heading"] - ref["heading"] + yaw_offset_deg)),
-        })
+    raw.sort(key=lambda r:r["stamp"])
+    offset=math.radians(yaw_offset_deg)
+    if raw[0]["format"] == "tum":
+        raw=[r for r in raw if r["format"] == "tum"]
+        ref=raw[0]; angle=-ref["yaw"]+offset; out=[]
+        for r in raw:
+            x,y=rotate_xy(r["x"]-ref["x"],r["y"]-ref["y"],angle)
+            out.append({"stamp":r["stamp"],"x":x,"y":y,"z":r["z"]-ref["z"],
+                        "yaw":normalize_angle(r["yaw"]-ref["yaw"]+offset)})
+        return out
+    raw=[r for r in raw if r["format"] == "urbannav"]
+    ref=raw[0]; ref_ecef=ecef_from_lla(ref["lat"],ref["lon"],ref["h"])
+    heading=math.radians(ref["heading"]); fe,fn=math.sin(heading),math.cos(heading); re,rn=math.cos(heading),-math.sin(heading)
+    out=[]
+    for r in raw:
+        e=ecef_from_lla(r["lat"],r["lon"],r["h"])
+        east,north,up=enu_from_ecef_delta(e[0]-ref_ecef[0],e[1]-ref_ecef[1],e[2]-ref_ecef[2],ref["lat"],ref["lon"])
+        x,y=rotate_xy(east*re+north*rn,east*fe+north*fn,offset)
+        out.append({"stamp":r["stamp"],"x":x,"y":y,"z":up,
+                    "yaw":normalize_angle(math.radians(r["heading"]-ref["heading"])+offset)})
     return out
 
 
@@ -922,7 +922,10 @@ def command_per_compare(args) -> int:
                 dm = delta_metrics(drows)
                 dm.update({"algo": algo, "label": DISPLAY_NAMES.get(algo, algo), "per": per})
                 delta_summary.append(dm)
-                per_yaml = os.path.join("wrappers/localization_benchmark/config/perturbations", f"per_{per}.yaml")
+                perturb_root = ("wrappers/localization_benchmark/config/perturbations/e2o"
+                                if getattr(args, "dataset", "e2o") == "e2o"
+                                else "wrappers/localization_benchmark/config/perturbations")
+                per_yaml = os.path.join(perturb_root, f"per_{per}.yaml")
                 for idx, item in enumerate(load_yaml_list(per_yaml, "perturbations"), start=1):
                     try:
                         start = float(item["start"])
@@ -1019,12 +1022,13 @@ def write_per_report(path: str, algo: str, summary: List[dict], delta_summary: L
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="UrbanNav offline trajectory plot/analysis tools")
+    parser = argparse.ArgumentParser(description="Dataset-aware offline trajectory plot/analysis tools")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--results-root", default="data/results", help="Root containing <algo>/per_N/trajectory.csv")
-    common.add_argument("--gt", default="data/UrbanNav_TST_GT_raw.txt", help="UrbanNav GT text file")
+    common.add_argument("--dataset", choices=("e2o", "urbannav"), default=os.environ.get("DATASET", "e2o"))
+    common.add_argument("--results-root", default=None, help="Root containing <algo>/per_N/trajectory.csv")
+    common.add_argument("--gt", default=None, help="UrbanNav INS text or E2O TUM ground truth")
     common.add_argument("--gt-yaw-offset-deg", type=float, default=float(os.environ.get("GT_YAW_OFFSET_DEG", "0.0")))
     common.add_argument("--csv-name", default="trajectory.csv", help="CSV filename inside each result folder")
     common.add_argument("--out-dir", default="")
@@ -1039,8 +1043,8 @@ def build_parser() -> argparse.ArgumentParser:
     c = sub.add_parser("compare", parents=[common], help="Save cross-algorithm GT comparison plots/reports for one per")
     c.add_argument("--per", type=int, required=True)
     c.add_argument("--algo", default="all")
-    c.add_argument("--segments", default="wrappers/localization_benchmark/config/road_segments.yaml")
-    c.add_argument("--perturbations", default="")
+    c.add_argument("--segments", default=None)
+    c.add_argument("--perturbations", default=None)
     c.add_argument("--max-dt", type=float, default=0.75)
     c.add_argument("--jump-distance", type=float, default=5.0, help="Consecutive pose step threshold in meters")
     c.add_argument("--jump-speed", type=float, default=35.0, help="Consecutive pose speed threshold in m/s")
@@ -1059,6 +1063,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    dataset = getattr(args, "dataset", "e2o")
+    if not args.results_root:
+        args.results_root = os.path.join("data/results", dataset)
+    if not args.gt:
+        args.gt = "data/e2o/ground_truth/one_full_loop_gt.tum" if dataset == "e2o" else "data/UrbanNav_TST_GT_raw.txt"
+    if hasattr(args, "segments") and not args.segments:
+        args.segments = ("wrappers/localization_benchmark/config/datasets/e2o/road_segments.yaml"
+                         if dataset == "e2o" else "wrappers/localization_benchmark/config/road_segments.yaml")
+    if hasattr(args, "perturbations") and not args.perturbations and getattr(args, "per", None) is not None:
+        base = ("wrappers/localization_benchmark/config/perturbations/e2o"
+                if dataset == "e2o" else "wrappers/localization_benchmark/config/perturbations")
+        args.perturbations = os.path.join(base, "per_{}.yaml".format(args.per))
     return args.func(args)
 
 

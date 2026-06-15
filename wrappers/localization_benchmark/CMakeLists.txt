@@ -17,6 +17,7 @@ catkin_package()
 catkin_install_python(PROGRAMS
   scripts/urbannav_custom_bridge.py
   scripts/custom_fastlio_adapter.py
+  scripts/dataset_tf_broadcaster.py
   scripts/localization_output_recorder.py
   scripts/standard_output_republisher.py
   scripts/output_selector.py

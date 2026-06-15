@@ -2,6 +2,7 @@
   <param name="use_sim_time" value="true"/>
 
   <arg name="launch_fastlio2" default="true"/>
+  <arg name="fastlio_config_path" default="$(find fast_lio_urbannav)/config/velodyne_urbannav.yaml"/>
   <arg name="input_odom_topic" default="/Odometry"/>
   <arg name="input_cloud_topic" default="/cloud_registered_raw"/>
   <arg name="input_camera_topic" default="/camera/right/image_raw"/>
@@ -9,7 +10,9 @@
 
   <!-- FAST-LIO2 frontend. The perturbation adapter and bag player are started
        by ./run, matching the other benchmark algorithms. -->
-  <include if="$(arg launch_fastlio2)" file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch"/>
+  <include if="$(arg launch_fastlio2)" file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch">
+    <arg name="config_path" value="$(arg fastlio_config_path)"/>
+  </include>
 
   <include file="$(find adaptive_w_lvio_urbannav)/launch/adaptive_w_lvio.launch">
     <arg name="input_odom_topic" value="$(arg input_odom_topic)"/>

@@ -1,234 +1,148 @@
 #!/usr/bin/env python3
-"""
-UrbanNav ground-truth publisher for RViz and evaluation.
-
-This version publishes the COMPLETE fixed GT route on /ground_truth_path.
-It does not clip/generate the visible GT path using current /clock time.
-Default yaw_offset_deg is 0 deg; run scripts can override with GT_YAW_OFFSET_DEG.
-/ground_truth_odometry still follows current bag /clock for the live GT car pose.
-"""
-
+"""Publish UrbanNav INS text or TUM ground truth for live benchmark visualization."""
 import math
 import os
-from bisect import bisect_left, bisect_right
-from typing import List, Optional, Tuple
+from bisect import bisect_left
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Quaternion
 from nav_msgs.msg import Odometry, Path
 
-try:
-    from pyproj import Transformer
-except ImportError:
-    Transformer = None
-
 WGS84_A = 6378137.0
 WGS84_E2 = 6.69437999014e-3
 
 
-def dms_to_deg(degrees: float, minutes: float, seconds: float) -> float:
+def dms_to_deg(degrees, minutes, seconds):
     sign = -1.0 if degrees < 0 else 1.0
     return sign * (abs(degrees) + minutes / 60.0 + seconds / 3600.0)
 
 
-def ecef_from_lla_fallback(lat_deg: float, lon_deg: float, height: float) -> Tuple[float, float, float]:
-    lat = math.radians(lat_deg)
-    lon = math.radians(lon_deg)
-    sin_lat = math.sin(lat)
-    cos_lat = math.cos(lat)
+def ecef_from_lla(lat_deg, lon_deg, height):
+    lat, lon = math.radians(lat_deg), math.radians(lon_deg)
+    sin_lat, cos_lat = math.sin(lat), math.cos(lat)
     normal = WGS84_A / math.sqrt(1.0 - WGS84_E2 * sin_lat * sin_lat)
-    x = (normal + height) * cos_lat * math.cos(lon)
-    y = (normal + height) * cos_lat * math.sin(lon)
-    z = (normal * (1.0 - WGS84_E2) + height) * sin_lat
-    return x, y, z
+    return ((normal + height) * cos_lat * math.cos(lon),
+            (normal + height) * cos_lat * math.sin(lon),
+            (normal * (1.0 - WGS84_E2) + height) * sin_lat)
 
 
-def enu_from_ecef_delta(dx: float, dy: float, dz: float, ref_lat_deg: float, ref_lon_deg: float) -> Tuple[float, float, float]:
-    lat = math.radians(ref_lat_deg)
-    lon = math.radians(ref_lon_deg)
-    sin_lat = math.sin(lat)
-    cos_lat = math.cos(lat)
-    sin_lon = math.sin(lon)
-    cos_lon = math.cos(lon)
-    east = -sin_lon * dx + cos_lon * dy
-    north = -sin_lat * cos_lon * dx - sin_lat * sin_lon * dy + cos_lat * dz
-    up = cos_lat * cos_lon * dx + cos_lat * sin_lon * dy + sin_lat * dz
-    return east, north, up
+def enu_from_ecef_delta(dx, dy, dz, ref_lat_deg, ref_lon_deg):
+    lat, lon = math.radians(ref_lat_deg), math.radians(ref_lon_deg)
+    slat, clat, slon, clon = math.sin(lat), math.cos(lat), math.sin(lon), math.cos(lon)
+    return (-slon * dx + clon * dy,
+            -slat * clon * dx - slat * slon * dy + clat * dz,
+            clat * clon * dx + clat * slon * dy + slat * dz)
 
 
-class GroundTruthConverter:
-    def __init__(self):
-        self._transformer = Transformer.from_crs("EPSG:4979", "EPSG:4978", always_xy=True) if Transformer else None
-
-    def ecef_from_lla(self, lat_deg: float, lon_deg: float, height: float) -> Tuple[float, float, float]:
-        if self._transformer:
-            return self._transformer.transform(lon_deg, lat_deg, height)
-        return ecef_from_lla_fallback(lat_deg, lon_deg, height)
+def rotate_xy(x, y, angle):
+    c, s = math.cos(angle), math.sin(angle)
+    return c*x - s*y, s*x + c*y
 
 
-def parse_ground_truth(path: str) -> List[dict]:
-    samples = []
+def quaternion_yaw(qx, qy, qz, qw):
+    return math.atan2(2.0*(qw*qz + qx*qy), 1.0 - 2.0*(qy*qy + qz*qz))
+
+
+def yaw_quaternion(yaw):
+    q = Quaternion(); q.w = math.cos(0.5*yaw); q.z = math.sin(0.5*yaw); return q
+
+
+def parse_local_samples(path, yaw_offset_deg=0.0):
+    raw = []
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         for line in handle:
-            parts = line.split()
-            if len(parts) < 20:
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
+            parts = line.split()
             try:
-                utc = float(parts[0])
-                lat = dms_to_deg(float(parts[3]), float(parts[4]), float(parts[5]))
-                lon = dms_to_deg(float(parts[6]), float(parts[7]), float(parts[8]))
-                height = float(parts[9])
-                roll = float(parts[16])
-                pitch = float(parts[17])
-                heading = float(parts[18])
+                if len(parts) == 8:
+                    vals = [float(v) for v in parts]
+                    raw.append({"format":"tum", "stamp":vals[0], "x":vals[1], "y":vals[2], "z":vals[3],
+                                "yaw":quaternion_yaw(vals[4], vals[5], vals[6], vals[7])})
+                elif len(parts) >= 20:
+                    raw.append({"format":"urbannav", "stamp":float(parts[0]),
+                                "lat":dms_to_deg(float(parts[3]),float(parts[4]),float(parts[5])),
+                                "lon":dms_to_deg(float(parts[6]),float(parts[7]),float(parts[8])),
+                                "h":float(parts[9]), "heading":float(parts[18])})
             except ValueError:
                 continue
-            samples.append({
-                "utc": utc,
-                "lat": lat,
-                "lon": lon,
-                "height": height,
-                "roll": roll,
-                "pitch": pitch,
-                "heading": heading,
-            })
-    samples.sort(key=lambda s: s["utc"])
-    return samples
+    if not raw:
+        return []
+    raw.sort(key=lambda r:r["stamp"])
+    offset = math.radians(yaw_offset_deg)
+    if raw[0]["format"] == "tum":
+        raw = [r for r in raw if r["format"] == "tum"]
+        ref = raw[0]; angle = -ref["yaw"] + offset
+        out=[]
+        for r in raw:
+            x,y=rotate_xy(r["x"]-ref["x"], r["y"]-ref["y"], angle)
+            out.append({"stamp":r["stamp"], "x":x, "y":y, "z":r["z"]-ref["z"],
+                        "yaw":math.atan2(math.sin(r["yaw"]-ref["yaw"]+offset), math.cos(r["yaw"]-ref["yaw"]+offset))})
+        return out
+    raw=[r for r in raw if r["format"] == "urbannav"]
+    ref=raw[0]; ref_ecef=ecef_from_lla(ref["lat"],ref["lon"],ref["h"])
+    heading=math.radians(ref["heading"]); fe,fn=math.sin(heading),math.cos(heading); re,rn=math.cos(heading),-math.sin(heading)
+    out=[]
+    for r in raw:
+        e=ecef_from_lla(r["lat"],r["lon"],r["h"])
+        east,north,up=enu_from_ecef_delta(e[0]-ref_ecef[0],e[1]-ref_ecef[1],e[2]-ref_ecef[2],ref["lat"],ref["lon"])
+        x,y=rotate_xy(east*re+north*rn,east*fe+north*fn,offset)
+        out.append({"stamp":r["stamp"],"x":x,"y":y,"z":up,"yaw":math.radians(r["heading"]-ref["heading"])+offset})
+    return out
 
 
-def yaw_quaternion(yaw: float) -> Quaternion:
-    half = 0.5 * yaw
-    q = Quaternion()
-    q.w = math.cos(half)
-    q.z = math.sin(half)
-    return q
+def build_path(samples, frame_id, z_offset):
+    path=Path(); path.header.frame_id=frame_id
+    for row in samples:
+        ps=PoseStamped(); ps.header.frame_id=frame_id; ps.header.stamp=rospy.Time.from_sec(row["stamp"])
+        ps.pose.position.x=row["x"]; ps.pose.position.y=row["y"]; ps.pose.position.z=row["z"]+z_offset
+        ps.pose.orientation=yaw_quaternion(row["yaw"]); path.poses.append(ps)
+    return path
 
 
-def rotate_xy(x: float, y: float, yaw_offset_rad: float) -> Tuple[float, float]:
-    c = math.cos(yaw_offset_rad)
-    s = math.sin(yaw_offset_rad)
-    return c * x - s * y, s * x + c * y
+def nearest_pose(path_msg, stamps, stamp):
+    if not path_msg.poses: return None
+    target=stamp.to_sec(); idx=bisect_left(stamps,target); candidates=[]
+    if idx < len(path_msg.poses): candidates.append(path_msg.poses[idx])
+    if idx > 0: candidates.append(path_msg.poses[idx-1])
+    return min(candidates,key=lambda p:abs(p.header.stamp.to_sec()-target)) if candidates else path_msg.poses[-1]
 
 
-def build_path(samples: List[dict], frame_id: str, rotate_to_initial_heading: bool, yaw_offset_deg: float, z_offset: float) -> Path:
-    converter = GroundTruthConverter()
-    ref = samples[0]
-    ref_ecef = converter.ecef_from_lla(ref["lat"], ref["lon"], ref["height"])
-
-    heading_rad = math.radians(ref["heading"]) if rotate_to_initial_heading else 0.0
-    forward_e = math.sin(heading_rad)
-    forward_n = math.cos(heading_rad)
-    right_e = math.cos(heading_rad)
-    right_n = -math.sin(heading_rad)
-    yaw_offset_rad = math.radians(yaw_offset_deg)
-
-    path_msg = Path()
-    path_msg.header.frame_id = frame_id
-
-    for sample in samples:
-        ecef = converter.ecef_from_lla(sample["lat"], sample["lon"], sample["height"])
-        east, north, up = enu_from_ecef_delta(
-            ecef[0] - ref_ecef[0],
-            ecef[1] - ref_ecef[1],
-            ecef[2] - ref_ecef[2],
-            ref["lat"],
-            ref["lon"],
-        )
-
-        # Original UrbanNav local frame used in this project: x=right, y=forward.
-        x = east * right_e + north * right_n
-        y = east * forward_e + north * forward_n
-        x, y = rotate_xy(x, y, yaw_offset_rad)
-
-        pose = PoseStamped()
-        pose.header.frame_id = frame_id
-        pose.header.stamp = rospy.Time.from_sec(sample["utc"])
-        pose.pose.position.x = x
-        pose.pose.position.y = y
-        pose.pose.position.z = up + z_offset
-        pose.pose.orientation = yaw_quaternion(math.radians(sample["heading"] - ref["heading"] + yaw_offset_deg))
-        path_msg.poses.append(pose)
-
-    return path_msg
-
-
-def nearest_pose(path_msg: Path, stamps: List[float], stamp: rospy.Time) -> Optional[PoseStamped]:
-    if not path_msg.poses:
-        return None
-    target = stamp.to_sec()
-    if target <= 0.0:
-        return path_msg.poses[0]
-    idx = bisect_left(stamps, target)
-    candidates = []
-    if idx < len(path_msg.poses):
-        candidates.append(path_msg.poses[idx])
-    if idx > 0:
-        candidates.append(path_msg.poses[idx - 1])
-    return min(candidates, key=lambda pose: abs(pose.header.stamp.to_sec() - target)) if candidates else path_msg.poses[-1]
-
-
-def odometry_from_pose(pose: PoseStamped, stamp: rospy.Time, child_frame_id: str) -> Odometry:
-    odom = Odometry()
-    odom.header.frame_id = pose.header.frame_id
-    odom.header.stamp = stamp
-    odom.child_frame_id = child_frame_id
-    odom.pose.pose = pose.pose
-    return odom
+def odometry_from_pose(pose, stamp, child_frame_id):
+    odom=Odometry(); odom.header.frame_id=pose.header.frame_id; odom.header.stamp=stamp
+    odom.child_frame_id=child_frame_id; odom.pose.pose=pose.pose; return odom
 
 
 def main():
     rospy.init_node("ground_truth_path_node", anonymous=False)
-    gt_path = rospy.get_param("~ground_truth_path", "/data/UrbanNav_TST_GT_raw.txt")
-    topic = rospy.get_param("~topic", "/ground_truth_path")
-    full_topic = rospy.get_param("~full_topic", "/ground_truth_path_full")
-    odom_topic = rospy.get_param("~odom_topic", "/ground_truth_odometry")
-    frame_id = rospy.get_param("~frame_id", "camera_init")
-    child_frame_id = rospy.get_param("~child_frame_id", "ground_truth_car")
-    publish_rate = float(rospy.get_param("~publish_rate", 10.0))
-    rotate_to_initial_heading = bool(rospy.get_param("~rotate_to_initial_heading", True))
-    yaw_offset_deg = float(rospy.get_param("~yaw_offset_deg", 0.0))
-    z_offset = float(rospy.get_param("~z_offset", 0.0))
-    publish_full = bool(rospy.get_param("~publish_full_path", True))
-
+    gt_path=rospy.get_param("~ground_truth_path", "/data/UrbanNav_TST_GT_raw.txt")
+    topic=rospy.get_param("~topic", "/ground_truth_path")
+    full_topic=rospy.get_param("~full_topic", "/ground_truth_path_full")
+    odom_topic=rospy.get_param("~odom_topic", "/ground_truth_odometry")
+    frame_id=rospy.get_param("~frame_id", "camera_init")
+    child_frame_id=rospy.get_param("~child_frame_id", "ground_truth_car")
+    publish_rate=float(rospy.get_param("~publish_rate", 10.0))
+    yaw_offset_deg=float(rospy.get_param("~yaw_offset_deg", 0.0))
+    z_offset=float(rospy.get_param("~z_offset", 0.0))
+    publish_full=bool(rospy.get_param("~publish_full_path", True))
     if not os.path.isfile(gt_path):
-        rospy.logerr("[GroundTruthPath] File not found: %s", gt_path)
-        return
-    samples = parse_ground_truth(gt_path)
+        rospy.logerr("[GroundTruthPath] File not found: %s",gt_path); return
+    samples=parse_local_samples(gt_path,yaw_offset_deg)
     if not samples:
-        rospy.logerr("[GroundTruthPath] No valid samples in %s", gt_path)
-        return
-
-    full_path = build_path(samples, frame_id, rotate_to_initial_heading, yaw_offset_deg, z_offset)
-    stamps = [pose.header.stamp.to_sec() for pose in full_path.poses]
-
-    live_pub = rospy.Publisher(topic, Path, queue_size=1)
-    full_pub = rospy.Publisher(full_topic, Path, queue_size=1, latch=True)
-    odom_pub = rospy.Publisher(odom_topic, Odometry, queue_size=10)
-
-    rospy.loginfo(
-        "[GroundTruthPath] %d poses, live=%s full=%s odom=%s frame=%s yaw_offset=%.1f deg",
-        len(full_path.poses), topic, full_topic, odom_topic, frame_id, yaw_offset_deg,
-    )
-
-    # Publish the complete GT path as a fixed/static visual path.
-    # Do not clip it by /clock; the user requested complete GT, not time-generated GT.
-    full_path.header.stamp = rospy.Time(0)
-    live_pub.publish(full_path)
-    if publish_full:
-        full_pub.publish(full_path)
-
-    rate = rospy.Rate(publish_rate)
+        rospy.logerr("[GroundTruthPath] No valid INS/TUM samples in %s",gt_path); return
+    full_path=build_path(samples,frame_id,z_offset); stamps=[p.header.stamp.to_sec() for p in full_path.poses]
+    live_pub=rospy.Publisher(topic,Path,queue_size=1); full_pub=rospy.Publisher(full_topic,Path,queue_size=1,latch=True)
+    odom_pub=rospy.Publisher(odom_topic,Odometry,queue_size=10)
+    rospy.loginfo("[GroundTruthPath] %d poses from %s",len(full_path.poses),gt_path)
+    full_path.header.stamp=rospy.Time(0); live_pub.publish(full_path)
+    if publish_full: full_pub.publish(full_path)
+    rate=rospy.Rate(publish_rate)
     while not rospy.is_shutdown():
-        now = rospy.Time.now()
-        full_path.header.stamp = rospy.Time(0)
-        live_pub.publish(full_path)
-
-        # Keep live GT odometry synced with bag time for the car marker only.
-        pose = nearest_pose(full_path, stamps, now)
-        if pose:
-            odom_pub.publish(odometry_from_pose(pose, now, child_frame_id))
+        now=rospy.Time.now(); full_path.header.stamp=rospy.Time(0); live_pub.publish(full_path)
+        pose=nearest_pose(full_path,stamps,now)
+        if pose: odom_pub.publish(odometry_from_pose(pose,now,child_frame_id))
         rate.sleep()
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()

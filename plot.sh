@@ -10,17 +10,18 @@ DOCKER_MEMORY="${DOCKER_MEMORY:-8g}"
 usage() {
   cat <<'EOF'
 Usage:
-  ./plot.sh --per 0 --algo all
+  ./plot.sh --dataset e2o --per 0 --algo all
   ./plot.sh --per 0 --algo fast_lio2,lvisam,r3live
 
 Default behavior opens RViz and publishes saved CSV trajectories:
-  data/results/<algo>/per_<N>/trajectory.csv
+  data/results/<dataset>/<algo>/per_<N>/trajectory.csv
 
 Options:
   --per N                 Required. Perturbation/run id.
   --algo all|name,list    Required-ish. Default all.
-  --results-root PATH     Default data/results on host, /data/results in Docker.
-  --gt PATH               Default data/UrbanNav_TST_GT_raw.txt on host, /data/... in Docker.
+  --dataset e2o|urbannav  Default e2o.
+  --results-root PATH     Default data/results/<dataset>.
+  --gt PATH               Dataset ground truth default.
   --static                Old matplotlib backend: save PNGs instead of RViz.
   --no-docker             Run ROS/RViz on host instead of Docker. Requires sourced ROS Noetic.
 
