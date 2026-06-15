@@ -36,6 +36,12 @@ Visualization Manager:
       Keep: 1
       Position Tolerance: 0
       Angle Tolerance: 0
+      Covariance:
+        Orientation:
+          Value: false
+        Position:
+          Value: false
+        Value: false
     - Class: rviz/Path
       Name: R3LIVE Native Path
       Enabled: true
@@ -44,12 +50,12 @@ Visualization Manager:
       Line Style: Lines
       Line Width: 0.10
     - Class: rviz/Path
-      Name: R3LIVE Benchmark Output Path
-      Enabled: true
+      Name: R3LIVE Benchmark Output Path (GPS/output, hidden by default)
+      Enabled: false
       Topic: /r3live/path/output
-      Color: 255; 255; 0
+      Color: 255; 255; 255
       Line Style: Lines
-      Line Width: 0.08
+      Line Width: 0.03
     - Class: rviz/Odometry
       Name: R3LIVE Native Odometry
       Enabled: true
@@ -59,15 +65,36 @@ Visualization Manager:
       Keep: 10
       Position Tolerance: 0
       Angle Tolerance: 0
+      Covariance:
+        Orientation:
+          Value: false
+        Position:
+          Value: false
+        Value: false
     - Class: rviz/Odometry
-      Name: R3LIVE Benchmark Output Odom
-      Enabled: true
+      Name: R3LIVE Benchmark Output Odom (GPS/output, hidden by default)
+      Enabled: false
       Topic: /r3live/odometry/output
-      Color: 255; 255; 0
+      Color: 255; 255; 255
       Shape: Arrow
-      Keep: 10
+      Keep: 1
       Position Tolerance: 0
       Angle Tolerance: 0
+      Covariance:
+        Orientation:
+          Alpha: 0.0
+          Color: 255; 255; 255
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 0.01
+          Value: false
+        Position:
+          Alpha: 0.0
+          Color: 255; 255; 255
+          Scale: 0.01
+          Value: false
+        Value: false
     - Class: rviz/PointCloud2
       Name: Raw Velodyne Bag Cloud
       Enabled: true
