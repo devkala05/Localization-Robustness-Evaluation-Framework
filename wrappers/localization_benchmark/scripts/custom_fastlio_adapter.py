@@ -9,7 +9,7 @@ import time
 import rospy
 import sensor_msgs.point_cloud2 as pc2
 import yaml
-from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2
+from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2, PointField
 from std_msgs.msg import Header
 
 from custom_localization_msgs.msg import CustomImage, CustomImu, CustomPointCloud
@@ -124,6 +124,13 @@ class CustomFastLioAdapter:
         # UrbanNav /velodyne_points stores the FLOAT32 time field in seconds.
         # Keep default 1.0 for FAST-LIO2; set 1000000.0 for FAST-LIVO2 via algorithms.yaml.
         self.point_time_scale = float(rospy.get_param("~point_time_scale", 1.0))
+        # Some native R3LIVE/FAST-LIO-family builds subscribe to PointCloud2 as
+        # pcl::PointXYZINormal. UrbanNav Velodyne bags have x/y/z/intensity/ring/time
+        # only, which makes those nodes spam "Failed to find match for field
+        # normal_x/normal_y/normal_z/curvature" and produce no odometry. Keep this
+        # disabled for normal FAST-LIO2/LVI-SAM runs and enable it only for R3LIVE.
+        self.add_normal_fields = bool(rospy.get_param("~add_normal_fields", False))
+        self.curvature_from_time = bool(rospy.get_param("~curvature_from_time", True))
         self._point_time_checked = False
         self._point_time_offset = None
         self._point_time_struct = None
@@ -202,10 +209,11 @@ class CustomFastLioAdapter:
         )
 
         rospy.loginfo(
-            "[CustomFastLioAdapter] lidar pointcloud=%s livox_custom=%s enabled=%s",
+            "[CustomFastLioAdapter] lidar pointcloud=%s livox_custom=%s enabled=%s add_normal_fields=%s",
             self.native_lidar_topic,
             self.native_lidar_custom_topic,
             self.publish_livox_custom_msg,
+            self.add_normal_fields,
         )
 
         rospy.loginfo(
@@ -257,9 +265,88 @@ class CustomFastLioAdapter:
         sees PointCloud2 on /livox/lidar, while R3LIVE/FAST-LIVO subscribe to
         /livox/lidar_custom.
         """
-        self.lidar_pub.publish(self.scale_point_time_if_needed(cloud))
+        out = self.scale_point_time_if_needed(cloud)
+        if self.add_normal_fields:
+            out = self.pointcloud2_to_xyzinormal_cloud(out)
+        self.lidar_pub.publish(out)
         if self.publish_livox_custom_msg and self.livox_custom_pub is not None:
             self.livox_custom_pub.publish(self.pointcloud2_to_livox_custom(cloud))
+
+    def pointcloud2_to_xyzinormal_cloud(self, cloud):
+        """Return a PCL-layout PointXYZINormal PointCloud2 for native R3LIVE.
+
+        R3LIVE's r3live_mapping subscribes to sensor_msgs/PointCloud2, but its
+        LiDAR parser reads the message as PCL PointXYZINormal.  The previous
+        bridge added normal_x/normal_y/normal_z/curvature fields but packed them
+        in a compact 38-byte custom layout and kept extra time/ring fields.  That
+        layout is legal ROS PointCloud2, but it is not the memory layout used by
+        PCL PointXYZINormal, so R3LIVE printed:
+
+            Get pointcloud data from ros messages fail!!!
+
+        Build the cloud in the canonical 48-byte PCL PointXYZINormal layout:
+
+            x,y,z,pad, normal_x,normal_y,normal_z,pad, intensity,curvature,pad,pad
+
+        The ROS PointField list is intentionally ordered as:
+            x,y,z,intensity,normal_x,normal_y,normal_z,curvature
+        because upstream R3LIVE rejects PointCloud2 messages unless field[3] is
+        intensity and field[4] is normal_x.
+
+        Curvature carries the relative point time because R3LIVE/FAST-LIO code
+        sorts points by point.curvature for scan undistortion.  We intentionally
+        do not add separate `time` or `ring` fields on the R3LIVE topic because
+        the upstream parser is stricter than RViz/PCL utilities.
+        """
+        field_names = [f.name for f in cloud.fields]
+        read_fields = [n for n in ("x", "y", "z", "intensity", "time") if n in field_names]
+        if not all(k in read_fields for k in ("x", "y", "z")):
+            rospy.logwarn_throttle(5.0, "[CustomFastLioAdapter] add_normal_fields requested but x/y/z missing")
+            return cloud
+
+        idx = {name: i for i, name in enumerate(read_fields)}
+        raw = bytearray()
+        count = 0
+        pack = struct.Struct("<12f" if not cloud.is_bigendian else ">12f")
+        for pt in pc2.read_points(cloud, field_names=read_fields, skip_nans=True):
+            x = float(pt[idx["x"]])
+            y = float(pt[idx["y"]])
+            z = float(pt[idx["z"]])
+            intensity = float(pt[idx["intensity"]]) if "intensity" in idx else 0.0
+            rel_time = float(pt[idx["time"]]) if "time" in idx else 0.0
+            curvature = rel_time if self.curvature_from_time else 0.0
+            raw.extend(pack.pack(
+                x, y, z, 1.0,          # PCL_ADD_POINT4D padding
+                0.0, 0.0, 0.0, 0.0,    # PCL_ADD_NORMAL4D padding
+                intensity, curvature, 0.0, 0.0,
+            ))
+            count += 1
+
+        out = PointCloud2()
+        out.header = cloud.header
+        out.height = 1
+        out.width = count
+        # R3LIVE does an extra brittle check before pcl::fromROSMsg():
+        # it requires exactly 8 fields and specifically expects
+        # fields[3] == "intensity" and fields[4] == "normal_x".
+        # Keep PCL PointXYZINormal byte offsets, but order the fields the way
+        # upstream R3LIVE checks them.
+        out.fields = [
+            PointField("x", 0, PointField.FLOAT32, 1),
+            PointField("y", 4, PointField.FLOAT32, 1),
+            PointField("z", 8, PointField.FLOAT32, 1),
+            PointField("intensity", 32, PointField.FLOAT32, 1),
+            PointField("normal_x", 16, PointField.FLOAT32, 1),
+            PointField("normal_y", 20, PointField.FLOAT32, 1),
+            PointField("normal_z", 24, PointField.FLOAT32, 1),
+            PointField("curvature", 36, PointField.FLOAT32, 1),
+        ]
+        out.is_bigendian = cloud.is_bigendian
+        out.point_step = 48
+        out.row_step = out.point_step * out.width
+        out.data = bytes(raw)
+        out.is_dense = True
+        return out
 
     def pointcloud2_to_livox_custom(self, cloud):
         msg = LivoxCustomMsg()

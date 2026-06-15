@@ -82,14 +82,15 @@ if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
 fi
 
 if [ "${ALGO_STANDARD_NS}" = "r3live" ]; then
-    case "${R3LIVE_RUN_VISUAL:-false}" in
-        true|on|1|yes) R3LIVE_VISUAL_BOOL="true"; R3LIVE_NATIVE_ROLE="mapping" ;;
-        *) R3LIVE_VISUAL_BOOL="false"; R3LIVE_NATIVE_ROLE="stable" ;;
+    # Always run native r3live_mapping. The LiDAR-front-end-only executable uses
+    # livox_ros_driver/CustomMsg on some upstream builds, while r3live_mapping
+    # consumes sensor_msgs/PointCloud2 when lidar_type=0. This avoids silent no-odom
+    # runs caused by the wrong executable/message-type pair.
+    case "${R3LIVE_RUN_VISUAL:-true}" in
+        off|false|0|no) R3LIVE_VISUAL_BOOL="false" ;;
+        *) R3LIVE_VISUAL_BOOL="true" ;;
     esac
-    # Do not use FAST-LIO2 fallback for benchmark output. If native R3LIVE does
-    # not publish, the watchdog/mux will show that clearly instead of recording
-    # a FAST-LIO2 trajectory as R3LIVE.
-    ALGO_LAUNCH_ARGS="enable_fastlio_fallback:=false run_visual:=${R3LIVE_VISUAL_BOOL} native_role:=${R3LIVE_NATIVE_ROLE}"
+    ALGO_LAUNCH_ARGS="enable_fastlio_fallback:=false run_visual:=${R3LIVE_VISUAL_BOOL} native_role:=mapping"
 fi
 
 tmux kill-session -t "${SESSION}" 2>/dev/null || true
@@ -117,9 +118,10 @@ tmux send-keys -t "${ALGO_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch ${ALGO_LAU
 
 STD_PANE="$(tmux split-window -h -t "${ALGO_PANE}" -P -F "#{pane_id}")"
 STD_PUBLISH_TF=true
-# RTAB-Map adapter publishes camera_init->body for RTAB scan-cloud synchronization.
-# Keep BenchmarkOutput TF off for RTAB-Map to avoid duplicate frame authority.
-if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
+# RTAB-Map and Adaptive-W already publish or manage their own local frame outputs.
+# Keep BenchmarkOutput TF off for them to avoid duplicate camera_init->body authority
+# and TF_REPEATED_DATA warnings.
+if [ "${ALGO_STANDARD_NS}" = "rtabmap" ] || [ "${ALGO_STANDARD_NS}" = "adaptive_w_lvio" ]; then
     STD_PUBLISH_TF=false
 fi
 tmux send-keys -t "${STD_PANE}" "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=body" Enter

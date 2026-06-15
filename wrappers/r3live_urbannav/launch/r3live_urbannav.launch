@@ -14,6 +14,14 @@
   <arg name="pcd_path" default="/data/output/r3live_map.pcd"/>
 
   <rosparam command="load" file="$(arg config_path)"/>
+
+  <!-- Upstream r3live_mapping reads these exact root parameter names.
+       Keep them explicit so stale/default params do not point to
+       /laser_cloud_flat or /camera/image_color. -->
+  <param name="LiDAR_pointcloud_topic" value="/livox/lidar"/>
+  <param name="IMU_topic" value="/livox/imu"/>
+  <param name="Image_topic" value="/camera/image_raw"/>
+  <param name="Image_compressed_topic" value="/camera/image_raw/compressed"/>
   <param name="r3live_common/pcd_save_en" value="$(arg pcd_save_en)"/>
   <param name="r3live_common/pcd_path" value="$(arg pcd_path)"/>
   <param name="r3live_common/run_visual" value="$(arg run_visual)"/>
@@ -25,19 +33,19 @@
 
   <!-- Native upstream R3LIVE process. native_role=stable tries native LiDAR/R3LIVE
        binaries. native_role=mapping forces the full R3LIVE mapping/VIO executable. -->
-  <node name="r3live_native" pkg="r3live_urbannav" type="run_r3live_native.py" output="screen" required="false">
+  <node name="r3live_native" pkg="r3live_urbannav" type="run_r3live_native.py" output="screen" required="true">
     <param name="role" value="$(arg native_role)"/>
     <param name="config_path" value="$(arg config_path)"/>
     <param name="run_visual" value="$(arg run_visual)"/>
   </node>
 
   <node name="r3live_trajectory_mux" pkg="r3live_urbannav" type="trajectory_mux_node.py" output="screen">
-    <param name="odom_topics" value="/r3live/odometry,/aft_mapped_to_init,/aft_mapped_to_init_odom,/laser_mapping/odometry,/r3live/aft_mapped_to_init"/>
+    <param name="odom_topics" value="/r3live/odometry,/aft_mapped_to_init,/aft_mapped_to_init_odom,/aft_mapped_to_init_high_frec,/laser_mapping/odometry,/r3live/aft_mapped_to_init,/Odometry"/>
     <param name="output_odom_topic" value="/r3live/odometry/mapping"/>
     <param name="output_path_topic" value="/r3live/mapping/path"/>
     <param name="fixed_frame" value="camera_init"/>
     <param name="child_frame" value="body"/>
-    <param name="tf_pairs" value="camera_init:body,camera_init:base_link,map:body,map:base_link"/>
+    <param name="tf_pairs" value="camera_init:body,map:body,camera_init:camera_odom_frame,map:camera_odom_frame"/>
     <param name="use_tf_fallback" value="true"/>
     <param name="odom_stale_sec" value="0.75"/>
   </node>

@@ -1,0 +1,5 @@
+Localization robustness ranking
+Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
+
+1. per_0_rtab_map_20260615_153420 score=23.586266 position_rmse_m=1.795475 position_max_m=3.936342 yaw_rmse_rad=2.179079 samples=118 gps=off:auto rtk=auto note=RTAB-Map uses FAST-LIO2 as odometry prior, but subscribes to UrbanNav right camera image+camera_info and scan_cloud; benchmark output is generated from RTAB-Map mapPath, not raw FAST-LIO2 odometry.
+2. per_0_rtab_map_20260615_143956 score=23.586986 position_rmse_m=1.795719 position_max_m=3.934107 yaw_rmse_rad=2.179127 samples=118 gps=off:auto rtk=auto note=RTAB-Map uses FAST-LIO2 as odometry prior, but subscribes to UrbanNav right camera image+camera_info and scan_cloud; benchmark output is generated from RTAB-Map mapPath, not raw FAST-LIO2 odometry.

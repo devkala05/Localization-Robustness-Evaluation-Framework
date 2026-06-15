@@ -434,14 +434,22 @@ public:
     {
         *posXCur = 0; *posYCur = 0; *posZCur = 0;
 
-        // if (cloudInfo.odomAvailable == false || odomDeskewFlag == false)
-        //     return;
+        // In the LiDAR-only benchmark path this was intentionally disabled.
+        // With visual mode enabled, odomTopic is the VINS propagated odometry,
+        // so use its scan-start to scan-end increment for translational deskew.
+        if (cloudInfo.odomAvailable == false || odomDeskewFlag == false)
+            return;
 
-        // float ratio = relTime / (timeScanNext - timeScanCur);
+        double scanPeriod = timeScanNext - timeScanCur;
+        if (scanPeriod <= 1e-6)
+            return;
 
-        // *posXCur = ratio * odomIncreX;
-        // *posYCur = ratio * odomIncreY;
-        // *posZCur = ratio * odomIncreZ;
+        float ratio = relTime / scanPeriod;
+        ratio = std::max(0.0f, std::min(1.0f, ratio));
+
+        *posXCur = ratio * odomIncreX;
+        *posYCur = ratio * odomIncreY;
+        *posZCur = ratio * odomIncreZ;
     }
 
     PointType deskewPoint(PointType *point, double relTime)

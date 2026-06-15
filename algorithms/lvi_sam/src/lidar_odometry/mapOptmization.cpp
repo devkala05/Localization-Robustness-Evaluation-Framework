@@ -136,6 +136,12 @@ public:
 
     nav_msgs::Path globalPath;
 
+    // VINS relative-pose factor state.  The absolute VINS frame can drift, so
+    // only between-keyframe increments are used as weak graph constraints.
+    bool lastVinsFactorAvailable = false;
+    int lastVinsFactorResetId = -1;
+    Eigen::Affine3f lastVinsFactorTransformation;
+
     Eigen::Affine3f transPointAssociateToMap;
 
     map<int, int> loopIndexContainer; // from new to old
@@ -1363,26 +1369,53 @@ public:
 
     void addOdomFactor()
     {
+        Eigen::Affine3f currentVinsTransformation = pcl::getTransformation(
+            cloudInfo.odomX, cloudInfo.odomY, cloudInfo.odomZ,
+            cloudInfo.odomRoll, cloudInfo.odomPitch, cloudInfo.odomYaw);
+
         if (cloudKeyPoses3D->points.empty())
         {
-            // This benchmark runs LiDAR-IMU only; GPS factors are not added.
-            // The original LVI-SAM prior leaves translation almost free for
-            // GPS to anchor later, which can make iSAM2 numerically
-            // underconstrained on UrbanNav. Anchor the arbitrary local origin.
+            // Anchor the arbitrary local origin.  Visual factors below are used
+            // as relative increments only, not as absolute world priors.
             noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-2, 1e-2, M_PI*M_PI, 1e-2, 1e-2, 1e-2).finished()); // rad*rad, meter*meter
             gtSAMgraph.add(PriorFactor<Pose3>(0, trans2gtsamPose(transformTobeMapped), priorNoise));
             initialEstimate.insert(0, trans2gtsamPose(transformTobeMapped));
+
+            if (useVinsFactor && cloudInfo.odomAvailable)
+            {
+                lastVinsFactorTransformation = currentVinsTransformation;
+                lastVinsFactorResetId = cloudInfo.odomResetId;
+                lastVinsFactorAvailable = true;
+            }
         }else{
             noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
             gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
             gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
             gtSAMgraph.add(BetweenFactor<Pose3>(cloudKeyPoses3D->size()-1, cloudKeyPoses3D->size(), poseFrom.between(poseTo), odometryNoise));
+
+            if (useVinsFactor && cloudInfo.odomAvailable)
+            {
+                if (lastVinsFactorAvailable && lastVinsFactorResetId == cloudInfo.odomResetId)
+                {
+                    gtsam::Pose3 vinsPoseFrom = affine3fTogtsamPose3(lastVinsFactorTransformation);
+                    gtsam::Pose3 vinsPoseTo   = affine3fTogtsamPose3(currentVinsTransformation);
+                    noiseModel::Diagonal::shared_ptr vinsNoise = noiseModel::Diagonal::Sigmas(
+                        (Vector(6) << vinsFactorRotNoise, vinsFactorRotNoise, vinsFactorRotNoise,
+                                      vinsFactorTransNoise, vinsFactorTransNoise, vinsFactorTransNoise).finished());
+                    gtSAMgraph.add(BetweenFactor<Pose3>(cloudKeyPoses3D->size()-1, cloudKeyPoses3D->size(),
+                                                        vinsPoseFrom.between(vinsPoseTo), vinsNoise));
+                }
+
+                lastVinsFactorTransformation = currentVinsTransformation;
+                lastVinsFactorResetId = cloudInfo.odomResetId;
+                lastVinsFactorAvailable = true;
+            }
+            else
+            {
+                lastVinsFactorAvailable = false;
+            }
+
             initialEstimate.insert(cloudKeyPoses3D->size(), poseTo);
-            // if (isDegenerate)
-            // {
-                // adding VINS constraints is deleted as benefits are not obvious, disable for now
-                // gtSAMgraph.add(BetweenFactor<Pose3>(cloudKeyPoses3D->size()-1, cloudKeyPoses3D->size(), vinsPoseFrom.between(vinsPoseTo), odometryNoise));
-            // }
         }
     }
 

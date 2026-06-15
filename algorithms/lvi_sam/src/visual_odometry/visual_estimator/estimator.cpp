@@ -659,27 +659,52 @@ bool Estimator::failureDetection()
     }
     if (Bas[WINDOW_SIZE].norm() > 2.5)
     {
+        if (SOFT_VISUAL_FAILURE_MODE)
+        {
+            ROS_WARN_THROTTLE(5.0, "VINS acc bias high %.6f; soft visual mode keeps VINS diagnostic alive without rebooting LVI-SAM mapping", Bas[WINDOW_SIZE].norm());
+            return false;
+        }
         ROS_ERROR("VINS big IMU acc bias estimation %f, restart estimator!", Bas[WINDOW_SIZE].norm());
         return true;
     }
     if (Bgs[WINDOW_SIZE].norm() > 1.0)
     {
+        if (SOFT_VISUAL_FAILURE_MODE)
+        {
+            ROS_WARN_THROTTLE(5.0, "VINS gyro bias high %.6f; soft visual mode keeps VINS diagnostic alive", Bgs[WINDOW_SIZE].norm());
+            return false;
+        }
         ROS_ERROR("VINS big IMU gyr bias estimation %f, restart estimator!", Bgs[WINDOW_SIZE].norm());
         return true;
     }
     if (Vs[WINDOW_SIZE].norm() > 30.0)
     {
+        if (SOFT_VISUAL_FAILURE_MODE)
+        {
+            ROS_WARN_THROTTLE(5.0, "VINS speed high %.6f; soft visual mode ignores this for lidar-dominant mapping", Vs[WINDOW_SIZE].norm());
+            return false;
+        }
         ROS_ERROR("VINS big speed %f, restart estimator!", Vs[WINDOW_SIZE].norm());
         return true;
     }
     Vector3d tmp_P = Ps[WINDOW_SIZE];
     if ((tmp_P - last_P).norm() > 5.0)
     {
+        if (SOFT_VISUAL_FAILURE_MODE)
+        {
+            ROS_WARN_THROTTLE(5.0, "VINS translation jump; soft visual mode ignores it for lidar-dominant mapping");
+            return false;
+        }
         ROS_ERROR("VINS big translation, restart estimator!");
         return true;
     }
     if (abs(tmp_P.z() - last_P.z()) > 1)
     {
+        if (SOFT_VISUAL_FAILURE_MODE)
+        {
+            ROS_WARN_THROTTLE(5.0, "VINS z jump; soft visual mode ignores it for lidar-dominant mapping");
+            return false;
+        }
         ROS_ERROR("VINS big z translation, restart estimator!");
         return true; 
     }

@@ -92,6 +92,33 @@ RUN cd ${CATKIN_WS}/src && \
     git clone --depth 1 https://github.com/hku-mars/r3live.git && \
     cd r3live && (git submodule update --init --recursive || true)
 
+# Disable upstream R3LIVE OpenCV HighGUI windows (Control panel / save-map / pause)
+# for benchmark runs. This keeps native odometry/VIO running headless while RViz
+# remains available for visualization.
+RUN python3 - <<'R3LIVE_HEADLESS_PATCH'
+from pathlib import Path
+root = Path('/root/catkin_ws/src/r3live')
+needles = ('namedWindow', 'createTrackbar', 'imshow', 'setMouseCallback', 'destroyWindow', 'destroyAllWindows')
+changed = []
+for path in root.rglob('*'):
+    if path.suffix not in {'.cpp', '.cc', '.cxx', '.h', '.hpp'}:
+        continue
+    text = path.read_text(errors='ignore')
+    out = []
+    touched = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if any(('cv::' + n) in stripped or (n + '(') in stripped for n in needles):
+            out.append('// [benchmark headless] ' + line)
+            touched = True
+        else:
+            out.append(line)
+    if touched:
+        path.write_text('\n'.join(out) + '\n')
+        changed.append(str(path.relative_to(root)))
+print('Disabled R3LIVE HighGUI calls in:', ', '.join(changed) if changed else 'none')
+R3LIVE_HEADLESS_PATCH
+
 COPY wrappers/r3live_urbannav/ ${CATKIN_WS}/src/r3live_urbannav/
 COPY wrappers/localization_benchmark/ ${CATKIN_WS}/src/localization_benchmark/
 COPY wrappers/custom_localization_msgs/ ${CATKIN_WS}/src/custom_localization_msgs/
@@ -109,7 +136,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     catkin config --extend /opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release && \
     catkin build livox_ros_driver vikit_common vikit_ros --no-status && \
     catkin build fast_lio --no-status && \
-    (catkin build r3live --no-status || true) && \
+    catkin build r3live --no-status && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav r3live_urbannav --no-status"
 
 RUN mkdir -p /data /data/results/r3live /data/output

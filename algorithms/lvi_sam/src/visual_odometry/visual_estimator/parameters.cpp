@@ -26,6 +26,7 @@ double TD, TR;
 
 int USE_LIDAR;
 int ALIGN_CAMERA_LIDAR_COORDINATE;
+int SOFT_VISUAL_FAILURE_MODE;
 
 
 void readParameters(ros::NodeHandle &n)
@@ -45,6 +46,9 @@ void readParameters(ros::NodeHandle &n)
 
     fsSettings["use_lidar"] >> USE_LIDAR;
     fsSettings["align_camera_lidar_estimation"] >> ALIGN_CAMERA_LIDAR_COORDINATE;
+    SOFT_VISUAL_FAILURE_MODE = 0;
+    if (!fsSettings["soft_failure_mode"].empty())
+        fsSettings["soft_failure_mode"] >> SOFT_VISUAL_FAILURE_MODE;
 
     SOLVER_TIME = fsSettings["max_solver_time"];
     NUM_ITERATIONS = fsSettings["max_num_iterations"];

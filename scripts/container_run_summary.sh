@@ -100,7 +100,7 @@ if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
 fi
 
 if [ "${ALGO_STANDARD_NS}" = "r3live" ]; then
-    case "${R3LIVE_RUN_VISUAL:-false}" in
+    case "${R3LIVE_RUN_VISUAL:-true}" in
         true|on|1|yes) R3LIVE_VISUAL_BOOL="true"; R3LIVE_NATIVE_ROLE="mapping" ;;
         *) R3LIVE_VISUAL_BOOL="false"; R3LIVE_NATIVE_ROLE="stable" ;;
     esac
@@ -138,9 +138,10 @@ bash -lc "${SETUP} && ${ROS_ENV} && roslaunch ${ALGO_LAUNCH} ${ALGO_LAUNCH_ARGS}
 PIDS+=("$!")
 
 STD_PUBLISH_TF=true
-# RTAB-Map adapter publishes camera_init->body for RTAB scan-cloud synchronization.
-# Keep BenchmarkOutput TF off for RTAB-Map to avoid duplicate frame authority.
-if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
+# RTAB-Map and Adaptive-W already publish or manage their own local frame outputs.
+# Keep BenchmarkOutput TF off for them to avoid duplicate camera_init->body authority
+# and TF_REPEATED_DATA warnings.
+if [ "${ALGO_STANDARD_NS}" = "rtabmap" ] || [ "${ALGO_STANDARD_NS}" = "adaptive_w_lvio" ]; then
     STD_PUBLISH_TF=false
 fi
 

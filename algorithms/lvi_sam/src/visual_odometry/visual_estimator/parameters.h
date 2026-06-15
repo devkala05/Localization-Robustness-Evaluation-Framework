@@ -87,6 +87,7 @@ extern double ROW, COL;
 
 extern int USE_LIDAR;
 extern int ALIGN_CAMERA_LIDAR_COORDINATE;
+extern int SOFT_VISUAL_FAILURE_MODE;
 
 void readParameters(ros::NodeHandle &n);
 

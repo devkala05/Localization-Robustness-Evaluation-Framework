@@ -1,92 +1,122 @@
 # r3live_urbannav.yaml
-# ============================================================
-# R3LIVE configuration for the UrbanNav-HK-TST-20210517 dataset
-#
-# Sensors:
-#   LiDAR  : Velodyne HDL-32E (centre)  — 10 Hz, 32 rings, 360°
-#   IMU    : Xsens MTi-G-710            — 200 Hz
-#   Camera : ZED2 right (monocular)     — 15 Hz, 672×376
-#
-# Body frame = IMU frame (R3LIVE convention, same as FAST-LIO2 family)
-#
-# All extrinsic values from UrbanNav extrinsic.yaml.
-# Camera intrinsics from zed2_intrinsics.yaml (right camera).
-# IMU noise from xsens_imu_param.yaml.
-#
-# R3LIVE reads params under: r3live_common/, lio/, vio/
-# ============================================================
-
+# UrbanNav-HK-TST R3LIVE parameters.
+# IMPORTANT: upstream hku-mars/r3live reads a mix of root keys
+# (LiDAR_pointcloud_topic, IMU_topic, Image_topic) and namespaces
+# (r3live_vio/*, r3live_lio/*).  The older wrapper-only keys under
+# r3live_common/vio/lio are kept for documentation, but these duplicated
+# upstream keys are the ones that prevent R3LIVE from falling back to
+# /laser_cloud_flat and /camera/image_color or crashing with image_width=0.
 r3live_common:
-    lid_topic:   "/livox/lidar"       # adapter republishes /velodyne_points here as PointCloud2
-    imu_topic:   "/livox/imu"         # adapter republishes /imu/data here
-    img_topic:   "/camera/image_raw"  # adapter mono alias of ZED2 right
-
-    lidar_type:   2      # 2 = Velodyne (1=Livox, 2=Velodyne/Hesai, 3=Ouster)
-    scan_line:    32     # HDL-32E has 32 rings
-    blind:        0.5    # ignore points closer than 0.5 m
-
-    pcd_save_en:  false
-    pcd_path:     "/data/output/r3live_map.pcd"
-
-    # R3LIVE map is RAM-resident colourised point cloud.
-    # 12 GB DDR4 is adequate for the ~15 min TST sequence (~3-5 GB peak).
-    # Disable dense_publish to keep memory headroom.
-    dense_publish_en: false
-
+  lid_topic: /livox/lidar
+  imu_topic: /livox/imu
+  img_topic: /camera/image_raw
+  lidar_type: 0
+  scan_line: 32
+  blind: 0.5
+  cut_frame_num: 3
+  pcd_save_en: false
+  pcd_path: /data/output/r3live_map.pcd
+  dense_publish_en: false
+  record_offline_map: 0
+  pub_pt_minimum_views: 3
+  minimum_pts_size: 0.05
+  image_downsample_ratio: 1
+  estimate_i2c_extrinsic: 0
+  estimate_intrinsic: 0
+  maximum_vio_tracked_pts: 600
+  append_global_map_point_step: 4
+  if_dump_log: 0
 lio:
-    # ── IMU noise (Xsens MTi-G-710 from xsens_imu_param.yaml) ────────────────
-    # R3LIVE LIO = FAST-LIO internally; tuning weights same convention.
-    acc_cov:     0.5
-    gyr_cov:     0.3
-    b_acc_cov:   0.0001
-    b_gyr_cov:   0.0001
-
-    # ── Extrinsic: LiDAR → IMU/body ──────────────────────────────────────────
-    # CENTER_LIDAR_T_IMU: pure +0.28 m Z translation
-    extrinsic_T:  [0.0, 0.0, 0.28]
-    extrinsic_R:  [1, 0, 0,
-                   0, 1, 0,
-                   0, 0, 1]
-
-    max_iterations:    5
-    fov_degree:       360.0
-    det_range:         80.0
-    extrinsic_est_en:  false
-
+  acc_cov: 0.5
+  gyr_cov: 0.3
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+  extrinsic_T:
+  - 0.0
+  - 0.0
+  - 0.28
+  extrinsic_R:
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  max_iterations: 5
+  fov_degree: 360.0
+  det_range: 80.0
+  extrinsic_est_en: false
 vio:
-    # ── ZED2 right camera intrinsics (672×376) ───────────────────────────────
-    # Source: zed2_intrinsics.yaml right camera block
-    cam_fx:   264.2125
-    cam_fy:   264.155
-    cam_cx:   341.635
-    cam_cy:   183.993
-    image_width:  672
-    image_height: 376
-
-    # Distortion (plumb_bob / radial-tangential, OpenCV model)
-    cam_d0:  -0.0423469
-    cam_d1:   0.0115525
-    cam_d2:   0.0
-    cam_d3:   0.0
-
-    # ── Extrinsic: camera → LiDAR (R3LIVE convention: cam_T_lidar) ───────────
-    # R3LIVE VIO needs p_cam = R_cl * p_lidar + t_cl.
-    # Derived from RIGHT_CAMERA_T_IMU composed with CENTER_LIDAR_T_IMU:
-    #   R_cl = R_cam_imu
-    #   t_cl = t_cam_imu - R_cam_imu * t_lidar_imu
-    #        = [0.0753, 0.6833, -3.0080] - R * [0, 0, 0.28]
-    # Numerically:
-    #   t_cl ≈ [0.0894, 0.9629, -3.0107]  (matches FAST-LIVO2 Pcl)
-    cam_ext_R:  [ 9.98729e-01,  1.52876e-03,  5.03847e-02,
-                 -5.03672e-02, -9.89677e-03,  9.98682e-01,
-                  2.02539e-03, -9.99950e-01, -9.80719e-03]
-    cam_ext_T:  [0.0894400127001, 0.962943695832, -3.01070877745]
-
-    # VIO photometric tracking parameters (tuned for 672×376 outdoor urban)
-    max_iterations:         5
-    patch_size:             8
-    patch_pyrimid_level:    4
-    outlier_threshold:      1000
-    img_point_cov:          1000
-    exposure_estimate_en:   true
-    inv_expo_cov:           0.1
+  cam_fx: 264.2125
+  cam_fy: 264.155
+  cam_cx: 341.635
+  cam_cy: 183.993
+  image_width: 672
+  image_height: 376
+  cam_d0: -0.0423469
+  cam_d1: 0.0115525
+  cam_d2: 0.0
+  cam_d3: 0.0
+  cam_ext_R: &id001
+  - 0.998729
+  - 0.00152876
+  - 0.0503847
+  - -0.0503672
+  - -0.00989677
+  - 0.998682
+  - 0.00202539
+  - -0.99995
+  - -0.00980719
+  cam_ext_T: &id002
+  - 0.0894400127001
+  - 0.962943695832
+  - -3.01070877745
+  max_iterations: 5
+  patch_size: 8
+  patch_pyrimid_level: 4
+  outlier_threshold: 1000
+  img_point_cov: 1000
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+LiDAR_pointcloud_topic: /livox/lidar
+IMU_topic: /livox/imu
+Image_topic: /camera/image_raw
+Image_compressed_topic: /camera/image_raw/compressed
+r3live_vio:
+  image_width: 672
+  image_height: 376
+  camera_intrinsic:
+  - 264.2125
+  - 0.0
+  - 341.635
+  - 0.0
+  - 264.155
+  - 183.993
+  - 0.0
+  - 0.0
+  - 1.0
+  camera_dist_coeffs:
+  - -0.0423469
+  - 0.0115525
+  - 0.0
+  - 0.0
+  - 0.0
+  camera_ext_R: *id001
+  camera_ext_t: *id002
+r3live_lio:
+  lio_update_point_step: 1
+  max_iteration: 5
+  lidar_time_delay: 0
+  filter_size_corner: 0.3
+  filter_size_surf: 0.3
+  filter_size_surf_z: 0.3
+  filter_size_map: 0.4
+  fov_degree: 360.0
+Lidar_front_end:
+  lidar_type: 0
+  N_SCANS: 32
+  using_raw_point: 1
+  point_step: 1

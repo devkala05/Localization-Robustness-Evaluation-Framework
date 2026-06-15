@@ -54,7 +54,7 @@ algorithms:
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz
-    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics. LVI-SAM may use native GPS priors via /odometry/gps when --gps on.
+    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics, but final mapping stays LiDAR-IMU dominant. Camera/VINS is launched for feature/depth aiding and diagnostics; VINS graph constraints are disabled by default because they degraded UrbanNav localization.
     standard_topic_ns: lvisam
     local_odom_topic: /lvisam/odometry/local
     local_path_topic: /lvisam/path/local
@@ -213,6 +213,7 @@ algorithms:
     build_packages:
     - livox_ros_driver
     - fast_lio
+    - r3live
     - custom_localization_msgs
     - localization_benchmark
     - fast_lio_urbannav
@@ -230,7 +231,7 @@ algorithms:
     bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
     rviz_config: /root/catkin_ws/src/r3live_urbannav/config/r3live_urbannav.rviz
     enabled: true
-    notes: Native R3LIVE wrapper. FAST-LIO2 fallback is disabled; --r3live-vio true starts the full mapping/VIO role, otherwise native LiDAR/R3LIVE odometry is used when available.
+    notes: Native R3LIVE wrapper. Uses r3live_mapping with sensor_msgs/PointCloud2 input (lidar_type=0); FAST-LIO2 fallback is disabled and Docker fails if upstream r3live does not compile.
     standard_topic_ns: r3live
     local_odom_topic: /r3live/odometry/local
     local_path_topic: /r3live/path/local
@@ -239,5 +240,5 @@ algorithms:
     status_topic: /r3live/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: 'native_mono_camera_topic:=/camera/image_raw publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical'
-    launch_args: enable_fastlio_fallback:=false run_visual:=false native_role:=stable
+    adapter_args: 'native_mono_camera_topic:=/camera/image_raw publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical add_normal_fields:=true curvature_from_time:=true'
+    launch_args: enable_fastlio_fallback:=false run_visual:=true native_role:=mapping

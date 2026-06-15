@@ -81,6 +81,11 @@ public:
     float gpsCovThreshold;
     float poseCovThreshold;
 
+    // Optional visual odometry coupling into LiDAR mapping graph
+    bool useVinsFactor;
+    float vinsFactorRotNoise;
+    float vinsFactorTransNoise;
+
     // Save pcd
     bool savePCD;
     string savePCDDirectory;
@@ -160,6 +165,10 @@ public:
         nh.param<bool>(PROJECT_NAME + "/useGpsElevation", useGpsElevation, false);
         nh.param<float>(PROJECT_NAME + "/gpsCovThreshold", gpsCovThreshold, 2.0);
         nh.param<float>(PROJECT_NAME + "/poseCovThreshold", poseCovThreshold, 25.0);
+
+        nh.param<bool>(PROJECT_NAME + "/useVinsFactor", useVinsFactor, false);
+        nh.param<float>(PROJECT_NAME + "/vinsFactorRotNoise", vinsFactorRotNoise, 0.25);
+        nh.param<float>(PROJECT_NAME + "/vinsFactorTransNoise", vinsFactorTransNoise, 1.50);
 
         nh.param<bool>(PROJECT_NAME + "/savePCD", savePCD, false);
         nh.param<std::string>(PROJECT_NAME + "/savePCDDirectory", savePCDDirectory, "/tmp/loam/");

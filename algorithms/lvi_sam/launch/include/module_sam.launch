@@ -24,7 +24,12 @@
          remains controlled by the VINS config file. -->
     <group if="$(arg run_visual)">
       <node pkg="$(arg project)" type="$(arg project)_visual_feature" name="$(arg project)_visual_feature" output="screen" respawn="false"/>
-      <node pkg="$(arg project)" type="$(arg project)_visual_odometry" name="$(arg project)_visual_odometry" output="screen" respawn="false"/>
+      <node pkg="$(arg project)" type="$(arg project)_visual_odometry" name="$(arg project)_visual_odometry" output="screen" respawn="false">
+        <!-- VINS subscribes to the relative name odometry/imu in code.  Since the
+             benchmark namespaces the LiDAR-IMU propagated odometry, explicitly
+             feed that topic into VINS instead of leaving it disconnected. -->
+        <remap from="odometry/imu" to="/$(arg project)/lidar/odometry/imu"/>
+      </node>
       <node pkg="$(arg project)" type="$(arg project)_visual_loop" name="$(arg project)_visual_loop" output="screen" respawn="false"/>
 
       <node if="$(arg use_compressed_image_republish)" pkg="image_transport" type="republish" name="$(arg project)_republish" args="compressed in:=/camera/image_raw raw out:=/camera/image_raw" output="screen" respawn="false"/>

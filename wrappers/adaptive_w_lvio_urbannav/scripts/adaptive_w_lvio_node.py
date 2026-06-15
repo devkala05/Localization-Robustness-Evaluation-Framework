@@ -150,6 +150,9 @@ class AdaptiveWLVIO:
 
         self.frame_id = rospy.get_param("~frame_id", "camera_init")
         self.child_frame_id = rospy.get_param("~child_frame_id", "body")
+        # Publish one camera_init->body TF for RViz cloud display. The benchmark
+        # standard_output_republisher keeps TF disabled for adaptive_w_lvio, so
+        # this is the only dynamic body TF and does not create repeated data spam.
         self.publish_tf = bool(rospy.get_param("~publish_tf", True))
         self.max_path_length = int(rospy.get_param("~max_path_length", 200000))
 
@@ -163,6 +166,9 @@ class AdaptiveWLVIO:
         self.max_translation_step = float(rospy.get_param("~max_translation_step", 4.0))
         self.max_yaw_step = float(rospy.get_param("~max_yaw_step_deg", 12.0)) * math.pi / 180.0
         self.log_period = float(rospy.get_param("~log_period", 4.0))
+        self.max_local_map_points = int(rospy.get_param("~max_local_map_points", 25000))
+        self.scan_to_map_min_inliers = int(rospy.get_param("~scan_to_map_min_inliers", 120))
+        self.scan_to_map_blend = float(rospy.get_param("~scan_to_map_blend", 0.65))
 
         self.last_camera_stamp: Optional[rospy.Time] = None
         self.last_imu_stamp: Optional[rospy.Time] = None
@@ -173,6 +179,7 @@ class AdaptiveWLVIO:
         self.last_cloud_points = 0
 
         self.prev_xy: Optional[np.ndarray] = None
+        self.local_map_xy: Optional[np.ndarray] = None
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
@@ -233,6 +240,7 @@ class AdaptiveWLVIO:
 
         if self.prev_xy is None:
             self.prev_xy = curr_xy
+            self.local_map_xy = curr_xy.copy()
             self._publish_pose(stamp, lidar_h, visual_h, imu_h, 0.0, "initialised")
             return
 
@@ -264,14 +272,35 @@ class AdaptiveWLVIO:
 
         R_world_prev = yaw_to_rot2(self.yaw)
         d_world = R_world_prev @ np.array([dx_local, dy_local], dtype=np.float64)
-        self.x += float(d_world[0])
-        self.y += float(d_world[1])
-        self.z = float(np.median(points[:, 2])) if points.shape[0] else self.z
-        self.yaw = wrap_angle(self.yaw + yaw_delta)
+        pred_x = self.x + float(d_world[0])
+        pred_y = self.y + float(d_world[1])
+        pred_yaw = wrap_angle(self.yaw + yaw_delta)
+
+        map_fitness = self.max_corr_dist
+        map_inliers = 0
+        used_map = False
+        if self.local_map_xy is not None and self.local_map_xy.shape[0] >= self.scan_to_map_min_inliers:
+            abs_x, abs_y, abs_yaw, map_fitness, map_inliers = self._estimate_scan_to_map(
+                self.local_map_xy, curr_xy, pred_x, pred_y, pred_yaw)
+            map_quality = clamp((map_inliers / max(float(self.scan_to_map_min_inliers), 1.0)) *
+                                (1.0 - min(map_fitness, self.max_corr_dist) / self.max_corr_dist), 0.0, 1.0)
+            if map_inliers >= self.scan_to_map_min_inliers and map_fitness < self.max_corr_dist * 0.85:
+                a = clamp(self.scan_to_map_blend * map_quality, 0.0, 0.85)
+                self.x = (1.0 - a) * pred_x + a * abs_x
+                self.y = (1.0 - a) * pred_y + a * abs_y
+                self.yaw = blend_angle(pred_yaw, abs_yaw, a)
+                used_map = True
+            else:
+                self.x, self.y, self.yaw = pred_x, pred_y, pred_yaw
+        else:
+            self.x, self.y, self.yaw = pred_x, pred_y, pred_yaw
+
+        self.z = 0.0
 
         self.prev_xy = curr_xy
+        self._update_local_map(curr_xy)
         debug = (
-            f"icp_fitness={fitness:.3f} inliers={inliers} "
+            f"icp_fitness={fitness:.3f} inliers={inliers} map_fitness={map_fitness:.3f} map_inliers={map_inliers} map_used={used_map} "
             f"delta_local=({dx_local:.3f},{dy_local:.3f},{math.degrees(yaw_delta):.2f}deg) "
             f"w_lidar={w_lidar:.3f} w_visual={w_visual:.3f} w_imu={w_imu:.3f} "
             f"health_lidar={lidar_h:.3f} health_visual={visual_h:.3f} health_imu={imu_h:.3f} "
@@ -320,8 +349,49 @@ class AdaptiveWLVIO:
             R, t = best_fit_2d(src, dst)
             best_fitness = float(np.median(dist[valid]))
             best_inliers = inliers
+        # Keep the original benchmark convention here: the ICP transform is used
+        # directly as the local motion increment. The later scan-to-local-map
+        # refinement stabilizes absolute pose and prevents random drift.
         yaw = math.atan2(R[1, 0], R[0, 0])
         return float(t[0]), float(t[1]), wrap_angle(yaw), best_fitness, best_inliers
+
+    def _estimate_scan_to_map(self, map_xy: np.ndarray, curr_xy: np.ndarray, x0: float, y0: float, yaw0: float):
+        if not _HAS_SCIPY or map_xy is None or map_xy.shape[0] < 100 or curr_xy.shape[0] < 100:
+            return x0, y0, yaw0, self.max_corr_dist, 0
+        R = yaw_to_rot2(yaw0)
+        t = np.array([x0, y0], dtype=np.float64)
+        tree = cKDTree(map_xy)
+        best_fitness = self.max_corr_dist
+        best_inliers = 0
+        for _ in range(max(1, self.icp_iterations)):
+            transformed = curr_xy @ R.T + t
+            dist, idx = tree.query(transformed, k=1, distance_upper_bound=self.max_corr_dist)
+            valid = np.isfinite(dist) & (idx < map_xy.shape[0]) & (dist < self.max_corr_dist)
+            inliers = int(valid.sum())
+            if inliers < 50:
+                break
+            R_new, t_new = best_fit_2d(curr_xy[valid], map_xy[idx[valid]])
+            R, t = R_new, t_new
+            best_fitness = float(np.median(dist[valid]))
+            best_inliers = inliers
+        yaw = math.atan2(R[1, 0], R[0, 0])
+        return float(t[0]), float(t[1]), wrap_angle(yaw), best_fitness, best_inliers
+
+    def _update_local_map(self, curr_xy: np.ndarray):
+        R = yaw_to_rot2(self.yaw)
+        world = curr_xy @ R.T + np.array([self.x, self.y], dtype=np.float64)
+        if self.local_map_xy is None:
+            merged = world
+        else:
+            merged = np.vstack((self.local_map_xy, world))
+        if merged.shape[0] > self.max_local_map_points:
+            stride = int(math.ceil(merged.shape[0] / float(self.max_local_map_points)))
+            merged = merged[::stride]
+        if self.voxel_size > 0.0 and merged.shape[0] > 0:
+            keys = np.floor(merged / max(self.voxel_size, 1e-3)).astype(np.int32)
+            _, idx = np.unique(keys, axis=0, return_index=True)
+            merged = merged[np.sort(idx)]
+        self.local_map_xy = merged
 
     def _publish_pose(self, stamp, lidar_h, visual_h, imu_h, w_lidar, debug):
         odom = Odometry()

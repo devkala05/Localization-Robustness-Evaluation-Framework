@@ -14,6 +14,8 @@
   <arg name="native_camera_info_topic" default="/camera/right/camera_info"/>
   <arg name="camera_frame_id" default="camera_right"/>
   <arg name="point_time_scale" default="1.0"/>
+  <arg name="add_normal_fields" default="false"/>
+  <arg name="curvature_from_time" default="true"/>
   <arg name="publish_left_camera" default="false"/>
   <arg name="native_left_camera_topic" default="/camera/left/image_raw"/>
   <arg name="native_mono_camera_topic" default=""/>
@@ -38,6 +40,8 @@
     <param name="native_camera_info_topic" value="$(arg native_camera_info_topic)"/>
     <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="point_time_scale" value="$(arg point_time_scale)"/>
+    <param name="add_normal_fields" value="$(arg add_normal_fields)"/>
+    <param name="curvature_from_time" value="$(arg curvature_from_time)"/>
     <param name="publish_left_camera" value="$(arg publish_left_camera)"/>
     <param name="native_left_camera_topic" value="$(arg native_left_camera_topic)"/>
     <param name="native_mono_camera_topic" value="$(arg native_mono_camera_topic)"/>

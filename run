@@ -3,7 +3,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALGO=""; PER=""; MODE=""; EVAL="false"; DURATION="0"
 GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC="/gps/fix_raw"; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; RTK_MODE="auto"
-ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP="true"; R3LIVE_VIO="off"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
+ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
 usage(){ cat <<'EOF'
 UrbanNav Localization Benchmark
 

@@ -12,6 +12,13 @@ lvi_sam:
   odomTopic: "/lvi_sam/lidar/odometry/imu"
   gpsTopic: "/odometry/gps"
 
+  # Visual-LiDAR coupling. imageProjection consumes the VINS propagated
+  # odometry above for scan initial guess/deskew, and mapOptimization adds a
+  # weak VINS relative-pose factor between lidar keyframes when VINS is healthy.
+  useVinsFactor: false
+  vinsFactorRotNoise: 1.00
+  vinsFactorTransNoise: 5.00
+
   # UrbanNav centre UrbanNav center Velodyne cloud fields: x y z intensity ring time
   sensor: velodyne
   N_SCAN: 32

@@ -113,6 +113,7 @@ def main():
         make_tf(CAM_TO_OPTICAL, 'camera_left',  'camera_left_optical'),
         make_tf(invert_rigid(ANTENNA_T_IMU), 'body', 'gnss_antenna'),
         make_tf(np.eye(4),      'map',          'camera_init'),
+        make_tf(np.eye(4),      'body',         'base_link'),
     ]
     broadcaster.sendTransform(tfs)
     rospy.loginfo('[R3LIVE TF Broadcaster] Published %d static transforms:\n%s',

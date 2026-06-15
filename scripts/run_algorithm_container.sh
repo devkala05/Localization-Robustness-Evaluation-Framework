@@ -6,7 +6,7 @@ ALGO=""; PER=""; MODE=""; EVALUATE="false"; EVAL_DURATION="0"
 SKIP_RUNTIME_BUILD="${SKIP_RUNTIME_BUILD:-true}"
 DOCKER_CPUS="${DOCKER_CPUS:-}"; DOCKER_MEMORY="${DOCKER_MEMORY:-}"
 BAG_RATE="${BAG_RATE:-0.35}"; GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}"
-ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL:-true}"; R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL:-false}"
+ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL:-true}"; R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL:-true}"
 usage(){ echo "Internal runner. Use ./run --help"; }
 while [ "$#" -gt 0 ]; do
   case "$1" in

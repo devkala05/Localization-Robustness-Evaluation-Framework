@@ -37,14 +37,21 @@ Visualization Manager:
       Position Tolerance: 0
       Angle Tolerance: 0
     - Class: rviz/Path
-      Name: R3LIVE Path
+      Name: R3LIVE Native Path
       Enabled: true
       Topic: /r3live/mapping/path
       Color: 0; 255; 255
       Line Style: Lines
+      Line Width: 0.10
+    - Class: rviz/Path
+      Name: R3LIVE Benchmark Output Path
+      Enabled: true
+      Topic: /r3live/path/output
+      Color: 255; 255; 0
+      Line Style: Lines
       Line Width: 0.08
     - Class: rviz/Odometry
-      Name: R3LIVE Odometry
+      Name: R3LIVE Native Odometry
       Enabled: true
       Topic: /r3live/odometry/mapping
       Color: 0; 255; 255
@@ -52,18 +59,37 @@ Visualization Manager:
       Keep: 10
       Position Tolerance: 0
       Angle Tolerance: 0
+    - Class: rviz/Odometry
+      Name: R3LIVE Benchmark Output Odom
+      Enabled: true
+      Topic: /r3live/odometry/output
+      Color: 255; 255; 0
+      Shape: Arrow
+      Keep: 10
+      Position Tolerance: 0
+      Angle Tolerance: 0
     - Class: rviz/PointCloud2
-      Name: Adapter Raw LiDAR (/livox/lidar)
+      Name: Raw Velodyne Bag Cloud
+      Enabled: true
+      Topic: /velodyne_points
+      Style: Points
+      Size (Pixels): 3
+      Size (m): 0.05
+      Alpha: 0.7
+      Color Transformer: Intensity
+      Decay Time: 0
+    - Class: rviz/PointCloud2
+      Name: R3LIVE Input Cloud /livox/lidar
       Enabled: true
       Topic: /livox/lidar
       Style: Points
       Size (Pixels): 3
       Size (m): 0.05
-      Alpha: 0.75
+      Alpha: 0.85
       Color Transformer: Intensity
       Decay Time: 0
     - Class: rviz/PointCloud2
-      Name: R3LIVE Registered Cloud
+      Name: R3LIVE Cloud Registered candidate
       Enabled: true
       Topic: /cloud_registered
       Style: Points
@@ -73,9 +99,19 @@ Visualization Manager:
       Color Transformer: Intensity
       Decay Time: 5
     - Class: rviz/PointCloud2
-      Name: R3LIVE RGB Map candidates
-      Enabled: false
+      Name: R3LIVE Laser Surround candidate
+      Enabled: true
       Topic: /laser_cloud_surround
+      Style: Points
+      Size (Pixels): 2
+      Size (m): 0.04
+      Alpha: 0.9
+      Color Transformer: Intensity
+      Decay Time: 5
+    - Class: rviz/PointCloud2
+      Name: R3LIVE RGB Map candidate
+      Enabled: false
+      Topic: /RGB_map
       Style: Points
       Size (Pixels): 2
       Size (m): 0.04

@@ -12,13 +12,16 @@
 
   <arg name="frame_id" default="camera_init"/>
   <arg name="child_frame_id" default="body"/>
-  <arg name="publish_tf" default="true"/>
+  <arg name="publish_tf" default="false"/>
   <arg name="max_sensor_age" default="0.35"/>
   <arg name="min_cloud_points" default="2500"/>
   <arg name="voxel_size" default="0.45"/>
   <arg name="max_icp_points" default="3500"/>
   <arg name="max_corr_dist" default="1.8"/>
   <arg name="icp_iterations" default="8"/>
+  <arg name="max_local_map_points" default="25000"/>
+  <arg name="scan_to_map_min_inliers" default="120"/>
+  <arg name="scan_to_map_blend" default="0.65"/>
 
   <!-- Independent Adaptive-W LVIO localisation node.
        It consumes LiDAR/IMU/camera directly and does NOT subscribe to FAST-LIO2 /Odometry. -->
@@ -42,5 +45,8 @@
     <param name="max_icp_points" value="$(arg max_icp_points)"/>
     <param name="max_corr_dist" value="$(arg max_corr_dist)"/>
     <param name="icp_iterations" value="$(arg icp_iterations)"/>
+    <param name="max_local_map_points" value="$(arg max_local_map_points)"/>
+    <param name="scan_to_map_min_inliers" value="$(arg scan_to_map_min_inliers)"/>
+    <param name="scan_to_map_blend" value="$(arg scan_to_map_blend)"/>
   </node>
 </launch>

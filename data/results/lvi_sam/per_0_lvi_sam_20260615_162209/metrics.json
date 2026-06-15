@@ -1,0 +1,375 @@
+{
+  "algorithm_note": "Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics, but final mapping stays LiDAR-IMU dominant. Camera/VINS is launched for feature/depth aiding and diagnostics; VINS graph constraints are disabled by default because they degraded UrbanNav localization.",
+  "gps_mode": "off",
+  "gps_source": "auto",
+  "rtk_mode": "auto",
+  "overall": {
+    "x_rmse_m": 1.5953353252058837,
+    "y_rmse_m": 1.0186743804206955,
+    "z_rmse_m": 0.2693778691573678,
+    "yaw_rmse_rad": 2.14620295187906,
+    "position_rmse_m": 1.9118987236689642,
+    "position_max_m": 4.60996036526558,
+    "samples": 296,
+    "worst_component": "position_max_m"
+  },
+  "segments": {
+    "01_warmup": {
+      "name": "warmup",
+      "label": "01 warmup",
+      "type": "straight",
+      "start": 1621218776.071249,
+      "end": 1621218787.571249,
+      "metrics": {
+        "x_rmse_m": 0.0505567744813754,
+        "y_rmse_m": 0.5343292862971206,
+        "z_rmse_m": 0.07338172297489678,
+        "yaw_rmse_rad": 0.022932966357106073,
+        "position_rmse_m": 0.5417090094391227,
+        "position_max_m": 1.688738786230831,
+        "samples": 114,
+        "worst_component": "position_max_m"
+      }
+    },
+    "02_left_turn": {
+      "name": "left_turn",
+      "label": "02 left_turn",
+      "type": "turn_left",
+      "start": 1621218788.071249,
+      "end": 1621218791.571249,
+      "metrics": {
+        "x_rmse_m": 0.7351457199932269,
+        "y_rmse_m": 0.9409967920034222,
+        "z_rmse_m": 0.13334394003771616,
+        "yaw_rmse_rad": 1.4466563721501577,
+        "position_rmse_m": 1.2015385131280116,
+        "position_max_m": 1.8159772481487955,
+        "samples": 34,
+        "worst_component": "position_max_m"
+      }
+    },
+    "03_straight": {
+      "name": "straight",
+      "label": "03 straight",
+      "type": "straight",
+      "start": 1621218791.571249,
+      "end": 1621218810.071249,
+      "metrics": {
+        "x_rmse_m": 2.3241386268858957,
+        "y_rmse_m": 1.3265544049191347,
+        "z_rmse_m": 0.3849515876179011,
+        "yaw_rmse_rad": 3.082442781672298,
+        "position_rmse_m": 2.7036188102250955,
+        "position_max_m": 4.60996036526558,
+        "samples": 136,
+        "worst_component": "position_max_m"
+      }
+    },
+    "04_stop": {
+      "name": "stop",
+      "label": "04 stop",
+      "type": "stop",
+      "start": 1621218810.071249,
+      "end": 1621218846.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "05_right_turn": {
+      "name": "right_turn",
+      "label": "05 right_turn",
+      "type": "turn_right",
+      "start": 1621218846.071249,
+      "end": 1621218859.571249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "06_straight": {
+      "name": "straight",
+      "label": "06 straight",
+      "type": "straight",
+      "start": 1621218859.571249,
+      "end": 1621218899.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "07_under_bridge": {
+      "name": "under_bridge",
+      "label": "07 under_bridge",
+      "type": "under_bridge",
+      "start": 1621218899.071249,
+      "end": 1621218901.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "08_straight": {
+      "name": "straight",
+      "label": "08 straight",
+      "type": "straight",
+      "start": 1621218901.371249,
+      "end": 1621218907.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "09_slight_right": {
+      "name": "slight_right",
+      "label": "09 slight_right",
+      "type": "turn_slight_right",
+      "start": 1621218907.371249,
+      "end": 1621218916.841249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "10_stop": {
+      "name": "stop",
+      "label": "10 stop",
+      "type": "stop",
+      "start": 1621218916.841249,
+      "end": 1621218969.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "11_straight": {
+      "name": "straight",
+      "label": "11 straight",
+      "type": "straight",
+      "start": 1621218969.071249,
+      "end": 1621218978.701249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "12_right_turn": {
+      "name": "right_turn",
+      "label": "12 right_turn",
+      "type": "turn_right",
+      "start": 1621218978.701249,
+      "end": 1621218984.391249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "13_straight": {
+      "name": "straight",
+      "label": "13 straight",
+      "type": "straight",
+      "start": 1621218984.391249,
+      "end": 1621219025.451249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "14_stop": {
+      "name": "stop",
+      "label": "14 stop",
+      "type": "stop",
+      "start": 1621219025.451249,
+      "end": 1621219041.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "15_straight": {
+      "name": "straight",
+      "label": "15 straight",
+      "type": "straight",
+      "start": 1621219041.071249,
+      "end": 1621219073.261249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "16_stop": {
+      "name": "stop",
+      "label": "16 stop",
+      "type": "stop",
+      "start": 1621219073.261249,
+      "end": 1621219088.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "17_straight": {
+      "name": "straight",
+      "label": "17 straight",
+      "type": "straight",
+      "start": 1621219088.071249,
+      "end": 1621219104.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "18_right_turn": {
+      "name": "right_turn",
+      "label": "18 right_turn",
+      "type": "turn_right",
+      "start": 1621219104.071249,
+      "end": 1621219108.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "19_straight": {
+      "name": "straight",
+      "label": "19 straight",
+      "type": "straight",
+      "start": 1621219108.071249,
+      "end": 1621219133.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "20_under_bridge": {
+      "name": "under_bridge",
+      "label": "20 under_bridge",
+      "type": "under_bridge",
+      "start": 1621219133.071249,
+      "end": 1621219136.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    }
+  },
+  "perturbation_windows": {},
+  "run_time_range": {
+    "start": 1621218775.6230588,
+    "end": 1621218805.048194
+  },
+  "ground_truth_time_range": {
+    "start": 1621218775.0,
+    "end": 1621219561.0
+  },
+  "robustness_score_lower_is_better": 23.373928242459566,
+  "trajectory_plot": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/trajectory_baseline_vs_run.png",
+  "error_timeseries_csv": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/error_timeseries.csv",
+  "component_error_plot": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/component_errors_over_time.png",
+  "segment_rmse_plot": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/segment_rmse.png",
+  "segment_metrics_csv": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/segment_metrics.csv",
+  "perturbation_window_metrics_csv": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/perturbation_window_metrics.csv",
+  "segment_component_rmse_plot": "/data/results/lvi_sam/per_0_lvi_sam_20260615_162209/segment_component_rmse.png"
+}

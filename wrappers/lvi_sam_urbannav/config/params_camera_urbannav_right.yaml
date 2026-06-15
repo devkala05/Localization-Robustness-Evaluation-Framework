@@ -19,6 +19,9 @@ point_cloud_topic: "lvi_sam/lidar/deskew/cloud_deskewed"
 use_lidar: 1
 lidar_skip: 3
 align_camera_lidar_estimation: 1
+# Keep camera/VINS alive for feature/depth diagnostics, but do not let VINS
+# self-reset spam or unstable visual estimates disturb the lidar-dominant mapper.
+soft_failure_mode: 1
 
 # Lidar-to-camera transform used only by LVI-SAM visual feature depth registration.
 # UrbanNav official calibration provides:

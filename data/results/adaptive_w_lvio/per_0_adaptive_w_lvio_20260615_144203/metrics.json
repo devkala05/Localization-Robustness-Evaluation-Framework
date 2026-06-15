@@ -1,0 +1,375 @@
+{
+  "algorithm_note": "Independent Adaptive-W LVIO benchmark frontend: LiDAR scan-to-scan ICP with IMU yaw prior and camera/IMU/LiDAR adaptive health weighting. It no longer launches or subscribes to FAST-LIO2 /Odometry.",
+  "gps_mode": "off",
+  "gps_source": "auto",
+  "rtk_mode": "auto",
+  "overall": {
+    "x_rmse_m": 19.21039621792065,
+    "y_rmse_m": 3.2633352786229097,
+    "z_rmse_m": 0.40946004174008716,
+    "yaw_rmse_rad": 2.088431007510596,
+    "position_rmse_m": 19.48990347631273,
+    "position_max_m": 52.05156068896863,
+    "samples": 598,
+    "worst_component": "position_max_m"
+  },
+  "segments": {
+    "01_warmup": {
+      "name": "warmup",
+      "label": "01 warmup",
+      "type": "straight",
+      "start": 1621218776.071249,
+      "end": 1621218787.571249,
+      "metrics": {
+        "x_rmse_m": 0.6794823034135332,
+        "y_rmse_m": 1.3472149859791656,
+        "z_rmse_m": 0.0940851140213545,
+        "yaw_rmse_rad": 0.03722531349033652,
+        "position_rmse_m": 1.5117990699095616,
+        "position_max_m": 5.565122553122871,
+        "samples": 230,
+        "worst_component": "position_max_m"
+      }
+    },
+    "02_left_turn": {
+      "name": "left_turn",
+      "label": "02 left_turn",
+      "type": "turn_left",
+      "start": 1621218788.071249,
+      "end": 1621218791.571249,
+      "metrics": {
+        "x_rmse_m": 3.3594678741573833,
+        "y_rmse_m": 5.056706648392552,
+        "z_rmse_m": 0.5390417753870138,
+        "yaw_rmse_rad": 1.4680294022236504,
+        "position_rmse_m": 6.094823423283514,
+        "position_max_m": 9.140694030335776,
+        "samples": 70,
+        "worst_component": "position_max_m"
+      }
+    },
+    "03_straight": {
+      "name": "straight",
+      "label": "03 straight",
+      "type": "straight",
+      "start": 1621218791.571249,
+      "end": 1621218810.071249,
+      "metrics": {
+        "x_rmse_m": 28.2177322545807,
+        "y_rmse_m": 3.7883982995880827,
+        "z_rmse_m": 0.5272932347204561,
+        "yaw_rmse_rad": 2.983607788991796,
+        "position_rmse_m": 28.475786440815085,
+        "position_max_m": 52.05156068896863,
+        "samples": 276,
+        "worst_component": "position_max_m"
+      }
+    },
+    "04_stop": {
+      "name": "stop",
+      "label": "04 stop",
+      "type": "stop",
+      "start": 1621218810.071249,
+      "end": 1621218846.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "05_right_turn": {
+      "name": "right_turn",
+      "label": "05 right_turn",
+      "type": "turn_right",
+      "start": 1621218846.071249,
+      "end": 1621218859.571249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "06_straight": {
+      "name": "straight",
+      "label": "06 straight",
+      "type": "straight",
+      "start": 1621218859.571249,
+      "end": 1621218899.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "07_under_bridge": {
+      "name": "under_bridge",
+      "label": "07 under_bridge",
+      "type": "under_bridge",
+      "start": 1621218899.071249,
+      "end": 1621218901.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "08_straight": {
+      "name": "straight",
+      "label": "08 straight",
+      "type": "straight",
+      "start": 1621218901.371249,
+      "end": 1621218907.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "09_slight_right": {
+      "name": "slight_right",
+      "label": "09 slight_right",
+      "type": "turn_slight_right",
+      "start": 1621218907.371249,
+      "end": 1621218916.841249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "10_stop": {
+      "name": "stop",
+      "label": "10 stop",
+      "type": "stop",
+      "start": 1621218916.841249,
+      "end": 1621218969.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "11_straight": {
+      "name": "straight",
+      "label": "11 straight",
+      "type": "straight",
+      "start": 1621218969.071249,
+      "end": 1621218978.701249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "12_right_turn": {
+      "name": "right_turn",
+      "label": "12 right_turn",
+      "type": "turn_right",
+      "start": 1621218978.701249,
+      "end": 1621218984.391249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "13_straight": {
+      "name": "straight",
+      "label": "13 straight",
+      "type": "straight",
+      "start": 1621218984.391249,
+      "end": 1621219025.451249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "14_stop": {
+      "name": "stop",
+      "label": "14 stop",
+      "type": "stop",
+      "start": 1621219025.451249,
+      "end": 1621219041.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "15_straight": {
+      "name": "straight",
+      "label": "15 straight",
+      "type": "straight",
+      "start": 1621219041.071249,
+      "end": 1621219073.261249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "16_stop": {
+      "name": "stop",
+      "label": "16 stop",
+      "type": "stop",
+      "start": 1621219073.261249,
+      "end": 1621219088.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "17_straight": {
+      "name": "straight",
+      "label": "17 straight",
+      "type": "straight",
+      "start": 1621219088.071249,
+      "end": 1621219104.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "18_right_turn": {
+      "name": "right_turn",
+      "label": "18 right_turn",
+      "type": "turn_right",
+      "start": 1621219104.071249,
+      "end": 1621219108.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "19_straight": {
+      "name": "straight",
+      "label": "19 straight",
+      "type": "straight",
+      "start": 1621219108.071249,
+      "end": 1621219133.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "20_under_bridge": {
+      "name": "under_bridge",
+      "label": "20 under_bridge",
+      "type": "under_bridge",
+      "start": 1621219133.071249,
+      "end": 1621219136.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    }
+  },
+  "perturbation_windows": {},
+  "run_time_range": {
+    "start": 1621218775.5228698,
+    "end": 1621218805.3484836
+  },
+  "ground_truth_time_range": {
+    "start": 1621218775.0,
+    "end": 1621219561.0
+  },
+  "robustness_score_lower_is_better": 40.37421355141869,
+  "trajectory_plot": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/trajectory_baseline_vs_run.png",
+  "error_timeseries_csv": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/error_timeseries.csv",
+  "component_error_plot": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/component_errors_over_time.png",
+  "segment_rmse_plot": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/segment_rmse.png",
+  "segment_metrics_csv": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/segment_metrics.csv",
+  "perturbation_window_metrics_csv": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/perturbation_window_metrics.csv",
+  "segment_component_rmse_plot": "/data/results/adaptive_w_lvio/per_0_adaptive_w_lvio_20260615_144203/segment_component_rmse.png"
+}

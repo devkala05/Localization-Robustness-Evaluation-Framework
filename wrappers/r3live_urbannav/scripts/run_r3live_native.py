@@ -20,13 +20,14 @@ from pathlib import Path
 import rospy
 
 CANDIDATES = {
-    # Production UrbanNav default: try LiDAR front-end first, then full mapping.
+    # For UrbanNav/PointCloud2, use full mapping first. The LiDAR front-end
+    # may subscribe to livox_ros_driver/CustomMsg and then never produce odom.
     "stable": [
-        "r3live_LiDAR_front_end",
-        "r3live_lidar_front_end",
+        "r3live_mapping",
         "r3live_LiDAR_mapping",
         "r3live_lidar_mapping",
-        "r3live_mapping",
+        "r3live_LiDAR_front_end",
+        "r3live_lidar_front_end",
     ],
     "mapping": ["r3live_mapping"],
     "lio": [
@@ -75,6 +76,9 @@ def main():
         rospy.logerr("[R3LIVE NativeRunner] unknown role=%s; valid=%s", role, sorted(CANDIDATES))
         return 2
 
+    config_path = rospy.get_param("~config_path", "")
+    run_visual = rospy.get_param("~run_visual", False)
+    rospy.loginfo("[R3LIVE NativeRunner] config_path=%s run_visual=%s", config_path, run_visual)
     pkg_path = rospack_find("r3live")
     candidates = CANDIDATES[role]
     for base in search_paths(pkg_path):

@@ -119,9 +119,13 @@ class TrajectoryMux:
                       ', '.join('%s->%s' % p for p in self.tf_pairs))
 
     def _append_publish(self, pose: PoseStamped, odom: Odometry, source: str):
-        if not pose.header.frame_id:
-            pose.header.frame_id = self.fixed_frame
-            odom.header.frame_id = self.fixed_frame
+        # R3LIVE upstream often labels its odometry frame as `world` or `map`.
+        # In this benchmark those frames are equivalent to the UrbanNav local
+        # frame `camera_init`; forcing the frame here keeps RViz, TF, and CSV
+        # output in the same frame as GT and makes body->velodyne clouds visible.
+        pose.header.frame_id = self.fixed_frame
+        odom.header.frame_id = self.fixed_frame
+        odom.child_frame_id = self.child_frame
         self.odom_pub.publish(odom)
         should_append = (self.last_pose is None or
                          _pose_distance(self.last_pose, pose) >= self.min_path_step)
@@ -142,13 +146,15 @@ class TrajectoryMux:
         self.odom_count += 1
         odom = Odometry()
         odom.header = msg.header
-        if not odom.header.frame_id:
-            odom.header.frame_id = self.fixed_frame
-        odom.child_frame_id = msg.child_frame_id or self.child_frame
+        # R3LIVE publishes /aft_mapped_to_init in frame `world`. Treat it as
+        # benchmark frame camera_init so live RViz path and LiDAR TF line up.
+        odom.header.frame_id = self.fixed_frame
+        odom.child_frame_id = self.child_frame
         odom.pose = msg.pose
         odom.twist = msg.twist
         pose = PoseStamped()
         pose.header = odom.header
+        pose.header.frame_id = self.fixed_frame
         pose.pose = odom.pose.pose
         self._append_publish(pose, odom, f'odometry:{topic}')
         if self.odom_count == 1:
@@ -175,7 +181,9 @@ class TrajectoryMux:
                 self.last_warn = now
             return
         pose = _pose_from_transform(ts)
-        odom = _odom_from_pose(pose, used_pair[1])
+        pose.header.frame_id = self.fixed_frame
+        odom = _odom_from_pose(pose, self.child_frame)
+        odom.header.frame_id = self.fixed_frame
         self.tf_count += 1
         self._append_publish(pose, odom, f'tf:{used_pair[0]}->{used_pair[1]}')
         if self.tf_count == 1:
