@@ -54,7 +54,7 @@ algorithms:
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz
-    notes: Visual subsystem (VINS) disabled by default on UrbanNav. LVI-SAM may use native GPS priors via /odometry/gps when --gps on; otherwise output is LiDAR-IMU only.
+    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics. LVI-SAM may use native GPS priors via /odometry/gps when --gps on.
     standard_topic_ns: lvisam
     local_odom_topic: /lvisam/odometry/local
     local_path_topic: /lvisam/path/local
@@ -63,8 +63,8 @@ algorithms:
     status_topic: /lvisam/status
     gps_supported: true
     gps_strategy: native_lvisam_gps_prior_with_external_fallback
-    adapter_args: ''
-    launch_args: ''
+    adapter_args: 'camera_frame_id:=camera_right_optical publish_camera:=true publish_camera_info:=true'
+    launch_args: 'run_visual:=true'
   fast_livo2:
     display_name: FAST-LIVO2
     result_id: fast_livo2
@@ -133,17 +133,16 @@ algorithms:
     status_topic: /rtabmap/status
     gps_supported: true
     gps_strategy: rtabmap_global_pose_prior_or_external_fusion
-    adapter_args: ''
+    adapter_args: 'publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical native_camera_info_topic:=/camera/right/camera_info'
     launch_args: ''
-    notes: RTAB-Map uses FAST-LIO2 odometry frontend. GPS mode publishes /rtabmap/global_pose priors when enabled and keeps external fused output as fallback.
+    notes: RTAB-Map uses FAST-LIO2 as odometry prior, but subscribes to UrbanNav right camera image+camera_info and scan_cloud; benchmark output is generated from RTAB-Map mapPath, not raw FAST-LIO2 odometry.
   adaptive_w_lvio:
     display_name: Adaptive-W LVIO
     result_id: adaptive_w_lvio
     ros: ros1
-    adapter: fastlio_frontend
+    adapter: standalone_lvio
     build_packages:
     - livox_ros_driver
-    - fast_lio
     - custom_localization_msgs
     - localization_benchmark
     - fast_lio_urbannav
@@ -160,7 +159,7 @@ algorithms:
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
     enabled: true
-    notes: Python smoothing relay on FAST-LIO2 output. Not the paper GTSAM+eigendecomposition estimator. --gps on fuses after the smoothing relay.
+    notes: 'Independent Adaptive-W LVIO benchmark frontend: LiDAR scan-to-scan ICP with IMU yaw prior and camera/IMU/LiDAR adaptive health weighting. It no longer launches or subscribes to FAST-LIO2 /Odometry.'
     standard_topic_ns: adaptive_w_lvio
     local_odom_topic: /adaptive_w_lvio/odometry/local
     local_path_topic: /adaptive_w_lvio/path/local
@@ -169,7 +168,7 @@ algorithms:
     status_topic: /adaptive_w_lvio/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: ''
+    adapter_args: 'publish_camera:=true publish_camera_info:=true'
     launch_args: ''
   orb_slam3:
     display_name: ORB-SLAM3
@@ -210,7 +209,7 @@ algorithms:
     display_name: R3LIVE
     result_id: r3live
     ros: ros1
-    adapter: fastlio_frontend
+    adapter: native_r3live
     build_packages:
     - livox_ros_driver
     - fast_lio
@@ -224,14 +223,14 @@ algorithms:
     launch: r3live_urbannav r3live_urbannav.launch
     output_topic: /r3live/odometry/mapping
     path_topic: /r3live/mapping/path
-    native_lidar_topic: /cloud_registered_raw
+    native_lidar_topic: /livox/lidar
     native_imu_topic: /livox/imu
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1.0
     bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
     rviz_config: /root/catkin_ws/src/r3live_urbannav/config/r3live_urbannav.rviz
     enabled: true
-    notes: R3LIVE on UrbanNav defaults to stable LIO-first mode. Visual/RGB mapping is experimental for spinning LiDAR; FAST-LIO2 fallback is enabled so benchmark output does not silently stay empty.
+    notes: Native R3LIVE wrapper. FAST-LIO2 fallback is disabled; --r3live-vio true starts the full mapping/VIO role, otherwise native LiDAR/R3LIVE odometry is used when available.
     standard_topic_ns: r3live
     local_odom_topic: /r3live/odometry/local
     local_path_topic: /r3live/path/local
@@ -240,5 +239,5 @@ algorithms:
     status_topic: /r3live/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: ''
-    launch_args: enable_fastlio_fallback:=true run_visual:=${R3LIVE_RUN_VISUAL:-false}
+    adapter_args: 'native_mono_camera_topic:=/camera/image_raw publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical'
+    launch_args: enable_fastlio_fallback:=false run_visual:=false native_role:=stable

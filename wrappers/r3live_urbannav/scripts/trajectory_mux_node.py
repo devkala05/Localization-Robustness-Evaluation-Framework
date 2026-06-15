@@ -2,7 +2,7 @@
 """Robust R3LIVE trajectory publisher.
 
 R3LIVE publishes the live body pose as TF (camera_init -> body) from its LIO
-subsystem. Some builds also publish /r3live/odometry or /Odometry.
+subsystem. Some builds also publish /r3live/odometry or /aft_mapped_to_init odometry.
 This node makes output deterministic: uses odometry when available, falls back
 to TF when odometry is absent or stale.
 
@@ -72,7 +72,7 @@ def _odom_from_pose(pose: PoseStamped, child_frame_id: str) -> Odometry:
 
 class TrajectoryMux:
     def __init__(self):
-        topics_text = rospy.get_param('~odom_topics', '/r3live/odometry,/Odometry')
+        topics_text = rospy.get_param('~odom_topics', '/r3live/odometry,/aft_mapped_to_init,/aft_mapped_to_init_odom')
         self.odom_topics = _split_topics(topics_text)
         self.output_odom_topic = rospy.get_param('~output_odom_topic', '/r3live/odometry/mapping')
         self.output_path_topic = rospy.get_param('~output_path_topic', '/r3live/mapping/path')

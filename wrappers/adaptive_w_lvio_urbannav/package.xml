@@ -2,7 +2,7 @@
 <package format="2">
   <name>adaptive_w_lvio_urbannav</name>
   <version>0.1.0</version>
-  <description>Adaptive-W LVIO wrapper for the UrbanNav localization benchmark using FAST-LIO2 odometry with adaptive LiDAR/visual/IMU health weighting.</description>
+  <description>Adaptive-W LVIO wrapper for the UrbanNav localization benchmark using independent LiDAR scan matching, IMU yaw prior, and camera/IMU/LiDAR adaptive health weighting.</description>
   <maintainer email="user@example.com">Localization Benchmark</maintainer>
   <license>MIT</license>
 

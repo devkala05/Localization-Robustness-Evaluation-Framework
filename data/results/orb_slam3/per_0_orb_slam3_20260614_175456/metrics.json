@@ -1,0 +1,371 @@
+{
+  "algorithm_note": "ORB-SLAM3 default is stereo. --gps on uses conservative external fusion on the corrected body odometry output.",
+  "gps_mode": "off",
+  "gps_source": "auto",
+  "rtk_mode": "auto",
+  "overall": {
+    "x_rmse_m": 120.52114397793503,
+    "y_rmse_m": 247.09024183798317,
+    "z_rmse_m": 2.9105047182587676,
+    "yaw_rmse_rad": 1.832555612596622,
+    "position_rmse_m": 274.9316365844763,
+    "position_max_m": 538.9926472157905,
+    "samples": 5918,
+    "worst_component": "position_max_m"
+  },
+  "segments": {
+    "01_warmup": {
+      "name": "warmup",
+      "label": "01 warmup",
+      "type": "straight",
+      "start": 1621218776.071249,
+      "end": 1621218787.571249,
+      "metrics": {
+        "x_rmse_m": 0.03845901795503196,
+        "y_rmse_m": 2.3861603912239815,
+        "z_rmse_m": 0.26667500250380355,
+        "yaw_rmse_rad": 0.02669001129472204,
+        "position_rmse_m": 2.4013238152462186,
+        "position_max_m": 9.997408345197819,
+        "samples": 344,
+        "worst_component": "position_max_m"
+      }
+    },
+    "02_left_turn": {
+      "name": "left_turn",
+      "label": "02 left_turn",
+      "type": "turn_left",
+      "start": 1621218788.071249,
+      "end": 1621218791.571249,
+      "metrics": {
+        "x_rmse_m": 2.245648487627418,
+        "y_rmse_m": 13.69491959092018,
+        "z_rmse_m": 0.3982763833866977,
+        "yaw_rmse_rad": 1.4295418617988815,
+        "position_rmse_m": 13.88352922744488,
+        "position_max_m": 17.44535005353358,
+        "samples": 106,
+        "worst_component": "position_max_m"
+      }
+    },
+    "03_straight": {
+      "name": "straight",
+      "label": "03 straight",
+      "type": "straight",
+      "start": 1621218791.571249,
+      "end": 1621218810.071249,
+      "metrics": {
+        "x_rmse_m": 78.48254749994516,
+        "y_rmse_m": 17.289600248589924,
+        "z_rmse_m": 1.3522609963299823,
+        "yaw_rmse_rad": 2.894945240956972,
+        "position_rmse_m": 80.37579952099627,
+        "position_max_m": 129.23944317261163,
+        "samples": 554,
+        "worst_component": "position_max_m"
+      }
+    },
+    "04_stop": {
+      "name": "stop",
+      "label": "04 stop",
+      "type": "stop",
+      "start": 1621218810.071249,
+      "end": 1621218846.071249,
+      "metrics": {
+        "x_rmse_m": 127.93912344044689,
+        "y_rmse_m": 17.58502673208258,
+        "z_rmse_m": 2.529626128292744,
+        "yaw_rmse_rad": 2.747383093312386,
+        "position_rmse_m": 129.16675841805008,
+        "position_max_m": 129.60044137313892,
+        "samples": 1078,
+        "worst_component": "position_max_m"
+      }
+    },
+    "05_right_turn": {
+      "name": "right_turn",
+      "label": "05 right_turn",
+      "type": "turn_right",
+      "start": 1621218846.071249,
+      "end": 1621218859.571249,
+      "metrics": {
+        "x_rmse_m": 135.56635960595474,
+        "y_rmse_m": 17.08187527119968,
+        "z_rmse_m": 2.401101804102303,
+        "yaw_rmse_rad": 2.495862474602841,
+        "position_rmse_m": 136.65940732150688,
+        "position_max_m": 144.83723237921612,
+        "samples": 382,
+        "worst_component": "position_max_m"
+      }
+    },
+    "06_straight": {
+      "name": "straight",
+      "label": "06 straight",
+      "type": "straight",
+      "start": 1621218859.571249,
+      "end": 1621218899.071249,
+      "metrics": {
+        "x_rmse_m": 132.4829063083068,
+        "y_rmse_m": 196.34444896470393,
+        "z_rmse_m": 4.500593407604826,
+        "yaw_rmse_rad": 1.3593271824805966,
+        "position_rmse_m": 236.90318369361222,
+        "position_max_m": 355.43357898899643,
+        "samples": 1042,
+        "worst_component": "position_max_m"
+      }
+    },
+    "07_under_bridge": {
+      "name": "under_bridge",
+      "label": "07 under_bridge",
+      "type": "under_bridge",
+      "start": 1621218899.071249,
+      "end": 1621218901.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "08_straight": {
+      "name": "straight",
+      "label": "08 straight",
+      "type": "straight",
+      "start": 1621218901.371249,
+      "end": 1621218907.371249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "09_slight_right": {
+      "name": "slight_right",
+      "label": "09 slight_right",
+      "type": "turn_slight_right",
+      "start": 1621218907.371249,
+      "end": 1621218916.841249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "10_stop": {
+      "name": "stop",
+      "label": "10 stop",
+      "type": "stop",
+      "start": 1621218916.841249,
+      "end": 1621218969.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "11_straight": {
+      "name": "straight",
+      "label": "11 straight",
+      "type": "straight",
+      "start": 1621218969.071249,
+      "end": 1621218978.701249,
+      "metrics": {
+        "x_rmse_m": 81.72039600253294,
+        "y_rmse_m": 522.8673261732832,
+        "z_rmse_m": 3.364620662554048,
+        "yaw_rmse_rad": 0.5531160905548241,
+        "position_rmse_m": 529.2256461799752,
+        "position_max_m": 538.8527532380396,
+        "samples": 178,
+        "worst_component": "position_max_m"
+      }
+    },
+    "12_right_turn": {
+      "name": "right_turn",
+      "label": "12 right_turn",
+      "type": "turn_right",
+      "start": 1621218978.701249,
+      "end": 1621218984.391249,
+      "metrics": {
+        "x_rmse_m": 49.18159531595229,
+        "y_rmse_m": 529.0095442407631,
+        "z_rmse_m": 3.1788621068604193,
+        "yaw_rmse_rad": 0.5722265485747753,
+        "position_rmse_m": 531.3003222095165,
+        "position_max_m": 538.9926472157905,
+        "samples": 172,
+        "worst_component": "position_max_m"
+      }
+    },
+    "13_straight": {
+      "name": "straight",
+      "label": "13 straight",
+      "type": "straight",
+      "start": 1621218984.391249,
+      "end": 1621219025.451249,
+      "metrics": {
+        "x_rmse_m": 102.37139959655342,
+        "y_rmse_m": 380.50481658366573,
+        "z_rmse_m": 3.1061437195250208,
+        "yaw_rmse_rad": 1.0720233173900318,
+        "position_rmse_m": 394.0475441206714,
+        "position_max_m": 518.9358501048403,
+        "samples": 1228,
+        "worst_component": "position_max_m"
+      }
+    },
+    "14_stop": {
+      "name": "stop",
+      "label": "14 stop",
+      "type": "stop",
+      "start": 1621219025.451249,
+      "end": 1621219041.071249,
+      "metrics": {
+        "x_rmse_m": 171.14102960223553,
+        "y_rmse_m": 247.56060013460356,
+        "z_rmse_m": 1.9403482043806142,
+        "yaw_rmse_rad": 1.1442404562410367,
+        "position_rmse_m": 300.96389767457634,
+        "position_max_m": 301.0225986564403,
+        "samples": 468,
+        "worst_component": "position_max_m"
+      }
+    },
+    "15_straight": {
+      "name": "straight",
+      "label": "15 straight",
+      "type": "straight",
+      "start": 1621219041.071249,
+      "end": 1621219073.261249,
+      "metrics": {
+        "x_rmse_m": 184.84582557646596,
+        "y_rmse_m": 227.1720650177997,
+        "z_rmse_m": 2.123248504949818,
+        "yaw_rmse_rad": 1.1448020828561596,
+        "position_rmse_m": 292.8816049903282,
+        "position_max_m": 300.97685303256804,
+        "samples": 334,
+        "worst_component": "position_max_m"
+      }
+    },
+    "16_stop": {
+      "name": "stop",
+      "label": "16 stop",
+      "type": "stop",
+      "start": 1621219073.261249,
+      "end": 1621219088.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "17_straight": {
+      "name": "straight",
+      "label": "17 straight",
+      "type": "straight",
+      "start": 1621219088.071249,
+      "end": 1621219104.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "18_right_turn": {
+      "name": "right_turn",
+      "label": "18 right_turn",
+      "type": "turn_right",
+      "start": 1621219104.071249,
+      "end": 1621219108.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "19_straight": {
+      "name": "straight",
+      "label": "19 straight",
+      "type": "straight",
+      "start": 1621219108.071249,
+      "end": 1621219133.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    },
+    "20_under_bridge": {
+      "name": "under_bridge",
+      "label": "20 under_bridge",
+      "type": "under_bridge",
+      "start": 1621219133.071249,
+      "end": 1621219136.071249,
+      "metrics": {
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "samples": 0,
+        "worst_component": null
+      }
+    }
+  },
+  "perturbation_windows": {},
+  "run_time_range": {
+    "start": 1621218775.51741,
+    "end": 1621219052.1675715
+  },
+  "ground_truth_time_range": {
+    "start": 1621218775.0,
+    "end": 1621219561.0
+  },
+  "robustness_score_lower_is_better": 293.2571927104425,
+  "error_timeseries_csv": "/data/results/orb_slam3/per_0_orb_slam3_20260614_175456/error_timeseries.csv",
+  "segment_metrics_csv": "/data/results/orb_slam3/per_0_orb_slam3_20260614_175456/segment_metrics.csv",
+  "perturbation_window_metrics_csv": "/data/results/orb_slam3/per_0_orb_slam3_20260614_175456/perturbation_window_metrics.csv"
+}

@@ -91,12 +91,12 @@ lvi_sam:
   savePCD: false
   savePCDDirectory: "/data/output/lvisam_map/"
 
-  # Camera values retained for optional visual nodes, but default launch disables
-  # visual VINS because it repeatedly reboots on this bag/config and blocks useful
-  # LiDAR-IMU benchmarking output.
+  # Camera values mirror params_camera_urbannav_right.yaml for optional
+  # visualization/diagnostics. The visual VINS config itself is loaded from
+  # wrappers/lvi_sam_urbannav/config/params_camera_urbannav_right.yaml.
   imgTopic: "/camera/right/image_raw"
   fx: 264.2125
   fy: 264.155
   cx: 341.635
   cy: 183.993
-  distCoeffs: [0.0, 0.0, 0.0, 0.0]
+  distCoeffs: [-0.0423469, 0.0115525, 0.0, 0.0]

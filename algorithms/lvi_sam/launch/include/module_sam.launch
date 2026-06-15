@@ -19,9 +19,9 @@
     <node pkg="$(arg project)" type="$(arg project)_featureExtraction" name="$(arg project)_featureExtraction" output="screen" respawn="false"/>
     <node pkg="$(arg project)" type="$(arg project)_mapOptmization" name="$(arg project)_mapOptmization" output="screen" respawn="false"/>
 
-    <!-- Optional visual feature and odometry. Disabled by the UrbanNav wrapper
-         because this codebase does not ship a stable visual calibration/vocab for
-         the HK-TST bag and VINS repeatedly resets with "big z translation". -->
+    <!-- Optional visual feature and odometry. The UrbanNav wrapper now enables
+         this with a dataset-specific ZED2 right-camera calibration. Loop closure
+         remains controlled by the VINS config file. -->
     <group if="$(arg run_visual)">
       <node pkg="$(arg project)" type="$(arg project)_visual_feature" name="$(arg project)_visual_feature" output="screen" respawn="false"/>
       <node pkg="$(arg project)" type="$(arg project)_visual_odometry" name="$(arg project)_visual_odometry" output="screen" respawn="false"/>

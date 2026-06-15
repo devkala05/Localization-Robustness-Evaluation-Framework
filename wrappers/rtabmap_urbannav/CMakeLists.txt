@@ -15,6 +15,7 @@ catkin_package()
 
 catkin_install_python(PROGRAMS
   scripts/rtabmap_adapter_node.py
+  scripts/rtabmap_output_adapter_node.py
   scripts/cloud_sanitizer_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

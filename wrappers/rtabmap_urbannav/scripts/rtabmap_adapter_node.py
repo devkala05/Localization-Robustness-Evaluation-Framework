@@ -11,15 +11,17 @@ Input:
 
 Outputs:
   /rtabmap/input_odom       nav_msgs/Odometry for rtabmap_ros
-  /rtabmap/odometry/mapping nav_msgs/Odometry for benchmark recorder
-  /rtabmap/mapping/path     nav_msgs/Path for RViz
-  camera_init -> body     dynamic TF for RTAB-Map scan-cloud synchronization
+  camera_init -> body       dynamic TF for RTAB-Map scan/RGB synchronization
+
+Benchmark odometry is intentionally NOT published here. It is produced by
+rtabmap_output_adapter_node.py from RTAB-Map's optimized mapPath so the benchmark
+uses RTAB-Map output, not raw FAST-LIO2 odometry.
 """
 
 import rospy
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
-from nav_msgs.msg import Odometry, Path
+from nav_msgs.msg import Odometry
 from tf.transformations import (
     concatenate_matrices,
     quaternion_from_matrix,
@@ -33,8 +35,6 @@ class RtabmapAdapter:
     def __init__(self):
         self.input_odom_topic = rospy.get_param("~input_odom_topic", "/Odometry")
         self.rtabmap_odom_topic = rospy.get_param("~rtabmap_odom_topic", "/rtabmap/input_odom")
-        self.benchmark_odom_topic = rospy.get_param("~benchmark_odom_topic", "/rtabmap/odometry/mapping")
-        self.path_topic = rospy.get_param("~path_topic", "/rtabmap/mapping/path")
         self.odom_frame_id = rospy.get_param("~odom_frame_id", "camera_init")
         self.map_frame_id = rospy.get_param("~map_frame_id", "map")
         self.base_frame_id = rospy.get_param("~base_frame_id", "body")
@@ -46,19 +46,14 @@ class RtabmapAdapter:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         self.pub_input = rospy.Publisher(self.rtabmap_odom_topic, Odometry, queue_size=100)
-        self.pub_benchmark = rospy.Publisher(self.benchmark_odom_topic, Odometry, queue_size=100)
-        self.pub_path = rospy.Publisher(self.path_topic, Path, queue_size=10, latch=True)
-        self.path = Path()
-        self.path.header.frame_id = self.odom_frame_id
         self.tf_broadcaster = tf2_ros.TransformBroadcaster() if self.publish_tf else None
         self.count = 0
 
         rospy.Subscriber(self.input_odom_topic, Odometry, self.odom_cb, queue_size=200)
         rospy.loginfo(
-            "[RTAB-Map Adapter] %s -> %s and %s, frames odom=%s map=%s base=%s",
+            "[RTAB-Map InputAdapter] %s -> %s, frames odom=%s map=%s base=%s",
             self.input_odom_topic,
             self.rtabmap_odom_topic,
-            self.benchmark_odom_topic,
             self.odom_frame_id,
             self.map_frame_id,
             self.base_frame_id,
@@ -89,38 +84,9 @@ class RtabmapAdapter:
             tf_msg.transform.rotation = msg.pose.pose.orientation
             self.tf_broadcaster.sendTransform(tf_msg)
 
-        # Benchmark/local output must remain in the same local frame used by the
-        # other algorithms: camera_init -> body. RTAB-Map still builds its own
-        # internal map, but GPS fusion and the benchmark recorder should not
-        # consume a map-frame odometry stream because that creates body->map
-        # timing warnings in navsat_transform.
-        benchmark_odom = Odometry()
-        benchmark_odom.header.stamp = stamp
-        benchmark_odom.header.frame_id = self.odom_frame_id
-        benchmark_odom.child_frame_id = self.base_frame_id
-        benchmark_odom.pose = msg.pose
-        benchmark_odom.twist = msg.twist
-        self.pub_benchmark.publish(benchmark_odom)
-
-        pose = benchmark_odom.pose.pose
-        pose_stamped = self._pose_stamped(stamp, pose)
-        self.path.header.stamp = stamp
-        self.path.poses.append(pose_stamped)
-        if self.max_path_length > 0 and len(self.path.poses) > self.max_path_length:
-            self.path.poses = self.path.poses[-self.max_path_length:]
-        self.pub_path.publish(self.path)
-
         self.count += 1
         if self.count == 1:
-            rospy.loginfo("[RTAB-Map Adapter] first odometry received at %.9f", stamp.to_sec())
-
-    def _pose_stamped(self, stamp, pose):
-        from geometry_msgs.msg import PoseStamped
-        out = PoseStamped()
-        out.header.stamp = stamp
-        out.header.frame_id = self.odom_frame_id
-        out.pose = pose
-        return out
+            rospy.loginfo("[RTAB-Map InputAdapter] first FAST-LIO2 odometry received at %.9f", stamp.to_sec())
 
     @staticmethod
     def _transform_pose(transform_stamped, pose):

@@ -40,7 +40,7 @@ while [ "$#" -gt 0 ]; do
     --duration|--seconds) DURATION="${2:-}"; shift 2;; --duration=*|--seconds=*) DURATION="${1#*=}"; shift;;
     --orb-mode) ORB_MODE="${2:-}"; shift 2;; --orb-mode=*) ORB_MODE="${1#*=}"; shift;;
     --stereo-swap) STEREO_SWAP="${2:-}"; shift 2;; --stereo-swap=*) STEREO_SWAP="${1#*=}"; shift;;
-    --r3live-vio) R3LIVE_VIO="${2:-}"; shift 2;; --r3live-vio=*) R3LIVE_VIO="${1#*=}"; shift;;
+    --r3live-vio) if [ "${2:-}" ] && [[ "${2:-}" != --* ]]; then R3LIVE_VIO="${2}"; shift 2; else R3LIVE_VIO="on"; shift; fi;; --r3live-vio=*) R3LIVE_VIO="${1#*=}"; shift;;
     --bag) BAG="${2:-}"; shift 2;; --bag=*) BAG="${1#*=}"; shift;;
     --gt) GT="${2:-}"; shift 2;; --gt=*) GT="${1#*=}"; shift;;
     --skip-build) SKIP_BUILD="--skip-build"; shift;; --runtime-build) SKIP_BUILD="--runtime-build"; shift;;

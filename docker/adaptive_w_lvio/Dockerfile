@@ -1,7 +1,7 @@
 FROM ros:noetic-ros-base-focal
 
 LABEL maintainer="Adaptive-W LVIO UrbanNav Pipeline"
-LABEL description="Adaptive-W LVIO + FAST-LIO2 frontend for UrbanNav perturbation/evaluation pipeline"
+LABEL description="Adaptive-W LVIO independent frontend for UrbanNav perturbation/evaluation pipeline"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DISTRO=noetic
@@ -54,11 +54,6 @@ WORKDIR ${CATKIN_WS}
 RUN cd ${CATKIN_WS}/src && \
     git clone --depth 1 https://github.com/Livox-SDK/livox_ros_driver.git
 
-RUN cd ${CATKIN_WS}/src && \
-    git clone --depth 1 https://github.com/hku-mars/FAST_LIO.git && \
-    cd FAST_LIO && \
-    git submodule update --init --recursive
-
 COPY wrappers/fast-lio_urbannav/ ${CATKIN_WS}/src/fast_lio_urbannav/
 COPY wrappers/localization_benchmark/ ${CATKIN_WS}/src/localization_benchmark/
 COPY wrappers/custom_localization_msgs/ ${CATKIN_WS}/src/custom_localization_msgs/
@@ -75,7 +70,6 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     cd ${CATKIN_WS} && \
     catkin config --extend /opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release && \
     catkin build livox_ros_driver --no-status && \
-    catkin build fast_lio --no-status && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav adaptive_w_lvio_urbannav --no-status"
 
 RUN mkdir -p /data /data/results/adaptive_w_lvio /data/output

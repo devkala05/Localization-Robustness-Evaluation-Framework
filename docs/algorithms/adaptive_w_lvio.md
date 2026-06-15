@@ -1,7 +1,7 @@
 # Adaptive-W LVIO Integration Notes
 
-Adaptive-W LVIO was added as a fifth benchmark algorithm using the same
-repository conventions as FAST-LIO2, LVI-SAM, FAST-LIVO2, and RTAB-Map.
+Adaptive-W LVIO is now an independent benchmark frontend. It no longer launches
+FAST-LIO2 and no longer subscribes to `/Odometry`.
 
 ## Build
 
@@ -18,13 +18,6 @@ repository conventions as FAST-LIO2, LVI-SAM, FAST-LIVO2, and RTAB-Map.
 ./run --algo adaptive_w_lvio --per 1 --eval --duration 20
 ```
 
-Generic runner support is also enabled:
-
-```bash
-./run --algo adaptive_w_lvio --per 0
-./run --algo adaptive_w_lvio --per 0 --eval
-```
-
 ## Architecture
 
 ```text
@@ -34,41 +27,28 @@ UrbanNav bag
   /zed2/camera/right/image_raw
         │
         ▼
-localization_benchmark bridge + custom_fastlio_adapter
+localization_benchmark bridge + perturbation adapter
   /cloud_registered_raw
   /livox/imu
   /camera/right/image_raw
         │
         ▼
-FAST-LIO2 frontend
-  /Odometry
-  /path
+Adaptive-W LVIO node
+  LiDAR scan-to-scan ICP + IMU yaw prior + camera/IMU/LiDAR health weighting
         │
         ▼
-Adaptive-W LVIO node
-  subscribes: /Odometry, /cloud_registered_raw, /camera/right/image_raw, /livox/imu
-  publishes:  /adaptive_w_lvio/odometry/mapping
-              /adaptive_w_lvio/mapping/path
-              /adaptive_w_lvio/cloud_registered
-              /adaptive_w_lvio/debug/weights
+/adaptive_w_lvio/odometry/mapping
+/adaptive_w_lvio/mapping/path
+/adaptive_w_lvio/cloud_registered
+/adaptive_w_lvio/debug/weights
         │
         ▼
 localization_output_recorder
   /data/results/adaptive_w_lvio/per_N/trajectory.csv
 ```
 
-## Adaptive-W behavior
+## Important note
 
-The node computes LiDAR, visual, and IMU health weights from timestamp recency
-and LiDAR cloud density. When all streams are healthy, it passes FAST-LIO2 pose
-through unchanged. During camera/IMU/cloud gaps or sparse LiDAR, it adaptively
-smooths pose increments so the recorded output stays stable instead of jumping
-on stale/asynchronous measurements.
-
-This keeps the benchmark flow deterministic while exposing the adaptive weights
-on `/adaptive_w_lvio/debug/weights` for debugging.
-
-
-## Academic/reporting disclaimer
-
-Adaptive-W LVIO in this repository is a Python smoothing relay on FAST-LIO2 output. It is not the paper's GTSAM + eigendecomposition estimator. The benchmark result should be described as adaptive pose smoothing under sensor gaps, not degeneracy-aware weight transfer.
+This is still a lightweight benchmark implementation, not the original paper's
+full GTSAM/eigendecomposition estimator. But it is now doing localisation itself
+from LiDAR/IMU/camera streams instead of wrapping FAST-LIO2 output.

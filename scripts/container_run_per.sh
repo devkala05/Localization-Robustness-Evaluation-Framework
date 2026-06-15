@@ -81,6 +81,17 @@ if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
     ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} rtabmap_database_path:=${RTABMAP_DATABASE_PATH} delete_db_on_start:=true"
 fi
 
+if [ "${ALGO_STANDARD_NS}" = "r3live" ]; then
+    case "${R3LIVE_RUN_VISUAL:-false}" in
+        true|on|1|yes) R3LIVE_VISUAL_BOOL="true"; R3LIVE_NATIVE_ROLE="mapping" ;;
+        *) R3LIVE_VISUAL_BOOL="false"; R3LIVE_NATIVE_ROLE="stable" ;;
+    esac
+    # Do not use FAST-LIO2 fallback for benchmark output. If native R3LIVE does
+    # not publish, the watchdog/mux will show that clearly instead of recording
+    # a FAST-LIO2 trajectory as R3LIVE.
+    ALGO_LAUNCH_ARGS="enable_fastlio_fallback:=false run_visual:=${R3LIVE_VISUAL_BOOL} native_role:=${R3LIVE_NATIVE_ROLE}"
+fi
+
 tmux kill-session -t "${SESSION}" 2>/dev/null || true
 tmux new-session -d -s "${SESSION}" -x 240 -y 60
 

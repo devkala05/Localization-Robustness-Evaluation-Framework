@@ -51,16 +51,16 @@ Visualization Manager:
       Topic: /benchmark/selected_run_path
     - Class: rviz/Path
       Color: 255; 220; 30
-      Enabled: true
+      Enabled: false
       Line Style: Lines
       Line Width: 0.05
-      Name: FAST-LIO2 Frontend Path
+      Name: FAST-LIO2 Frontend Path (disabled; not used)
       Topic: /path
     - Class: rviz/Odometry
       Color: 255; 180; 30
-      Enabled: true
+      Enabled: false
       Keep: 30
-      Name: FAST-LIO2 Frontend Odometry
+      Name: FAST-LIO2 Frontend Odometry (disabled; not used)
       Position Tolerance: 0.1
       Shape: Arrow
       Topic: /Odometry
@@ -100,8 +100,8 @@ Visualization Manager:
     - Class: rviz/PointCloud2
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
-      Name: FAST-LIO2 Registered Cloud
+      Enabled: false
+      Name: FAST-LIO2 Registered Cloud (disabled; not used)
       Queue Size: 10
       Size (Pixels): 3
       Style: Points
