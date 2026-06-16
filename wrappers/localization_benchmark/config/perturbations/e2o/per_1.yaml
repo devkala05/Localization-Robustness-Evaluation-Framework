@@ -1,0 +1,19 @@
+name: lidar_dropout_and_rain
+description: LiDAR stress windows. Edit timestamps after inspecting RViz time. Timestamps adapted to E2O GT start; verify
+  against the actual bag clock.
+perturbations:
+- name: lidar_point_dropout_turn
+  sensor: lidar
+  type: point_dropout
+  start: 1723528228.157124
+  end: 1723528233.157124
+  drop_rate: 0.3
+  seed: 101
+- name: lidar_rain_noise
+  sensor: lidar
+  type: rain
+  start: 1723528243.157124
+  end: 1723528248.157124
+  xyz_stddev: 0.05
+  drop_rate: 0.1
+  seed: 102

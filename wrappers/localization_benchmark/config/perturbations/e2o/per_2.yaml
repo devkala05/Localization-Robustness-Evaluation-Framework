@@ -1,0 +1,30 @@
+name: imu_bias_windows
+description: IMU bias windows. Edit timestamps after inspecting RViz time. Timestamps adapted to E2O GT start; verify against
+  the actual bag clock.
+perturbations:
+- name: yaw_gyro_bias
+  sensor: imu
+  type: bias
+  start: 1723528218.157124
+  end: 1723528223.157124
+  angular_velocity_bias:
+  - 0.0
+  - 0.0
+  - 0.02
+  linear_acceleration_bias:
+  - 0.0
+  - 0.0
+  - 0.0
+- name: forward_accel_bias
+  sensor: imu
+  type: bias
+  start: 1723528238.157124
+  end: 1723528243.157124
+  angular_velocity_bias:
+  - 0.0
+  - 0.0
+  - 0.0
+  linear_acceleration_bias:
+  - 0.08
+  - 0.0
+  - 0.0

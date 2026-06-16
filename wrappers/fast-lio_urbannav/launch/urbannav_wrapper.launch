@@ -1,0 +1,73 @@
+<!-- urbannav_wrapper.launch
+     Launches:
+       1. TF broadcaster (static calibration transforms)
+       2. UrbanNav → Fast-LIO2 topic converter (wrapper node)
+-->
+<launch>
+  <!-- ══════════════════════════════════════════════════════════════════
+       Parameters: override on command line with _param:=value
+       ══════════════════════════════════════════════════════════════════ -->
+
+  <!-- Use simulated time from rosbag /clock topic -->
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ── Input topics from UrbanNav rosbag ──────────────────────────── -->
+  <arg name="lidar_topic_in"   default="/velodyne_points"/>
+  <arg name="imu_topic_in"     default="/imu/data"/>
+  <arg name="camera_topic_in"  default="/zed2/camera/right/image_raw"/>
+
+  <!-- ── Output topics for Fast-LIO2 ───────────────────────────────── -->
+  <arg name="lidar_topic_out"  default="/cloud_registered_raw"/>
+  <arg name="imu_topic_out"    default="/livox/imu"/>
+  <arg name="camera_topic_out" default="/camera/right/image_raw"/>
+
+  <!-- ── Frame IDs (must match Fast-LIO2 config YAML) ─────────────── -->
+  <arg name="lidar_frame_id"   default="velodyne"/>
+  <arg name="imu_frame_id"     default="body"/>
+  <arg name="camera_frame_id"  default="camera_right"/>
+
+  <!-- TF mode flags. For LVI-SAM set publish_map_odom=false and enable the two bridge flags. -->
+  <arg name="publish_map_odom" default="true"/>
+  <arg name="publish_camera_init_map" default="false"/>
+  <arg name="publish_base_link_body" default="false"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1. Static TF broadcaster
+          Publishes: body→velodyne, body→camera_left/right,
+                     velodyne→velodyne_left/right, etc.
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="tf_broadcaster_node"
+        pkg="fast_lio_urbannav"
+        type="tf_broadcaster_node.py"
+        output="screen"
+        required="true">
+    <param name="publish_map_odom" value="$(arg publish_map_odom)"/>
+    <param name="publish_camera_init_map" value="$(arg publish_camera_init_map)"/>
+    <param name="publish_base_link_body" value="$(arg publish_base_link_body)"/>
+  </node>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       2. Topic wrapper node
+          Remaps UrbanNav topics → Fast-LIO2 topics
+          Patches frame_ids to match Fast-LIO2 expectations
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="urbannav_wrapper_node"
+        pkg="fast_lio_urbannav"
+        type="urbannav_wrapper_node.py"
+        output="screen"
+        required="true">
+
+    <param name="lidar_topic_in"   value="$(arg lidar_topic_in)"/>
+    <param name="imu_topic_in"     value="$(arg imu_topic_in)"/>
+    <param name="camera_topic_in"  value="$(arg camera_topic_in)"/>
+
+    <param name="lidar_topic_out"  value="$(arg lidar_topic_out)"/>
+    <param name="imu_topic_out"    value="$(arg imu_topic_out)"/>
+    <param name="camera_topic_out" value="$(arg camera_topic_out)"/>
+
+    <param name="lidar_frame_id"   value="$(arg lidar_frame_id)"/>
+    <param name="imu_frame_id"     value="$(arg imu_frame_id)"/>
+    <param name="camera_frame_id"  value="$(arg camera_frame_id)"/>
+  </node>
+
+</launch>

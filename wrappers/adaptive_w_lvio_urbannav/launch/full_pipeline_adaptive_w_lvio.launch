@@ -1,0 +1,17 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="input_cloud_topic" default="/cloud_registered_raw"/>
+  <arg name="input_camera_topic" default="/camera/right/image_raw"/>
+  <arg name="input_imu_topic" default="/livox/imu"/>
+
+  <!-- No FAST-LIO2 include here. The benchmark runner starts only the common
+       bag bridge + perturbation adapter. Adaptive-W performs its own LiDAR/IMU
+       scan matching localisation inside adaptive_w_lvio_node.py. -->
+  <include file="$(find adaptive_w_lvio_urbannav)/launch/adaptive_w_lvio.launch">
+    <arg name="input_cloud_topic" value="$(arg input_cloud_topic)"/>
+    <arg name="input_camera_topic" value="$(arg input_camera_topic)"/>
+    <arg name="input_imu_topic" value="$(arg input_imu_topic)"/>
+    <arg name="publish_tf" value="true"/>
+  </include>
+</launch>

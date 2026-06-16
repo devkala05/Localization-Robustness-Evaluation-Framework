@@ -1,0 +1,18 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="algorithm" default="fast_lio2"/>
+  <arg name="run_id" default="1"/>
+  <arg name="source_topic" default="/Odometry"/>
+  <arg name="csv_path" default="/data/results/$(arg algorithm)/run_$(arg run_id)/trajectory.csv"/>
+
+  <node name="localization_output_recorder"
+        pkg="localization_benchmark"
+        type="localization_output_recorder.py"
+        output="screen">
+    <param name="algorithm" value="$(arg algorithm)"/>
+    <param name="run_id" value="$(arg run_id)"/>
+    <param name="source_topic" value="$(arg source_topic)"/>
+    <param name="csv_path" value="$(arg csv_path)"/>
+  </node>
+</launch>

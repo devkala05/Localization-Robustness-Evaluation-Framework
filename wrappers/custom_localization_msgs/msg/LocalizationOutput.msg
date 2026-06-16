@@ -1,0 +1,6 @@
+std_msgs/Header header
+string algorithm
+string run_id
+string source_topic
+geometry_msgs/PoseWithCovariance pose
+geometry_msgs/TwistWithCovariance twist

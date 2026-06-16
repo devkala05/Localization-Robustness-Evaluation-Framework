@@ -1,0 +1,97 @@
+#!/bin/bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALGO=""; PER=""; MODE=""; EVAL="false"; DURATION="0"; DATASET="${DATASET:-urbannav}"
+GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC=""; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; RTK_MODE="auto"
+ORB_MODE="${ORB_MODE:-stereo}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
+LIDAR_TOPIC=""; IMU_TOPIC=""; CAMERA_TOPIC=""; LEFT_CAMERA_TOPIC=""
+usage(){ cat <<'EOF'
+UrbanNav Localization Benchmark
+
+Usage:
+  ./run --dataset urbannav --algo <name> --per <0..6> [--gps on|off] [--eval] [--duration SEC]
+  ./run --dataset e2o --algo fastlio2|fastlivo2 --per <0..6> [--gps on|off] [--eval]
+  ./run --algo <name> --shell
+  ./run --list
+  ./run --list-datasets
+
+Canonical algorithm names:
+  fastlio2
+  lvisam
+  fastlivo2
+  rtabmap
+  adaptive_w_lvio
+  orbslam3
+  r3live
+EOF
+}
+canonical_algo(){ case "$1" in fastlio2|lvisam|fastlivo2|rtabmap|adaptive_w_lvio|orbslam3|r3live) echo "$1";; *) echo "";; esac; }
+if [ "${1:-}" = "--list" ]; then printf "%s\n" fastlio2 lvisam fastlivo2 rtabmap adaptive_w_lvio orbslam3 r3live; exit 0; fi
+if [ "${1:-}" = "--list-datasets" ]; then python3 "$SCRIPT_DIR/scripts/dataset_config.py" --config "$SCRIPT_DIR/wrappers/localization_benchmark/config/datasets.yaml" --dataset e2o --list; exit 0; fi
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dataset) DATASET="${2:-}"; shift 2;; --dataset=*) DATASET="${1#*=}"; shift;;
+    --algo) ALGO="${2:-}"; shift 2;; --algo=*) ALGO="${1#*=}"; shift;;
+    --per) MODE="per"; PER="${2:-}"; shift 2;; --per=*) MODE="per"; PER="${1#*=}"; shift;;
+    --gps) GPS="${2:-}"; shift 2;; --gps=*) GPS="${1#*=}"; shift;;
+    --gps-source) GPS_SOURCE="${2:-}"; shift 2;; --gps-source=*) GPS_SOURCE="${1#*=}"; shift;;
+    --gps-file) GPS_FILE="${2:-}"; shift 2;; --gps-file=*) GPS_FILE="${1#*=}"; shift;;
+    --gps-topic) GPS_TOPIC="${2:-}"; shift 2;; --gps-topic=*) GPS_TOPIC="${1#*=}"; shift;;
+    --gps-required) GPS_REQUIRED="true"; shift;;
+    --gps-use-z) GPS_USE_Z="${2:-}"; shift 2;; --gps-use-z=*) GPS_USE_Z="${1#*=}"; shift;;
+    --gps-alpha) GPS_ALPHA="${2:-}"; shift 2;; --gps-alpha=*) GPS_ALPHA="${1#*=}"; shift;;
+    --rtk) RTK_MODE="${2:-}"; shift 2;; --rtk=*) RTK_MODE="${1#*=}"; shift;;
+    --eval|--summary|--evaluate) EVAL="true"; shift;;
+    --duration|--seconds) DURATION="${2:-}"; shift 2;; --duration=*|--seconds=*) DURATION="${1#*=}"; shift;;
+    --orb-mode) ORB_MODE="${2:-}"; shift 2;; --orb-mode=*) ORB_MODE="${1#*=}"; shift;;
+    --stereo-swap) STEREO_SWAP="${2:-}"; shift 2;; --stereo-swap=*) STEREO_SWAP="${1#*=}"; shift;;
+    --r3live-vio) if [ "${2:-}" ] && [[ "${2:-}" != --* ]]; then R3LIVE_VIO="${2}"; shift 2; else R3LIVE_VIO="on"; shift; fi;; --r3live-vio=*) R3LIVE_VIO="${1#*=}"; shift;;
+    --bag) BAG="${2:-}"; shift 2;; --bag=*) BAG="${1#*=}"; shift;;
+    --gt) GT="${2:-}"; shift 2;; --gt=*) GT="${1#*=}"; shift;;
+    --lidar-topic) LIDAR_TOPIC="${2:-}"; shift 2;; --lidar-topic=*) LIDAR_TOPIC="${1#*=}"; shift;;
+    --imu-topic) IMU_TOPIC="${2:-}"; shift 2;; --imu-topic=*) IMU_TOPIC="${1#*=}"; shift;;
+    --camera-topic) CAMERA_TOPIC="${2:-}"; shift 2;; --camera-topic=*) CAMERA_TOPIC="${1#*=}"; shift;;
+    --left-camera-topic) LEFT_CAMERA_TOPIC="${2:-}"; shift 2;; --left-camera-topic=*) LEFT_CAMERA_TOPIC="${1#*=}"; shift;;
+    --skip-build) SKIP_BUILD="--skip-build"; shift;; --runtime-build) SKIP_BUILD="--runtime-build"; shift;;
+    --shell) MODE="shell"; shift;;
+    -h|--help) usage; exit 0;;
+    *) echo "ERROR: unknown argument $1"; usage; exit 2;;
+  esac
+done
+eval "$(python3 "$SCRIPT_DIR/scripts/dataset_config.py" --config "$SCRIPT_DIR/wrappers/localization_benchmark/config/datasets.yaml" --dataset "$DATASET")"
+ALGO="$(canonical_algo "${ALGO}")"
+[ -n "${ALGO}" ] || { echo "ERROR: --algo must be one canonical name. Run ./run --list"; exit 2; }
+if [ "${DATASET_ID}" = "e2o" ]; then
+  case "${ALGO}" in
+    fastlio2|fastlivo2) ;;
+    *) echo "ERROR: this copy is wired for E2O FAST-LIO2/FAST-LIVO2 first. Requested --algo ${ALGO}."; exit 2 ;;
+  esac
+fi
+if [ "${MODE}" != "shell" ]; then [ -n "${PER}" ] || { echo "ERROR: --per is required"; exit 2; }; [[ "${PER}" =~ ^[0-6]$ ]] || { echo "ERROR: --per must be 0..6"; exit 2; }; fi
+case "${GPS}" in on|true|1|yes) GPS_ENABLE="on";; off|false|0|no) GPS_ENABLE="off";; *) echo "ERROR: --gps must be on/off"; exit 2;; esac
+[ -n "$LIDAR_TOPIC" ] && DATASET_SOURCE_LIDAR_TOPIC="$LIDAR_TOPIC"
+[ -n "$IMU_TOPIC" ] && DATASET_SOURCE_IMU_TOPIC="$IMU_TOPIC"
+[ -n "$CAMERA_TOPIC" ] && DATASET_SOURCE_CAMERA_TOPIC="$CAMERA_TOPIC"
+[ -n "$LEFT_CAMERA_TOPIC" ] && DATASET_SOURCE_LEFT_CAMERA_TOPIC="$LEFT_CAMERA_TOPIC"
+[ -n "$GPS_TOPIC" ] || GPS_TOPIC="$DATASET_GPS_TOPIC"
+if [ "${GPS_ENABLE}" = "on" ] && [ "${GPS_SOURCE}" = "auto" ]; then
+  if [ "$DATASET_ID" = "e2o" ]; then GPS_SOURCE="topic"; else GPS_SOURCE="csv"; GPS_FILE="${GPS_FILE:-data/gnss/urbannav_tst_gnss.csv}"; fi
+fi
+[[ "${GPS_FILE}" == data/* ]] && GPS_FILE="/data/${GPS_FILE#data/}"
+[[ "${BAG}" == data/* ]] && BAG="/data/${BAG#data/}"
+[[ "${GT}" == data/* ]] && GT="/data/${GT#data/}"
+case "${STEREO_SWAP}" in on|true|1|yes) STEREO_SWAP_BOOL="true";; *) STEREO_SWAP_BOOL="false";; esac
+case "${R3LIVE_VIO}" in on|true|1|yes) R3LIVE_RUN_VISUAL="true";; *) R3LIVE_RUN_VISUAL="false";; esac
+export DATASET_ID DATASET_DISPLAY DATASET_LABEL DATASET_DEFAULT_BAG DATASET_DEFAULT_GT DATASET_GT_FORMAT
+export DATASET_WORLD_FRAME DATASET_BODY_FRAME DATASET_LIDAR_FRAME DATASET_IMU_FRAME DATASET_CAMERA_FRAME
+export DATASET_SOURCE_LIDAR_TOPIC DATASET_SOURCE_IMU_TOPIC DATASET_SOURCE_CAMERA_TOPIC DATASET_SOURCE_LEFT_CAMERA_TOPIC
+export DATASET_GPS_TOPIC DATASET_CAMERA_INFO_YAML DATASET_STATIC_TF_YAML DATASET_BAG_TOPICS DATASET_POINT_TIME_FIELD DATASET_POINT_TIME_UNIT DATASET_USE_CLOCK_STAMP
+export DATASET_PERTURBATIONS_DIR DATASET_SEGMENTS_YAML
+export GPS_ENABLE GPS_SOURCE GPS_FILE GPS_TOPIC GPS_REQUIRED GPS_USE_Z GPS_ALPHA RTK_MODE ORB_MODE STEREO_SWAP_BOOL R3LIVE_RUN_VISUAL
+[ -z "${BAG}" ] || export BAG_PATH_OVERRIDE="${BAG}"
+[ -z "${GT}" ] || export GT_PATH_OVERRIDE="${GT}"
+ARGS=(--algo "${ALGO}"); if [ "${MODE}" = "shell" ]; then ARGS+=(--shell); else ARGS+=(--per "${PER}"); fi
+[ "${EVAL}" = "true" ] && ARGS+=(--eval)
+[ "${DURATION}" != "0" ] && ARGS+=(--duration "${DURATION}")
+[ -n "${SKIP_BUILD}" ] && ARGS+=("${SKIP_BUILD}")
+exec "${SCRIPT_DIR}/scripts/run_algorithm_container.sh" "${ARGS[@]}"

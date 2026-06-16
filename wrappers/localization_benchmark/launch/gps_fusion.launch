@@ -1,0 +1,98 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="gps_enable" default="false"/>
+  <arg name="algo_ns" default="algorithm"/>
+  <arg name="local_odom_topic" default="/algorithm/odometry/local"/>
+  <arg name="gps_fix_topic" default="/gps/fix"/>
+  <arg name="imu_topic" default="/livox/imu"/>
+  <arg name="output_odom_topic" default="/algorithm/odometry/output"/>
+  <arg name="output_path_topic" default="/algorithm/path/output"/>
+  <arg name="status_topic" default="/algorithm/status"/>
+  <arg name="use_z" default="false"/>
+  <arg name="position_alpha" default="0.08"/>
+
+  <group if="$(arg gps_enable)">
+    <!-- Convert NavSatFix into a local odometry measurement using the algorithm odometry yaw.
+         This is the standard robot_localization GPS path; UrbanNav-HK_TST normally uses a replayed CSV NavSatFix. -->
+    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_$(arg algo_ns)" output="screen">
+      <param name="frequency" value="30"/>
+      <param name="delay" value="5.0"/>
+      <param name="magnetic_declination_radians" value="0.0"/>
+      <param name="yaw_offset" value="0.0"/>
+      <param name="zero_altitude" value="true"/>
+      <param name="broadcast_cartesian_transform" value="false"/>
+      <param name="publish_filtered_gps" value="false"/>
+      <param name="use_odometry_yaw" value="true"/>
+      <param name="wait_for_datum" value="false"/>
+      <remap from="/imu/data" to="$(arg imu_topic)"/>
+      <remap from="/gps/fix" to="$(arg gps_fix_topic)"/>
+      <remap from="/odometry/filtered" to="$(arg local_odom_topic)"/>
+      <remap from="/odometry/gps" to="/odometry/gps"/>
+    </node>
+
+    <!-- Global EKF: local algorithm odometry + GPS odometry from navsat_transform_node.
+         publish_tf=false avoids fighting algorithm TFs. -->
+    <node pkg="robot_localization" type="ekf_localization_node" name="gps_global_ekf_$(arg algo_ns)" output="screen">
+      <remap from="odometry/filtered" to="/$(arg algo_ns)/odometry/gps_fused"/>
+      <rosparam subst_value="true">
+frequency: 30
+sensor_timeout: 0.3
+two_d_mode: false
+transform_time_offset: 0.0
+transform_timeout: 2.0
+print_diagnostics: true
+publish_tf: false
+map_frame: map
+odom_frame: camera_init
+base_link_frame: body
+world_frame: map
+odom0: $(arg local_odom_topic)
+odom0_config: [true,  true,  false,
+               false, false, true,
+               true,  true,  false,
+               false, false, true,
+               false, false, false]
+odom0_queue_size: 20
+odom0_differential: false
+odom0_relative: false
+odom0_pose_rejection_threshold: 8.0
+odom0_twist_rejection_threshold: 4.0
+odom1: /odometry/gps
+odom1_config: [true,  true,  false,
+               false, false, false,
+               false, false, false,
+               false, false, false,
+               false, false, false]
+odom1_queue_size: 20
+odom1_differential: false
+odom1_relative: false
+odom1_pose_rejection_threshold: 10.0
+process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0.05, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0.10, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.03, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.03, 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.06, 0,    0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.10, 0,    0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0.10, 0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0.20, 0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0.03, 0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.03, 0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.06, 0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.10, 0,    0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.10, 0,
+                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.20]
+      </rosparam>
+    </node>
+  </group>
+
+  <node name="output_selector_$(arg algo_ns)" pkg="localization_benchmark" type="output_selector.py" output="screen">
+    <param name="algo_ns" value="$(arg algo_ns)"/>
+    <param name="gps_enabled" value="$(arg gps_enable)"/>
+    <param name="local_odom_topic" value="$(arg local_odom_topic)"/>
+    <param name="gps_odom_topic" value="/$(arg algo_ns)/odometry/gps_fused"/>
+    <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+    <param name="output_path_topic" value="$(arg output_path_topic)"/>
+    <param name="status_topic" value="$(arg status_topic)"/>
+  </node>
+</launch>

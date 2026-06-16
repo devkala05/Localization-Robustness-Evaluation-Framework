@@ -1,0 +1,48 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="bag_path" default="/data/UrbanNav-HK_TST-20210517_sensors.bag"/>
+  <arg name="rate" default="0.35"/>
+  <arg name="start_delay" default="5.0"/>
+  <arg name="rviz" default="true"/>
+  <arg name="ground_truth_path" default="/data/UrbanNav_TST_GT_raw.txt"/>
+  <arg name="gt_yaw_offset_deg" default="0.0"/>
+
+  <include file="$(find fast_lio_urbannav)/launch/urbannav_wrapper.launch">
+    <arg name="publish_map_odom" value="false"/>
+    <arg name="publish_camera_init_map" value="true"/>
+    <arg name="publish_base_link_body" value="true"/>
+  </include>
+
+  <include file="$(find lvi_sam_urbannav)/launch/lvisam_urbannav.launch"/>
+
+  <node name="bag_player"
+        pkg="fast_lio_urbannav"
+        type="bag_player.py"
+        output="screen">
+    <param name="bag_path" value="$(arg bag_path)"/>
+    <param name="rate" value="$(arg rate)"/>
+    <param name="start_delay" value="$(arg start_delay)"/>
+    <param name="use_sim_time" value="true"/>
+  </node>
+
+  <node name="ground_truth_path_node"
+        pkg="fast_lio_urbannav"
+        type="ground_truth_path_node.py"
+        output="screen">
+    <param name="ground_truth_path" value="$(arg ground_truth_path)"/>
+    <param name="topic" value="/ground_truth_path"/>
+    <param name="frame_id" value="camera_init"/>
+    <param name="rotate_to_initial_heading" value="true"/>
+    <param name="yaw_offset_deg" value="$(arg gt_yaw_offset_deg)"/>
+    <param name="publish_full_path" value="true"/>
+  </node>
+
+  <group if="$(arg rviz)">
+    <node name="rviz"
+          pkg="rviz"
+          type="rviz"
+          args="-d $(find localization_benchmark)/config/benchmark_paths.rviz"
+          output="screen"/>
+  </group>
+</launch>
