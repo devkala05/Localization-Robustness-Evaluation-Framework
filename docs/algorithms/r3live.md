@@ -1,56 +1,42 @@
-# R3LIVE Integration Notes
+# R3LIVE
 
-R3LIVE is integrated for UrbanNav-HK_TST-20210517 as a production **stable LIO-first** benchmark participant.
+R3LIVE is integrated through `wrappers/r3live_urbannav` and runs native `r3live_mapping` in the maintained benchmark path.
 
-## Why LIO-first by default
+## Build And Run
 
-Upstream R3LIVE supports a full LiDAR-Inertial-Visual estimator, but spinning-LiDAR + visual operation on UrbanNav is fragile without source-level front-end validation. Therefore this wrapper defaults to:
-
-```text
-run_visual=false
-native R3LIVE stable role: LiDAR front-end first, full mapping second
-FAST-LIO2 fallback frontend: enabled
+```bash
+./build_r3live.sh
+./run --algo r3live --per 0 --gps off --eval
+./run --algo r3live --per 0 --gps on --eval
 ```
 
-This keeps `/r3live/odometry/mapping` alive and comparable instead of silently producing an empty path.
+The first build is heavy because upstream R3LIVE, vikit, and the Livox driver are compiled.
 
-## Input topics
-
-The common benchmark bridge/adapter publishes:
+## Inputs
 
 ```text
-/velodyne_points + /imu/data + /zed2/camera/right/image_raw
-    -> /mycar/* custom messages
-    -> custom_fastlio_adapter
-    -> /cloud_registered_raw, /livox/imu, /camera/right/image_raw, /camera/image_raw
+/livox/lidar
+/livox/imu
+/camera/right/image_raw
+/camera/image_raw
 ```
 
-R3LIVE uses `/cloud_registered_raw` / `/livox/imu` in the stable benchmark path. `/camera/image_raw` remains available for experimental visual mode.
+The adapter adds fields expected by the R3LIVE path, including normal/curvature handling where configured.
 
-## Point time scale
-
-For R3LIVE, `point_time_scale` is intentionally `1.0`. UrbanNav Velodyne point time is already relative seconds, matching the FAST-LIO/FAST-LIO2 Velodyne path.
-
-## Output topics
-
-The wrapper exposes the standard native and benchmark topics:
+## Outputs
 
 ```text
-/r3live/odometry/mapping       native wrapper output
-/r3live/mapping/path           native wrapper path
-/r3live/odometry/local         standardized local odometry
-/r3live/path/local             standardized local path
-/r3live/odometry/output        selected output, local or GPS-fused
-/r3live/path/output            selected output path
+/r3live/odometry/mapping
+/r3live/mapping/path
+/r3live/odometry/local
+/r3live/path/local
+/r3live/odometry/output
+/r3live/path/output
+/r3live/status
 ```
 
-`trajectory_mux_node.py` subscribes to common upstream odometry names:
+Results are written to `data/results/r3live/`.
 
-```text
-/r3live/odometry
-/Odometry
-/aft_mapped_to_init
-/aft_mapped_to_init_odom
-```
+## Notes
 
-If native R3LIVE publishes nothing, the FAST-LIO2 fallback `/Odometry` keeps the benchmark output live and the status pane makes this visible.
+The maintained configuration disables the FAST-LIO2 fallback. If native R3LIVE does not compile or publish odometry, the run should fail or report that clearly instead of recording a FAST-LIO2 trajectory as R3LIVE.

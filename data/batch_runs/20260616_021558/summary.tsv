@@ -1,6 +1,0 @@
-timestamp	algo	per	gps	phase	status	log
-2026-06-16 02:20:45	fastlio2	-	-	build	0	/home/devil/Desktop/car/localisation/final_codebase/data/batch_runs/20260616_021558/logs/fastlio2__build.log
-2026-06-16 02:24:41	fastlio2	0	off	run	130	/home/devil/Desktop/car/localisation/final_codebase/data/batch_runs/20260616_021558/logs/fastlio2__per_0__gps_off.log
-2026-06-16 02:24:43	fastlio2	0	on	run	130	/home/devil/Desktop/car/localisation/final_codebase/data/batch_runs/20260616_021558/logs/fastlio2__per_0__gps_on.log
-2026-06-16 02:24:43	fastlio2	1	off	run	130	/home/devil/Desktop/car/localisation/final_codebase/data/batch_runs/20260616_021558/logs/fastlio2__per_1__gps_off.log
-2026-06-16 02:24:44	fastlio2	1	on	run	130	/home/devil/Desktop/car/localisation/final_codebase/data/batch_runs/20260616_021558/logs/fastlio2__per_1__gps_on.log

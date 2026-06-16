@@ -1,36 +1,38 @@
-# RTAB-Map Integration
+# RTAB-Map
 
-Added RTAB-Map as a third benchmarked algorithm using FAST-LIO2 as the odometry frontend.
+RTAB-Map is integrated as a map-level correction layer using FAST-LIO2 odometry as its odometry prior plus the UrbanNav right camera and scan cloud.
 
-## Commands
+## Build And Run
 
 ```bash
 ./build_rtabmap.sh
-./run --algo rtabmap --per 0
-./run --algo rtabmap --per 0 --eval
-./run --algo rtabmap --per 1 --eval --duration 20
+./run --algo rtabmap --per 0 --gps off --eval
+./run --algo rtabmap --per 0 --gps on --eval
 ```
 
-`./run --algo rtabmap` runs RTAB-Map after the RTAB-Map image has been built:
+## Inputs
 
-```bash
-./build_fastlio2.sh
-./run --algo rtabmap --per 0
-./run --algo rtabmap --per 0 --eval
+```text
+/rtabmap/input_odom
+/cloud_registered_raw
+/camera/right/image_raw
+/camera/right/camera_info
 ```
 
-## Topics
+## Outputs
 
-RTAB-Map consumes:
+```text
+/rtabmap/odometry/mapping
+/rtabmap/mapping/path
+/rtabmap/cloud_map
+/rtabmap/odometry/local
+/rtabmap/path/local
+/rtabmap/odometry/output
+/rtabmap/path/output
+```
 
-- `/Odometry` from FAST-LIO2, converted to `/rtabmap/input_odom`
-- `/cloud_registered_raw` as `scan_cloud`
+Results are written to `data/results/rtab_map/`.
 
-Benchmark output:
+## Notes
 
-- `/rtabmap/odometry/mapping`
-- `/rtabmap/mapping/path`
-- `/rtabmap/cloud_map`
-- `/data/results/rtab_map/per_N/trajectory.csv`
-
-The adapter applies RTAB-Map's `map -> odom` correction when available so the recorded odometry follows the RTAB-Map map frame.
+Each evaluated run writes its RTAB-Map database inside the timestamped result directory as `rtabmap.db`, so runs do not reuse stale map state.

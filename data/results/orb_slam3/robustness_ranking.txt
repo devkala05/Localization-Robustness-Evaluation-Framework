@@ -1,5 +1,0 @@
-Localization robustness ranking
-Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
-
-1. per_0_orb_slam3_20260613_224556 score=20.166062 position_rmse_m=9.475268 position_max_m=20.702092 yaw_rmse_rad=1.069079 samples=522 gps=off:auto rtk=auto note=ORB-SLAM3 default is stereo. --gps on uses conservative external fusion on the corrected body odometry output.
-2. per_0_orb_slam3_20260614_175456 score=293.257193 position_rmse_m=274.931637 position_max_m=538.992647 yaw_rmse_rad=1.832556 samples=5918 gps=off:auto rtk=auto note=ORB-SLAM3 default is stereo. --gps on uses conservative external fusion on the corrected body odometry output.

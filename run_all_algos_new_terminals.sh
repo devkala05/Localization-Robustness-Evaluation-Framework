@@ -36,6 +36,10 @@ if [ -n "${PER_LIST:-}" ]; then
   # shellcheck disable=SC2206
   PERS=(${PER_LIST})
 elif [ -n "${START_PER:-}" ]; then
+  if ! [[ "${START_PER}" =~ ^[0-6]$ ]]; then
+    echo "ERROR: START_PER must be 0..6, got '${START_PER}'" >&2
+    exit 2
+  fi
   PERS=()
   for p in 0 1 2 3 4 5 6; do
     [ "${p}" -ge "${START_PER}" ] && PERS+=("${p}")
@@ -44,6 +48,50 @@ fi
 if [ -n "${GPS_LIST:-}" ]; then
   # shellcheck disable=SC2206
   GPS_MODES=(${GPS_LIST})
+fi
+
+validate_algo_name() {
+  case "$1" in
+    fastlio2|lvisam|fastlivo2|rtabmap|adaptive_w_lvio|orbslam3|r3live) ;;
+    *) echo "ERROR: unknown algorithm '$1'" >&2; return 2 ;;
+  esac
+}
+
+for algo in "${ALGOS[@]}"; do
+  validate_algo_name "${algo}"
+done
+
+if [ -n "${START_ALGO:-}" ]; then
+  validate_algo_name "${START_ALGO}"
+fi
+
+for per in "${PERS[@]}"; do
+  if ! [[ "${per}" =~ ^[0-6]$ ]]; then
+    echo "ERROR: per must be 0..6, got '${per}'" >&2
+    exit 2
+  fi
+done
+
+for gps in "${GPS_MODES[@]}"; do
+  case "${gps}" in
+    off|on) ;;
+    *) echo "ERROR: gps mode must be off/on, got '${gps}'" >&2; exit 2 ;;
+  esac
+done
+
+if [ "${#ALGOS[@]}" -eq 0 ]; then
+  echo "ERROR: algorithm list is empty" >&2
+  exit 2
+fi
+
+if [ "${#PERS[@]}" -eq 0 ]; then
+  echo "ERROR: perturbation list is empty" >&2
+  exit 2
+fi
+
+if [ "${#GPS_MODES[@]}" -eq 0 ]; then
+  echo "ERROR: GPS mode list is empty" >&2
+  exit 2
 fi
 
 build_script_for_algo() {
@@ -163,12 +211,7 @@ for algo in "${ALGOS[@]}"; do
   open_terminal_wait "BUILD ${algo}" "${build_script}"
 
   for per in "${PERS[@]}"; do
-    if ! [[ "${per}" =~ ^[0-6]$ ]]; then
-      echo "ERROR: per must be 0..6, got '${per}'" >&2
-      exit 2
-    fi
     for gps in "${GPS_MODES[@]}"; do
-      case "${gps}" in off|on) ;; *) echo "ERROR: gps mode must be off/on, got '${gps}'" >&2; exit 2 ;; esac
       title="RUN ${algo} per_${per} gps_${gps} eval_full"
       cmd="./run --algo ${algo} --per ${per} --gps ${gps} --eval"
       open_terminal_wait "${title}" "${cmd}"

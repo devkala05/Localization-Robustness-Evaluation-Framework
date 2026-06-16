@@ -1,8 +1,4 @@
 Localization robustness ranking
 Lower score is more robust. Score = position_RMSE_m + 10 * yaw_RMSE_rad.
 
-1. per_0_fast_lio2_20260613_172741 score=23.622657 position_rmse_m=1.919219 position_max_m=4.934399 yaw_rmse_rad=2.170344 samples=592 gps=off:auto rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
-2. per_0_fast_lio2_20260613_193613 score=57.603900 position_rmse_m=46.743854 position_max_m=117.011702 yaw_rmse_rad=1.086005 samples=296 gps=on:csv rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
-3. per_0_fast_lio2_20260613_173745 score=57.726278 position_rmse_m=46.868685 position_max_m=117.266984 yaw_rmse_rad=1.085759 samples=296 gps=on:csv rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
-4. per_0_fast_lio2_20260613_185000 score=57.726278 position_rmse_m=46.868685 position_max_m=117.266984 yaw_rmse_rad=1.085759 samples=296 gps=on:csv rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
-5. per_0_fast_lio2_20260613_175315 score=57.726278 position_rmse_m=46.868685 position_max_m=117.266984 yaw_rmse_rad=1.085759 samples=296 gps=on:csv rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
+1. per_0_fast_lio2_20260616_091408 score=41.029179 position_rmse_m=25.578918 position_max_m=51.561673 yaw_rmse_rad=1.545026 samples=15690 gps=off:auto rtk=auto note=FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.

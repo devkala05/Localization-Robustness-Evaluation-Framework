@@ -1,26 +1,37 @@
-# FAST-LIVO2 integration
+# FAST-LIVO2
 
-Added from `example.zip` into this combined FAST-LIO2 + LVI-SAM codebase.
+FAST-LIVO2 is integrated through `wrappers/fast_livo2_wrapper` and uses the same perturbation, GPS, recording, and evaluation pipeline as the other algorithms.
 
-Commands:
+## Build And Run
 
 ```bash
 ./build_fastlivo2.sh
-./run --algo fastlivo2 --per 0
-./run --algo fastlivo2 --per 0 --eval
-./run --algo fastlivo2 --per 1 --eval --duration 20
+./run --algo fastlivo2 --per 0 --gps off --eval
+./run --algo fastlivo2 --per 0 --gps on --eval
 ```
 
-FAST-LIVO2 uses the same perturbation/evaluation framework as FAST-LIO2:
+## Inputs
 
-- Input bag topics: `/velodyne_points`, `/imu/data`, `/zed2/camera/right/image_raw`
-- Perturbed/native topics: `/livox/lidar`, `/livox/imu`, `/camera/right/image_raw`
-- Output recorded for evaluation: `/Odometry`
-- Result folder: `/data/results/fast_livo2/per_X/trajectory.csv`
+```text
+/livox/lidar
+/livox/imu
+/camera/right/image_raw
+```
 
-The adapter preserves bag timestamps. For FAST-LIVO2 only, it converts the Velodyne per-point `time` field from seconds to microseconds using `point_time_scale: 1000000.0`, matching the working reference wrapper.
+The benchmark adapter converts UrbanNav Velodyne point time from seconds to microseconds with `point_time_scale: 1000000.0`.
 
+## Outputs
 
-## Point-time scaling check
+```text
+/fast_livo2/odometry
+/fastlivo2/odometry/local
+/fastlivo2/path/local
+/fastlivo2/odometry/output
+/fastlivo2/path/output
+```
 
-The benchmark `./run --algo fastlivo2` path uses `custom_fastlio_adapter.launch` and applies `point_time_scale: 1000000.0` exactly once to convert UrbanNav Velodyne per-point time from seconds to microseconds. The standalone `fast_livo2_wrapper/topic_bridge_node.py` also contains its own auto seconds→microseconds conversion for direct `full_pipeline.launch` use. Do not run both bridges at the same time for the same input cloud, or point times will be double-scaled.
+Results are written to `data/results/fast_livo2/`.
+
+## Point-Time Rule
+
+The benchmark `./run --algo fastlivo2` path applies point-time scaling exactly once in `custom_fastlio_adapter.launch`. Do not run the standalone `fast_livo2_wrapper/topic_bridge_node.py` on the same input cloud at the same time, because that direct bridge also has seconds-to-microseconds conversion logic.

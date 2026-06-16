@@ -1,0 +1,61 @@
+Localization run analysis
+=========================
+
+Algorithm note: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
+
+GPS mode: off
+GPS source: auto
+RTK mode: auto
+
+Samples compared: 15690
+Robustness score, lower is better: 41.029179
+Overall position RMSE: 25.578918 m
+Overall position max: 51.561673 m
+Overall x RMSE: 12.109919 m
+Overall y RMSE: 9.634498 m
+Overall z RMSE: 20.366820 m
+Overall yaw RMSE: 1.545026 rad
+Worst overall component: position_max_m
+
+Run CSV time range: 1621218775.823315 to 1621219560.8955348
+Ground truth time range: 1621218775.0 to 1621219561.0
+If a scene/window shows zero samples, its timestamps do not overlap the run CSV time range.
+
+Road scene impact
+-----------------
+01 warmup (straight, 1621218776.071249 to 1621218787.571249): position_rmse=0.567245 m, x_rmse=0.048085 m, y_rmse=0.563447 m, z_rmse=0.044520 m, yaw_rmse=0.023045 rad, worst_component=position_max_m, samples=230
+02 left_turn (turn_left, 1621218788.071249 to 1621218791.571249): position_rmse=1.261999 m, x_rmse=0.820076 m, y_rmse=0.953006 m, z_rmse=0.109072 m, yaw_rmse=1.529515 rad, worst_component=position_max_m, samples=70
+03 straight (straight, 1621218791.571249 to 1621218810.071249): position_rmse=2.728005 m, x_rmse=2.235428 m, y_rmse=1.066959 m, z_rmse=1.143010 m, yaw_rmse=3.096527 rad, worst_component=position_max_m, samples=370
+04 stop (stop, 1621218810.071249 to 1621218846.071249): position_rmse=2.228419 m, x_rmse=0.464583 m, y_rmse=1.628821 m, z_rmse=1.448087 m, yaw_rmse=3.133970 rad, worst_component=yaw_rmse_rad, samples=718
+05 right_turn (turn_right, 1621218846.071249 to 1621218859.571249): position_rmse=2.351945 m, x_rmse=0.555593 m, y_rmse=1.917334 m, z_rmse=1.243702 m, yaw_rmse=2.629442 rad, worst_component=position_max_m, samples=270
+06 straight (straight, 1621218859.571249 to 1621218899.071249): position_rmse=8.525422 m, x_rmse=1.628482 m, y_rmse=2.999852 m, z_rmse=7.812282 m, yaw_rmse=0.096227 rad, worst_component=position_max_m, samples=790
+07 under_bridge (under_bridge, 1621218899.071249 to 1621218901.371249): position_rmse=18.208354 m, x_rmse=1.978723 m, y_rmse=2.994934 m, z_rmse=17.851027 m, yaw_rmse=0.067086 rad, worst_component=position_max_m, samples=46
+08 straight (straight, 1621218901.371249 to 1621218907.371249): position_rmse=21.928311 m, x_rmse=1.958352 m, y_rmse=2.890290 m, z_rmse=21.648600 m, yaw_rmse=0.064173 rad, worst_component=position_max_m, samples=120
+09 slight_right (turn_slight_right, 1621218907.371249 to 1621218916.841249): position_rmse=27.467971 m, x_rmse=1.991131 m, y_rmse=1.539526 m, z_rmse=27.352417 m, yaw_rmse=1.367181 rad, worst_component=position_max_m, samples=188
+10 stop (stop, 1621218916.841249 to 1621218969.071249): position_rmse=29.641297 m, x_rmse=1.419831 m, y_rmse=0.331610 m, z_rmse=29.605415 m, yaw_rmse=1.649297 rad, worst_component=position_max_m, samples=1044
+11 straight (straight, 1621218969.071249 to 1621218978.701249): position_rmse=31.328583 m, x_rmse=1.928747 m, y_rmse=0.967751 m, z_rmse=31.254176 m, yaw_rmse=1.598114 rad, worst_component=position_max_m, samples=194
+12 right_turn (turn_right, 1621218978.701249 to 1621218984.391249): position_rmse=33.613361 m, x_rmse=2.290332 m, y_rmse=1.029288 m, z_rmse=33.519442 m, yaw_rmse=2.359742 rad, worst_component=position_max_m, samples=112
+13 straight (straight, 1621218984.391249 to 1621219025.451249): position_rmse=23.415861 m, x_rmse=3.485610 m, y_rmse=4.449170 m, z_rmse=22.723511 m, yaw_rmse=1.327654 rad, worst_component=position_max_m, samples=822
+14 stop (stop, 1621219025.451249 to 1621219041.071249): position_rmse=16.860417 m, x_rmse=4.990233 m, y_rmse=5.899265 m, z_rmse=14.985656 m, yaw_rmse=1.149162 rad, worst_component=position_max_m, samples=312
+15 straight (straight, 1621219041.071249 to 1621219073.261249): position_rmse=15.695909 m, x_rmse=7.792860 m, y_rmse=7.600910 m, z_rmse=11.307478 m, yaw_rmse=1.122544 rad, worst_component=position_max_m, samples=642
+16 stop (stop, 1621219073.261249 to 1621219088.071249): position_rmse=15.503844 m, x_rmse=9.358741 m, y_rmse=9.061531 m, z_rmse=8.406652 m, yaw_rmse=1.108131 rad, worst_component=position_max_m, samples=296
+17 straight (straight, 1621219088.071249 to 1621219104.071249): position_rmse=15.627640 m, x_rmse=10.084076 m, y_rmse=9.211297 m, z_rmse=7.595165 m, yaw_rmse=0.989559 rad, worst_component=position_max_m, samples=320
+18 right_turn (turn_right, 1621219104.071249 to 1621219108.071249): position_rmse=15.977454 m, x_rmse=11.499489 m, y_rmse=9.724215 m, z_rmse=5.336705 m, yaw_rmse=0.990137 rad, worst_component=position_max_m, samples=80
+19 straight (straight, 1621219108.071249 to 1621219133.071249): position_rmse=17.695666 m, x_rmse=14.115612 m, y_rmse=7.666412 m, z_rmse=7.423759 m, yaw_rmse=2.032872 rad, worst_component=position_max_m, samples=500
+20 under_bridge (under_bridge, 1621219133.071249 to 1621219136.071249): position_rmse=21.004122 m, x_rmse=15.654579 m, y_rmse=5.311553 m, z_rmse=12.957420 m, yaw_rmse=2.462456 rad, worst_component=position_max_m, samples=60
+
+Most affected scene by position RMSE: 12 right_turn with 33.613361 m and worst component position_max_m
+
+Perturbation window impact
+--------------------------
+No perturbation windows configured for this case.
+
+Generated files
+---------------
+trajectory_plot: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/trajectory_baseline_vs_run.png
+component_error_plot: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/component_errors_over_time.png
+segment_rmse_plot: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/segment_rmse.png
+segment_component_rmse_plot: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/segment_component_rmse.png
+error_timeseries_csv: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/error_timeseries.csv
+segment_metrics_csv: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/segment_metrics.csv
+perturbation_window_metrics_csv: /data/results/fast_lio2/per_0_fast_lio2_20260616_091408/perturbation_window_metrics.csv

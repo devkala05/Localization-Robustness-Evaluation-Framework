@@ -1,2 +1,0 @@
-key,label,type,sensor,perturbation_type,start,end,x_rmse_m,y_rmse_m,z_rmse_m,yaw_rmse_rad,position_rmse_m,position_max_m,worst_component,samples
-01_warmup,01 warmup,straight,,,1621218776.071249,1621218787.571249,0.009698945019430286,0.007118379841539123,0.010962056251688973,0.00032265330296907436,0.01627598056411826,0.018773857658592605,position_max_m,18
