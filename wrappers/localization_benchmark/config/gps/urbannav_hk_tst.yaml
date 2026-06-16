@@ -1,0 +1,10 @@
+gps:
+  # UrbanNav-HK_TST-20210517_sensors.bag has no live NavSatFix; use a CSV
+  # derived from matching RINEX/RTKLIB/GraphGNSSLib output when --gps on.
+  source: csv
+  csv_contract: stamp,lat,lon,alt,cov_x,cov_y,cov_z,status,service,rtk_mode,source
+  gps_utc_offset_sec: 18.0
+  use_z: false
+  max_cov_xy: 100.0
+  max_cov_z: 400.0
+  fusion_alpha: 0.08

@@ -1,0 +1,78 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python cache / envs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+venv/
+
+# ROS/catkin build outputs
+build/
+devel/
+install/
+log/
+logs/
+.catkin_tools/
+catkin_generated/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Docker/generated archives
+*.tar
+*.tar.gz
+*.zip
+*.7z
+docker_cache/
+.cache/
+
+# Large input data: add manually on each machine
+data/*.bag
+data/**/*.bag
+*.bag
+*.bag.active
+bags/
+datasets/
+!wrappers/localization_benchmark/config/datasets/
+!wrappers/localization_benchmark/config/datasets/*.yaml
+UrbanNav*/
+*.db3
+
+# Heavy generated maps/databases
+*.pcd
+*.ply
+*.bt
+*.pgm
+*.bin
+*.npy
+*.npz
+*.db
+*.rtabmap
+rtabmap.db
+
+# Logs/temp
+*.log
+nohup.out
+*.rviz~
+.ros/
+
+# Compiled artifacts
+*.o
+*.so
+*.a
+*.dll
+*.dylib
+*.exe
+
+# Keep benchmark results committed if desired
+!data/results/**

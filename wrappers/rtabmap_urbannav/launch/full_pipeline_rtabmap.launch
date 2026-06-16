@@ -1,0 +1,22 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="launch_fastlio2" default="true"/>
+  <arg name="rtabmap_database_path" default="/data/output/rtabmap_urbannav.db"/>
+  <arg name="delete_db_on_start" default="true"/>
+  <arg name="fastlio2_config_path" default="$(find fast_lio_urbannav)/config/velodyne_urbannav.yaml"/>
+  <arg name="fastlio2_scan_line" default="32"/>
+
+  <!-- FAST-LIO2 frontend. The perturbation adapter and bag player are started
+       by ./run, matching the other benchmark algorithms. -->
+  <include if="$(arg launch_fastlio2)" file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch">
+    <arg name="config_path" value="$(arg fastlio2_config_path)"/>
+    <arg name="scan_line" value="$(arg fastlio2_scan_line)"/>
+  </include>
+
+  <!-- RTAB-Map backend consuming FAST-LIO2 odometry and cloud_registered_raw. -->
+  <include file="$(find rtabmap_urbannav)/launch/rtabmap_urbannav.launch">
+    <arg name="database_path" value="$(arg rtabmap_database_path)"/>
+    <arg name="delete_db_on_start" value="$(arg delete_db_on_start)"/>
+  </include>
+</launch>

@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+
+  # ─── ROS Master ──────────────────────────────────────────────────────────────
+  roscore:
+    image: fastlio2-urbannav:latest
+    container_name: roscore
+    network_mode: host
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: roscore
+    restart: unless-stopped
+
+  # ─── Wrapper node (topic converter) ─────────────────────────────────────────
+  wrapper:
+    image: fastlio2-urbannav:latest
+    container_name: fastlio2_wrapper
+    network_mode: host
+    depends_on:
+      - roscore
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data:/data:ro
+      - ./wrappers/fast-lio_urbannav:/root/catkin_ws/src/fast_lio_urbannav:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               roslaunch fast_lio_urbannav urbannav_wrapper.launch"
+    restart: unless-stopped
+
+  # ─── Fast-LIO2 ───────────────────────────────────────────────────────────────
+  fastlio2:
+    image: fastlio2-urbannav:latest
+    container_name: fastlio2
+    network_mode: host
+    depends_on:
+      - wrapper
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data:/data
+      - ./wrappers/fast-lio_urbannav:/root/catkin_ws/src/fast_lio_urbannav:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               sleep 5 &&
+               roslaunch fast_lio_urbannav fast_lio2_urbannav.launch"
+    restart: unless-stopped
+
+  # ─── RViz visualisation ──────────────────────────────────────────────────────
+  rviz:
+    image: fastlio2-urbannav:latest
+    container_name: fastlio2_rviz
+    network_mode: host
+    depends_on:
+      - fastlio2
+    environment:
+      - ROS_MASTER_URI=http://localhost:11311
+      - ROS_HOSTNAME=localhost
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./wrappers/fast-lio_urbannav/config:/config:ro
+    command: >
+      bash -c "source /root/catkin_ws/devel/setup.bash &&
+               sleep 8 &&
+               rviz -d /config/fastlio2_urbannav.rviz"
+    restart: unless-stopped

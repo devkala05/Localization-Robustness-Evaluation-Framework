@@ -1,0 +1,60 @@
+dataset:
+  id: e2o
+  name: e2o_faculty_loop
+  bag_path: /data/one_full_loop.bag
+  ground_truth_path: /data/odometry.csv
+  results_root: /data/results/e2o
+  frame_id: camera_init
+  gt_format: fastlivo2_lidar103_csv
+  gt_yaw_offset_deg: 0.0
+  gps_source: topic
+  gps_file: ""
+  gps_topic: /mavros/global_position/global
+  default_orb_mode: mono
+  stereo_swap: false
+  use_clock_stamp: true
+
+frames:
+  world: camera_init
+  body: body
+  lidar: velodyne
+  imu: body
+  camera_right: camera_right_optical
+
+lidar:
+  model: vlp16
+  scan_line: 16
+  point_time_field: time
+  point_time_unit: s
+
+source_topics:
+  # Working E2O reference uses lidar103 as the body/reference LiDAR.
+  # Do not use /merged/velodyne_points here; that caused alignment drift.
+  lidar: /lidar103/velodyne_points
+  imu: /mavros/imu/data
+  camera_right: /camera/color/image_raw
+  camera_left: ""
+  gps: /mavros/global_position/global
+
+bag_topics:
+  default: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw /mavros/global_position/global
+  orbslam3: /camera/color/image_raw
+  r3live: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+
+paths:
+  perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations/e2o
+  segments_yaml: /root/catkin_ws/src/localization_benchmark/config/datasets/e2o/road_segments.yaml
+
+calibration:
+  camera_right:
+    label: front_camera
+    width: 1280
+    height: 720
+    K: [668.02585977, 0.0, 657.26752359, 0.0, 658.80930843, 363.16409155, 0.0, 0.0, 1.0]
+    D: [-0.05078581, 0.08456123, -0.00046157, 0.00656211, -0.03406049]
+    # p_camera = R * p_lidar103 + t, copied from working FAST-LIVO2 E2O reference.
+    lidar103_to_camera:
+      R: [-0.18256836, -0.98306216, -0.01604916,
+          0.11110754, -0.00440978, -0.99379861,
+          0.97689503, -0.18321936, 0.1100307]
+      t: [0.07383026, -0.5358112, -0.31010858]

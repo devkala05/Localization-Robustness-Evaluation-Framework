@@ -1,0 +1,111 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="database_path" default="/data/output/rtabmap_urbannav.db"/>
+  <arg name="delete_db_on_start" default="true"/>
+  <arg name="input_odom_topic" default="/Odometry"/>
+  <arg name="input_cloud_topic" default="/rtabmap/cloud_registered"/>
+  <arg name="input_rgb_topic" default="/camera/right/image_raw"/>
+  <arg name="input_camera_info_topic" default="/camera/right/camera_info"/>
+  <arg name="rtabmap_input_odom_topic" default="/rtabmap/input_odom"/>
+  <arg name="benchmark_odom_topic" default="/rtabmap/odometry/mapping"/>
+  <arg name="path_topic" default="/rtabmap/mapping/path"/>
+  <arg name="map_frame_id" default="map"/>
+  <arg name="odom_frame_id" default="camera_init"/>
+  <arg name="base_frame_id" default="body"/>
+  <arg name="publish_tf" default="true"/>
+
+  <!-- FAST-LIO2 odometry is only an odometry prior for RTAB-Map. -->
+  <node name="rtabmap_input_adapter_node"
+        pkg="rtabmap_urbannav"
+        type="rtabmap_adapter_node.py"
+        output="screen">
+    <param name="input_odom_topic" value="$(arg input_odom_topic)"/>
+    <param name="rtabmap_odom_topic" value="$(arg rtabmap_input_odom_topic)"/>
+    <param name="map_frame_id" value="$(arg map_frame_id)"/>
+    <param name="odom_frame_id" value="$(arg odom_frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="publish_tf" value="$(arg publish_tf)"/>
+  </node>
+
+  <!-- Sanitize FAST-LIO PointCloud2 metadata before RTAB-Map.
+       Some FAST-LIO builds publish row_step=0, which crashes RTAB-Map. -->
+  <node name="rtabmap_cloud_sanitizer"
+        pkg="rtabmap_urbannav"
+        type="cloud_sanitizer_node.py"
+        output="screen">
+    <param name="input_topic" value="/cloud_registered_raw"/>
+    <param name="output_topic" value="/rtabmap/cloud_registered"/>
+    <param name="frame_id" value="body"/>
+    <param name="min_odom_topic" value="$(arg rtabmap_input_odom_topic)"/>
+    <param name="drop_until_first_odom" value="true"/>
+  </node>
+
+  <!-- RTAB-Map graph/map node. It uses FAST-LIO2 odometry as a prior, but now
+       also subscribes to the right camera image+camera_info for visual features
+       and loop closure. The benchmark output is created from RTAB-Map mapPath,
+       not directly from FAST-LIO2. -->
+  <node name="rtabmap"
+        pkg="rtabmap_slam"
+        type="rtabmap"
+        output="screen"
+        args="$(eval '--delete_db_on_start' if arg('delete_db_on_start') == 'true' else '')">
+
+    <param name="database_path" value="$(arg database_path)"/>
+    <param name="frame_id" value="$(arg base_frame_id)"/>
+    <param name="odom_frame_id" value="$(arg odom_frame_id)"/>
+    <param name="map_frame_id" value="$(arg map_frame_id)"/>
+    <param name="publish_tf" value="false"/>
+
+    <!-- Camera + LiDAR-cloud + external odometry prior. -->
+    <param name="subscribe_depth" value="false"/>
+    <param name="subscribe_rgb" value="true"/>
+    <param name="subscribe_rgbd" value="false"/>
+    <param name="subscribe_scan" value="false"/>
+    <param name="subscribe_scan_cloud" value="true"/>
+    <param name="approx_sync" value="true"/>
+    <param name="wait_for_transform_duration" value="0.5"/>
+    <param name="sync_queue_size" value="50"/>
+    <param name="queue_size" value="50"/>
+
+    <!-- Visual + ICP registration: camera contributes features/loop-closure;
+         scan_cloud keeps geometry robust on UrbanNav. -->
+    <param name="Reg/Strategy" value="2"/>
+    <param name="RGBD/NeighborLinkRefining" value="true"/>
+    <param name="RGBD/ProximityBySpace" value="true"/>
+    <param name="RGBD/ProximityMaxGraphDepth" value="50"/>
+    <param name="RGBD/ProximityPathMaxNeighbors" type="string" value="1"/>
+    <param name="RGBD/OptimizeFromGraphEnd" value="true"/>
+    <param name="Vis/MinInliers" value="10"/>
+    <param name="Kp/MaxFeatures" value="600"/>
+
+    <!-- Keep RTAB-Map light enough for live rosbag playback. -->
+    <param name="Rtabmap/DetectionRate" value="2.0"/>
+    <param name="Grid/Sensor" value="0"/>
+    <param name="Grid/3D" value="true"/>
+    <param name="Icp/PointToPlane" value="true"/>
+    <param name="Icp/MaxCorrespondenceDistance" value="1.0"/>
+    <param name="Icp/VoxelSize" value="0.4"/>
+    <param name="Icp/DownsamplingStep" value="2"/>
+    <param name="Mem/IncrementalMemory" value="true"/>
+    <param name="Mem/InitWMWithAllNodes" value="false"/>
+
+    <remap from="odom" to="$(arg rtabmap_input_odom_topic)"/>
+    <remap from="scan_cloud" to="$(arg input_cloud_topic)"/>
+    <remap from="rgb/image" to="$(arg input_rgb_topic)"/>
+    <remap from="rgb/camera_info" to="$(arg input_camera_info_topic)"/>
+    <remap from="cloud_map" to="/rtabmap/cloud_map"/>
+    <remap from="mapPath" to="/rtabmap/mapPath"/>
+  </node>
+
+  <!-- Standard benchmark odometry/path now comes from RTAB-Map's optimized mapPath. -->
+  <node name="rtabmap_output_adapter_node"
+        pkg="rtabmap_urbannav"
+        type="rtabmap_output_adapter_node.py"
+        output="screen">
+    <param name="input_path_topic" value="/rtabmap/mapPath"/>
+    <param name="output_odom_topic" value="$(arg benchmark_odom_topic)"/>
+    <param name="output_path_topic" value="$(arg path_topic)"/>
+    <param name="child_frame_id" value="$(arg base_frame_id)"/>
+  </node>
+</launch>

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>orbslam3_urbannav</name>
+  <version>1.0.0</version>
+  <description>
+    Black-box wrapper that converts UrbanNav-HK rosbag camera topics into the
+    exact format expected by ORB-SLAM3 (monocular mode, right ZED2 camera).
+    Handles topic renaming, frame-ID patching, and timestamp preservation.
+    Only the right camera image stream is forwarded — no LiDAR, IMU, GPS,
+    odometry, or ground-truth is injected into ORB-SLAM3.
+    Mirrors the fast_lio_urbannav package structure and conventions.
+  </description>
+
+  <maintainer email="user@example.com">UrbanNav ORB-SLAM3 Pipeline</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>message_filters</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>image_transport</build_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <export>
+  </export>
+</package>

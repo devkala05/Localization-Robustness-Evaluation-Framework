@@ -1,0 +1,52 @@
+<!-- fast_lio2_urbannav.launch
+     Launches Fast-LIO2 (FAST_LIO package) configured for the
+     UrbanNav-HK dataset (Velodyne LiDAR + Xsens IMU).
+
+     Fast-LIO2 is treated as a black box — only its config YAML is
+     customised via the config/ directory in this package.
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- Path to the Fast-LIO2 config file for UrbanNav -->
+  <arg name="config_path"
+       default="$(find fast_lio_urbannav)/config/velodyne_urbannav.yaml"/>
+
+  <!-- Fast-LIO2 map saving -->
+  <arg name="save_map"    default="false"/>
+  <arg name="map_path"    default="/data/output/fast_lio2_map"/>
+  <arg name="scan_line"   default="32"/>
+
+  <!-- FAST-LIO reads its settings from ROS params under common/,
+       preprocess/, mapping/, publish/, and pcd_save/. Loading the YAML here is
+       what makes it subscribe to the wrapper topics instead of package defaults. -->
+  <rosparam command="load" file="$(arg config_path)"/>
+  <param name="preprocess/scan_line" value="$(arg scan_line)"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       Fast-LIO2 node
+       Package: FAST_LIO  (cloned from hku-mars/FAST_LIO)
+       Node:    fastlio_mapping
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="fastlio_mapping"
+        pkg="fast_lio"
+        type="fastlio_mapping"
+        output="screen"
+        required="true">
+
+    <!-- Kept for traceability in rosparam dumps; FAST-LIO itself uses the
+         loaded YAML namespaces above. -->
+    <param name="config_path" value="$(arg config_path)"/>
+
+    <!-- Topic remappings: wrapper output → Fast-LIO2 expected names -->
+    <!-- Fast-LIO2 reads topic names from its config YAML, but we also
+         remap here as a belt-and-braces safety measure. -->
+    <remap from="/cloud_registered_raw" to="/cloud_registered_raw"/>
+    <remap from="/livox/imu"            to="/livox/imu"/>
+    <!-- Suppress native dynamic TF; benchmark StandardOutput publishes camera_init -> body. -->
+    <remap from="/tf" to="/native/fast_lio/tf"/>
+    <remap from="/tf_static" to="/native/fast_lio/tf_static"/>
+
+  </node>
+
+</launch>

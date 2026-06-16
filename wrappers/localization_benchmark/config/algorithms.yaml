@@ -1,0 +1,244 @@
+algorithms:
+  fast_lio2:
+    display_name: FAST-LIO2
+    result_id: fast_lio2
+    ros: ros1
+    adapter: fastlio
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: fast_lio_urbannav fast_lio2_urbannav.launch
+    output_topic: /Odometry
+    path_topic: /fastlio2/path/local
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    enabled: true
+    standard_topic_ns: fastlio2
+    local_odom_topic: /fastlio2/odometry/local
+    local_path_topic: /fastlio2/path/local
+    selected_output_topic: /fastlio2/odometry/output
+    selected_path_topic: /fastlio2/path/output
+    status_topic: /fastlio2/status
+    gps_supported: true
+    gps_strategy: external_fusion
+    adapter_args: ''
+    launch_args: ''
+    notes: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
+  lvi_sam:
+    display_name: LVI-SAM
+    result_id: lvi_sam
+    ros: ros1
+    adapter: standalone
+    enabled: true
+    build_packages:
+    - lvi_sam
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - lvi_sam_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false _publish_camera_init_map:=true _publish_base_link_body:=true
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: lvi_sam_urbannav lvisam_urbannav.launch
+    output_topic: /lvi_sam/lidar/mapping/odometry
+    path_topic: /lvi_sam/lidar/mapping/path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    rviz_config: /root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz
+    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics, but final mapping stays LiDAR-IMU dominant. Camera/VINS is launched for feature/depth aiding and diagnostics; VINS graph constraints are disabled by default because they degraded UrbanNav localization.
+    standard_topic_ns: lvisam
+    local_odom_topic: /lvisam/odometry/local
+    local_path_topic: /lvisam/path/local
+    selected_output_topic: /lvisam/odometry/output
+    selected_path_topic: /lvisam/path/output
+    status_topic: /lvisam/status
+    gps_supported: true
+    gps_strategy: native_lvisam_gps_prior_with_external_fallback
+    adapter_args: 'camera_frame_id:=camera_right_optical publish_camera:=true publish_camera_info:=true'
+    launch_args: 'run_visual:=true'
+  fast_livo2:
+    display_name: FAST-LIVO2
+    result_id: fast_livo2
+    ros: ros1
+    adapter: fastlio
+    build_packages:
+    - livox_ros_driver
+    - fast_livo
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - fast_livo2_wrapper
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: fast_livo2_wrapper fast_livo2.launch
+    output_topic: /fast_livo2/odometry
+    path_topic: /fastlivo2/path/local
+    native_lidar_topic: /livox/lidar
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1000000.0
+    enabled: true
+    notes: FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global fusion.
+    standard_topic_ns: fastlivo2
+    local_odom_topic: /fastlivo2/odometry/local
+    local_path_topic: /fastlivo2/path/local
+    selected_output_topic: /fastlivo2/odometry/output
+    selected_path_topic: /fastlivo2/path/output
+    status_topic: /fastlivo2/status
+    gps_supported: true
+    gps_strategy: external_fusion
+    adapter_args: ''
+    launch_args: ''
+  rtab_map:
+    display_name: RTAB-Map
+    result_id: rtab_map
+    ros: ros1
+    adapter: fastlio_frontend
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - rtabmap_urbannav
+    build_jobs: 4
+    # RTAB-Map consumes scan clouds in body frame and odometry in camera_init frame.
+    # Publish only static UrbanNav sensor TFs plus map->camera_init; no odom/base_link tree.
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=true _publish_camera_init_map:=false _publish_base_link_body:=false
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: rtabmap_urbannav full_pipeline_rtabmap.launch
+    output_topic: /rtabmap/odometry/mapping
+    path_topic: /rtabmap/mapping/path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    rviz_config: /root/catkin_ws/src/rtabmap_urbannav/config/rtabmap_urbannav.rviz
+    enabled: true
+    standard_topic_ns: rtabmap
+    local_odom_topic: /rtabmap/odometry/local
+    local_path_topic: /rtabmap/path/local
+    selected_output_topic: /rtabmap/odometry/output
+    selected_path_topic: /rtabmap/path/output
+    status_topic: /rtabmap/status
+    gps_supported: true
+    gps_strategy: rtabmap_global_pose_prior_or_external_fusion
+    adapter_args: 'publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical native_camera_info_topic:=/camera/right/camera_info'
+    launch_args: ''
+    notes: RTAB-Map uses FAST-LIO2 as odometry prior, but subscribes to UrbanNav right camera image+camera_info and scan_cloud; benchmark output is generated from RTAB-Map mapPath, not raw FAST-LIO2 odometry.
+  adaptive_w_lvio:
+    display_name: Adaptive-W LVIO
+    result_id: adaptive_w_lvio
+    ros: ros1
+    adapter: standalone_lvio
+    build_packages:
+    - livox_ros_driver
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - adaptive_w_lvio_urbannav
+    build_jobs: 4
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+    launch: adaptive_w_lvio_urbannav full_pipeline_adaptive_w_lvio.launch
+    output_topic: /adaptive_w_lvio/odometry/mapping
+    path_topic: /adaptive_w_lvio/mapping/path
+    native_lidar_topic: /cloud_registered_raw
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
+    enabled: true
+    notes: 'Independent Adaptive-W LVIO benchmark frontend: LiDAR scan-to-scan ICP with IMU yaw prior and camera/IMU/LiDAR adaptive health weighting. It no longer launches or subscribes to FAST-LIO2 /Odometry.'
+    standard_topic_ns: adaptive_w_lvio
+    local_odom_topic: /adaptive_w_lvio/odometry/local
+    local_path_topic: /adaptive_w_lvio/path/local
+    selected_output_topic: /adaptive_w_lvio/odometry/output
+    selected_path_topic: /adaptive_w_lvio/path/output
+    status_topic: /adaptive_w_lvio/status
+    gps_supported: true
+    gps_strategy: external_fusion
+    adapter_args: 'publish_camera:=true publish_camera_info:=true'
+    launch_args: ''
+  orb_slam3:
+    display_name: ORB-SLAM3
+    result_id: orb_slam3
+    ros: ros1
+    adapter: stereo_camera
+    build_packages:
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - orbslam3_urbannav
+    build_jobs: 4
+    tf_command: rosrun orbslam3_urbannav tf_broadcaster_node.py _world_frame_id:=camera_init _camera_frame_id:=camera_right
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch publish_left_camera:=true stereo_swap_lr:=true native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
+    launch: orbslam3_urbannav full_pipeline_orb.launch
+    output_topic: /orbslam3/odometry/mapping
+    path_topic: /orbslam3/mapping/path
+    native_lidar_topic: /orbslam3/unused/lidar
+    native_imu_topic: /orbslam3/unused/imu
+    native_camera_topic: /camera/right/image_raw
+    native_left_camera_topic: /camera/left/image_raw
+    point_time_scale: 1.0
+    bag_topics: /zed2/camera/left/image_raw /zed2/camera/right/image_raw
+    rviz_config: /root/catkin_ws/src/orbslam3_urbannav/config/orbslam3_benchmark.rviz
+    enabled: true
+    standard_topic_ns: orbslam3
+    local_odom_topic: /orbslam3/odometry/local
+    local_path_topic: /orbslam3/path/local
+    selected_output_topic: /orbslam3/odometry/output
+    selected_path_topic: /orbslam3/path/output
+    status_topic: /orbslam3/status
+    gps_supported: true
+    gps_strategy: external_fusion
+    adapter_args: publish_left_camera:=true stereo_swap_lr:=${STEREO_SWAP_BOOL:-true} native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
+    launch_args: ''
+    notes: ORB-SLAM3 default is stereo. --gps on uses conservative external fusion on the corrected body odometry output.
+  r3live:
+    display_name: R3LIVE
+    result_id: r3live
+    ros: ros1
+    adapter: native_r3live
+    build_packages:
+    - livox_ros_driver
+    - fast_lio
+    - r3live
+    - custom_localization_msgs
+    - localization_benchmark
+    - fast_lio_urbannav
+    - r3live_urbannav
+    build_jobs: 4
+    tf_command: "true"
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch native_mono_camera_topic:=/camera/image_raw
+    launch: r3live_urbannav r3live_urbannav.launch
+    output_topic: /r3live/odometry/mapping
+    path_topic: /r3live/mapping/path
+    native_lidar_topic: /livox/lidar
+    native_imu_topic: /livox/imu
+    native_camera_topic: /camera/right/image_raw
+    point_time_scale: 1.0
+    bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
+    rviz_config: /root/catkin_ws/src/r3live_urbannav/config/r3live_urbannav.rviz
+    enabled: true
+    notes: Native R3LIVE wrapper. Uses r3live_mapping with sensor_msgs/PointCloud2 input (lidar_type=0); FAST-LIO2 fallback is disabled and Docker fails if upstream r3live does not compile.
+    standard_topic_ns: r3live
+    local_odom_topic: /r3live/odometry/local
+    local_path_topic: /r3live/path/local
+    selected_output_topic: /r3live/odometry/output
+    selected_path_topic: /r3live/path/output
+    status_topic: /r3live/status
+    gps_supported: true
+    gps_strategy: external_fusion
+    adapter_args: 'native_mono_camera_topic:=/camera/image_raw publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical add_normal_fields:=true curvature_from_time:=true'
+    launch_args: enable_fastlio_fallback:=false run_visual:=true native_role:=mapping

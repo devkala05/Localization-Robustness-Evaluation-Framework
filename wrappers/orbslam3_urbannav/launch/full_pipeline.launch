@@ -1,0 +1,46 @@
+<!-- full_pipeline.launch  (orbslam3_urbannav)
+     One-command launcher: wrapper + ORB-SLAM3 + bag player + RViz.
+
+     Usage:
+       roslaunch orbslam3_urbannav full_pipeline.launch \
+           bag_path:=/data/UrbanNav-HK_TST-20210517_sensors.bag
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="bag_path"    default="/data/UrbanNav-HK_TST-20210517_sensors.bag"/>
+  <arg name="rate"        default="1.0"/>
+  <arg name="start_delay" default="5.0"/>
+  <arg name="rviz"        default="true"/>
+  <arg name="mode"        default="mono"/>
+
+  <!-- 1. Wrapper (TF + camera converter + pose republisher) -->
+  <include file="$(find orbslam3_urbannav)/launch/urbannav_wrapper.launch"/>
+
+  <!-- 2. ORB-SLAM3 -->
+  <include file="$(find orbslam3_urbannav)/launch/orbslam3_urbannav.launch">
+    <arg name="mode" value="$(arg mode)"/>
+  </include>
+
+  <!-- 3. Rosbag player (camera-only, delayed) -->
+  <node name="bag_player"
+        pkg="orbslam3_urbannav"
+        type="bag_player.py"
+        output="screen">
+    <param name="bag_path"     value="$(arg bag_path)"/>
+    <param name="rate"         value="$(arg rate)"/>
+    <param name="start_delay"  value="$(arg start_delay)"/>
+    <param name="mode"         value="$(arg mode)"/>
+    <param name="use_sim_time" value="true"/>
+  </node>
+
+  <!-- 4. RViz (optional) -->
+  <group if="$(arg rviz)">
+    <node name="rviz"
+          pkg="rviz"
+          type="rviz"
+          args="-d $(find orbslam3_urbannav)/config/orbslam3_urbannav.rviz"
+          output="screen"/>
+  </group>
+
+</launch>

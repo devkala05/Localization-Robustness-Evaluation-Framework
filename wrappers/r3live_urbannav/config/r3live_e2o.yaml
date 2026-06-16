@@ -1,0 +1,105 @@
+# R3LIVE E2O one_full_loop parameters.
+# Mirrors the working FAST-LIVO2 E2O calibration: lidar103 is the body origin,
+# IMU is treated body-aligned, and front camera uses lidar103->camera R/t.
+r3live_common:
+  lid_topic: /livox/lidar
+  imu_topic: /livox/imu
+  img_topic: /camera/image_raw
+  lidar_type: 0
+  scan_line: 16
+  blind: 0.5
+  cut_frame_num: 3
+  pcd_save_en: false
+  pcd_path: /data/output/r3live_e2o_map.pcd
+  dense_publish_en: false
+  record_offline_map: 0
+  pub_pt_minimum_views: 3
+  minimum_pts_size: 0.05
+  image_downsample_ratio: 1
+  estimate_i2c_extrinsic: 0
+  estimate_intrinsic: 0
+  maximum_vio_tracked_pts: 600
+  append_global_map_point_step: 4
+  if_dump_log: 0
+lio:
+  acc_cov: 0.5
+  gyr_cov: 0.3
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+  extrinsic_T: [0.0, 0.0, 0.0]
+  extrinsic_R: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  max_iterations: 5
+  fov_degree: 360.0
+  det_range: 80.0
+  extrinsic_est_en: false
+vio:
+  cam_fx: 668.02585977
+  cam_fy: 658.80930843
+  cam_cx: 657.26752359
+  cam_cy: 363.16409155
+  image_width: 1280
+  image_height: 720
+  cam_d0: -0.05078581
+  cam_d1: 0.08456123
+  cam_d2: -0.00046157
+  cam_d3: 0.00656211
+  cam_ext_R: &e2o_cam_R
+  - -0.18256836
+  - -0.98306216
+  - -0.01604916
+  - 0.11110754
+  - -0.00440978
+  - -0.99379861
+  - 0.97689503
+  - -0.18321936
+  - 0.1100307
+  cam_ext_T: &e2o_cam_T
+  - 0.07383026
+  - -0.5358112
+  - -0.31010858
+  max_iterations: 5
+  patch_size: 8
+  patch_pyrimid_level: 4
+  outlier_threshold: 1000
+  img_point_cov: 1000
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+LiDAR_pointcloud_topic: /livox/lidar
+IMU_topic: /livox/imu
+Image_topic: /camera/image_raw
+Image_compressed_topic: /camera/image_raw/compressed
+r3live_vio:
+  image_width: 1280
+  image_height: 720
+  camera_intrinsic:
+  - 668.02585977
+  - 0.0
+  - 657.26752359
+  - 0.0
+  - 658.80930843
+  - 363.16409155
+  - 0.0
+  - 0.0
+  - 1.0
+  camera_dist_coeffs:
+  - -0.05078581
+  - 0.08456123
+  - -0.00046157
+  - 0.00656211
+  - -0.03406049
+  camera_ext_R: *e2o_cam_R
+  camera_ext_t: *e2o_cam_T
+r3live_lio:
+  lio_update_point_step: 1
+  max_iteration: 5
+  lidar_time_delay: 0
+  filter_size_corner: 0.3
+  filter_size_surf: 0.3
+  filter_size_surf_z: 0.3
+  filter_size_map: 0.4
+  fov_degree: 360.0
+Lidar_front_end:
+  lidar_type: 0
+  N_SCANS: 16
+  using_raw_point: 1
+  point_step: 1

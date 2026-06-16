@@ -1,0 +1,7 @@
+gps:
+  max_cov_xy: 100.0
+  max_cov_z: 400.0
+  use_z: false
+  latency_ms: 0
+  fusion_alpha: 0.08
+  required: false
