@@ -81,6 +81,8 @@ def main():
     shell_var("DATASET_GPS_FILE", dataset.get("gps_file", ""))
     shell_var("DATASET_GPS_TOPIC", dataset.get("gps_topic", "/gps/fix_raw"))
     shell_var("DATASET_ORB_MODE", dataset.get("default_orb_mode", "stereo"))
+    shell_var("DATASET_ORB_MONO_SCALE", dataset.get("orb_mono_scale", ""))
+    shell_var("DATASET_ORB_YAW_OFFSET_DEG", dataset.get("orb_yaw_offset_deg", ""))
     shell_var("DATASET_STEREO_SWAP", dataset.get("stereo_swap", True))
     shell_var("DATASET_LIDAR_MODEL", lidar.get("model", "velodyne_32"))
     shell_var("DATASET_SCAN_LINE", lidar.get("scan_line", 32))

@@ -69,6 +69,18 @@ def invert_rigid(T: np.ndarray) -> np.ndarray:
     return Ti
 
 
+def yaw_rotation(yaw_rad: float) -> np.ndarray:
+    c = math.cos(yaw_rad)
+    s = math.sin(yaw_rad)
+    T = np.eye(4)
+    T[:3, :3] = np.array([
+        [c, -s, 0.0],
+        [s, c, 0.0],
+        [0.0, 0.0, 1.0],
+    ])
+    return T
+
+
 def pose_to_mat(pose: gm.Pose) -> np.ndarray:
     q = pose.orientation
     T = np.eye(4)
@@ -111,6 +123,9 @@ class PoseRepublisher:
         self.use_camera_to_body_extrinsic = rospy.get_param("~use_camera_to_body_extrinsic", True)
         self.dataset_id = str(rospy.get_param("~dataset_id", os.environ.get("DATASET_ID", "urbannav"))).lower()
         self.camera_to_body_extrinsic = E2O_OPTICAL_CAMERA_T_BODY if self.dataset_id == "e2o" else RIGHT_CAMERA_T_IMU
+        self.pose_scale = float(rospy.get_param("~pose_scale", 1.0))
+        self.yaw_offset_rad = math.radians(float(rospy.get_param("~yaw_offset_deg", 0.0)))
+        self.yaw_offset_T = yaw_rotation(self.yaw_offset_rad)
 
         self._pub_odom = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=50)
         self._pub_path = rospy.Publisher(self.output_path_topic, Path, queue_size=10)
@@ -136,7 +151,7 @@ class PoseRepublisher:
         self._watchdog = rospy.Timer(rospy.Duration(1.0), self._watchdog_cb)
 
         rospy.loginfo(
-            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s dataset=%s body_extrinsic=%s normalize=%s jump_guard=%.1fm/%.1fmps",
+            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s dataset=%s body_extrinsic=%s normalize=%s scale=%.3f yaw_offset=%.2fdeg jump_guard=%.1fm/%.1fmps",
             self.input_topic,
             self.output_odom_topic,
             self.output_path_topic,
@@ -145,6 +160,8 @@ class PoseRepublisher:
             self.dataset_id,
             self.use_camera_to_body_extrinsic,
             self.normalize_to_start,
+            self.pose_scale,
+            math.degrees(self.yaw_offset_rad),
             self.max_interframe_translation,
             self.max_speed_mps,
         )
@@ -161,6 +178,10 @@ class PoseRepublisher:
                 self._first_body_inv = invert_rigid(T_world_body)
                 rospy.loginfo("[ORB-SLAM3 PoseRepublisher] Locked first ORB body pose as camera_init origin")
             T_world_body = self._first_body_inv @ T_world_body
+        if self.pose_scale != 1.0:
+            T_world_body[:3, 3] *= self.pose_scale
+        if self.yaw_offset_rad != 0.0:
+            T_world_body = self.yaw_offset_T @ T_world_body
         return T_world_body
 
     def _passes_jump_guard(self, stamp: rospy.Time, position: np.ndarray) -> bool:
