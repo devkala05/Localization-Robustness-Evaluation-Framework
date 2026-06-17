@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 
 ROOT = Path("/root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/src")
@@ -54,6 +55,13 @@ def replace_once(text: str, old: str, new: str, path: Path) -> str:
     if old not in text:
         raise RuntimeError(f"Pattern not found in {path}: {old[:120]!r}")
     return text.replace(old, new, 1)
+
+
+def replace_regex_once(text: str, pattern: str, repl: str, path: Path) -> str:
+    text_new, count = re.subn(pattern, repl, text, count=1, flags=re.MULTILINE)
+    if count != 1:
+        raise RuntimeError(f"Pattern not found in {path}: {pattern[:120]!r}")
+    return text_new
 
 
 def insert_helper(text: str, path: Path) -> str:
@@ -161,12 +169,18 @@ def patch_mono_inertial():
         MONO_INERTIAL,
     )
     text = replace_once(text, '    ORB_SLAM3::System* mpSLAM;\n    ImuGrabber *mpImuGb;\n', '    ORB_SLAM3::System* mpSLAM;\n    ImuGrabber *mpImuGb;\n    ros::Publisher pose_pub;\n', MONO_INERTIAL)
-    text = replace_once(text, '    ImageGrabber igb(&SLAM,&imugb,bEqual);\n', '    ImageGrabber igb(&SLAM,&imugb,n,bEqual);\n', MONO_INERTIAL)
-    text = replace_once(
+    text = replace_regex_once(
         text,
-        '        mpSLAM->TrackMonocular(im,tIm,vImuMeas);\n',
-        '        Sophus::SE3f Tcw = mpSLAM->TrackMonocular(im,tIm,vImuMeas);\n'
-        '        if (mpSLAM->GetTrackingState() == 2 && isFiniteTcw(Tcw))\n            pose_pub.publish(poseFromTcw(Tcw, ros::Time(tIm)));\n',
+        r'ImageGrabber\s+igb\(&SLAM,\s*&imugb,\s*([^;\n]+?)\);',
+        r'ImageGrabber igb(&SLAM,&imugb,n,\1);',
+        MONO_INERTIAL,
+    )
+    text = replace_regex_once(
+        text,
+        r'mpSLAM->TrackMonocular\(im,\s*tIm,\s*vImuMeas\);',
+        'Sophus::SE3f Tcw = mpSLAM->TrackMonocular(im,tIm,vImuMeas);\n'
+        '        if (mpSLAM->GetTrackingState() == 2 && isFiniteTcw(Tcw))\n'
+        '            pose_pub.publish(poseFromTcw(Tcw, ros::Time(tIm)));',
         MONO_INERTIAL,
     )
     MONO_INERTIAL.write_text(text)
@@ -189,12 +203,18 @@ def patch_stereo_inertial():
         STEREO_INERTIAL,
     )
     text = replace_once(text, '    ORB_SLAM3::System* mpSLAM;\n    ImuGrabber *mpImuGb;\n', '    ORB_SLAM3::System* mpSLAM;\n    ImuGrabber *mpImuGb;\n    ros::Publisher pose_pub;\n', STEREO_INERTIAL)
-    text = replace_once(text, '    ImageGrabber igb(&SLAM,&imugb,sbRect == "true",bEqual);\n', '    ImageGrabber igb(&SLAM,&imugb,n,sbRect == "true",bEqual);\n', STEREO_INERTIAL)
-    text = replace_once(
+    text = replace_regex_once(
         text,
-        '            mpSLAM->TrackStereo(imLeft,imRight,tImLeft,vImuMeas);\n',
-        '            Sophus::SE3f Tcw = mpSLAM->TrackStereo(imLeft,imRight,tImLeft,vImuMeas);\n'
-        '            if (mpSLAM->GetTrackingState() == 2 && isFiniteTcw(Tcw))\n                pose_pub.publish(poseFromTcw(Tcw, ros::Time(tImLeft)));\n',
+        r'ImageGrabber\s+igb\(&SLAM,\s*&imugb,\s*([^,\n]+?),\s*([^;\n]+?)\);',
+        r'ImageGrabber igb(&SLAM,&imugb,n,\1,\2);',
+        STEREO_INERTIAL,
+    )
+    text = replace_regex_once(
+        text,
+        r'mpSLAM->TrackStereo\(imLeft,\s*imRight,\s*tImLeft,\s*vImuMeas\);',
+        'Sophus::SE3f Tcw = mpSLAM->TrackStereo(imLeft,imRight,tImLeft,vImuMeas);\n'
+        '            if (mpSLAM->GetTrackingState() == 2 && isFiniteTcw(Tcw))\n'
+        '                pose_pub.publish(poseFromTcw(Tcw, ros::Time(tImLeft)));',
         STEREO_INERTIAL,
     )
     STEREO_INERTIAL.write_text(text)

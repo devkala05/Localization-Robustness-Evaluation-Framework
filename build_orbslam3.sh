@@ -22,9 +22,9 @@ for path in \
     fi
 done
 
-chmod +x "${SCRIPT_DIR}"/wrappers/orbslam3_urbannav/scripts/*.py "${SCRIPT_DIR}"/wrappers/orbslam3_urbannav/scripts/*.sh || true
-chmod +x "${SCRIPT_DIR}"/wrappers/localization_benchmark/scripts/*.py || true
-chmod +x "${SCRIPT_DIR}"/wrappers/fast-lio_urbannav/scripts/*.py || true
+find "${SCRIPT_DIR}/wrappers/orbslam3_urbannav/scripts" -maxdepth 1 -type f \( -name '*.py' -o -name '*.sh' \) -exec chmod +x {} +
+find "${SCRIPT_DIR}/wrappers/localization_benchmark/scripts" -maxdepth 1 -type f -name '*.py' -exec chmod +x {} +
+find "${SCRIPT_DIR}/wrappers/fast-lio_urbannav/scripts" -maxdepth 1 -type f -name '*.py' -exec chmod +x {} +
 
 mkdir -p "${SCRIPT_DIR}/data/results/orb_slam3" "${SCRIPT_DIR}/data/output"
 
