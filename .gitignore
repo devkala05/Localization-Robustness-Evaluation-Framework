@@ -104,19 +104,12 @@ trajectory*.txt
 # =========================
 # Dataset / Bags / Outputs
 # =========================
-data/
-datasets/
-bags/
-rosbags/
 *.bag
 *.mcap
 results/
 outputs/
-runs/
 benchmark_results/
 golden/
-metrics/
-plots/
 reports/generated/
 
 # =========================

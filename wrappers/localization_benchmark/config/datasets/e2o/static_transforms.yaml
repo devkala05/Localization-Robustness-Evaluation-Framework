@@ -1,0 +1,103 @@
+# E2O static TF adapter.
+# ROS convention: each transform is the pose of child in parent.
+# The supplied calibration stores p_front_camera = R * p_lidar103 + t.
+# Therefore body(lidar103) -> camera_right below uses the inverse transform.
+transforms:
+- parent: body
+  child: velodyne
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  assumption: body/IMU aligned with lidar103; unverified
+- parent: body
+  child: velodyne103
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  assumption: body frame is defined at lidar103 until IMU extrinsic is measured
+- parent: body
+  child: gnss_antenna
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  assumption: GNSS antenna lever arm is unavailable; zero lever arm is provisional
+- parent: body
+  child: camera_right
+  translation:
+  - 0.37595526
+  - 0.01339903
+  - -0.49718205
+  rotation_matrix:
+  - - -0.18256836
+    - 0.11110754
+    - 0.97689503
+  - - -0.98306216
+    - -0.00440978
+    - -0.18321936
+  - - -0.01604916
+    - -0.99379861
+    - 0.1100307
+  source: inverse(lidar103_to_front_camera)
+- parent: camera_right
+  child: camera_color_optical_frame
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+- parent: velodyne103
+  child: velodyne102
+  translation:
+  - 0.36883
+  - 0.290573
+  - -0.187366
+  rotation_matrix:
+  - - 0.939229
+    - 0.114115
+    - 0.323769
+  - - -0.183642
+    - 0.963858
+    - 0.193013
+  - - -0.290041
+    - -0.240741
+    - 0.92624
+  source: lidar102_to_lidar103
+- parent: velodyne103
+  child: velodyne104
+  translation:
+  - 0.24126
+  - -0.433314
+  - -0.154562
+  rotation_matrix:
+  - - 0.936284
+    - 0.272688
+    - 0.221389
+  - - -0.198318
+    - 0.930633
+    - -0.307559
+  - - -0.289899
+    - 0.244057
+    - 0.925416
+  source: lidar104_to_lidar103

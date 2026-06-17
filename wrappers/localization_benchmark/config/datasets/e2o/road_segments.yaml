@@ -1,0 +1,18 @@
+# Approximate temporal phases only; no manually annotated E2O road-scene labels were supplied.
+segments:
+- name: warmup_departure
+  type: temporal_phase
+  start: 1723528213.157124
+  end: 1723528258.157124
+- name: faculty_loop_first_pass
+  type: temporal_phase
+  start: 1723528258.157124
+  end: 1723528348.157124
+- name: faculty_loop_second_pass
+  type: temporal_phase
+  start: 1723528348.157124
+  end: 1723528448.157124
+- name: return_and_stop
+  type: temporal_phase
+  start: 1723528448.157124
+  end: 1723528521.6637032

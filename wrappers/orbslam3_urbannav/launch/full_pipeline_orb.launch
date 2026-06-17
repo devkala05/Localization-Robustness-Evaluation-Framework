@@ -14,6 +14,10 @@
   <arg name="use_camera_to_body_extrinsic" default="true"/>
   <arg name="pose_scale" default="1.0"/>
   <arg name="yaw_offset_deg" default="0.0"/>
+  <arg name="align_to_gt" default="false"/>
+  <arg name="gt_odom_topic" default="/ground_truth_odometry"/>
+  <arg name="align_min_gt_motion_m" default="5.0"/>
+  <arg name="align_min_orb_motion_m" default="0.05"/>
   <arg name="normalize_to_start" default="true"/>
   <arg name="max_interframe_translation" default="5.0"/>
   <arg name="max_speed_mps" default="45.0"/>
@@ -44,6 +48,10 @@
     <param name="use_camera_to_body_extrinsic" value="$(arg use_camera_to_body_extrinsic)"/>
     <param name="pose_scale" value="$(arg pose_scale)"/>
     <param name="yaw_offset_deg" value="$(arg yaw_offset_deg)"/>
+    <param name="align_to_gt" value="$(arg align_to_gt)"/>
+    <param name="gt_odom_topic" value="$(arg gt_odom_topic)"/>
+    <param name="align_min_gt_motion_m" value="$(arg align_min_gt_motion_m)"/>
+    <param name="align_min_orb_motion_m" value="$(arg align_min_orb_motion_m)"/>
     <!-- Dynamic camera_init->body TF is published by standard_output_republisher.
          Keep this node odometry/path-only to avoid TF_REPEATED_DATA duplicate TFs. -->
     <param name="publish_tf" value="false"/>

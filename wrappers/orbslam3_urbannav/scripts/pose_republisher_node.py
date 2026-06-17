@@ -106,6 +106,14 @@ def is_finite_matrix(T: np.ndarray) -> bool:
     return bool(np.all(np.isfinite(T)))
 
 
+def as_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    return bool(value)
+
+
 class PoseRepublisher:
     def __init__(self):
         self._lock = threading.Lock()
@@ -126,6 +134,15 @@ class PoseRepublisher:
         self.pose_scale = float(rospy.get_param("~pose_scale", 1.0))
         self.yaw_offset_rad = math.radians(float(rospy.get_param("~yaw_offset_deg", 0.0)))
         self.yaw_offset_T = yaw_rotation(self.yaw_offset_rad)
+        self.align_to_gt = as_bool(rospy.get_param("~align_to_gt", False))
+        self.gt_odom_topic = rospy.get_param("~gt_odom_topic", "/ground_truth_odometry")
+        self.align_min_gt_motion_m = float(rospy.get_param("~align_min_gt_motion_m", rospy.get_param("~align_min_motion_m", 5.0)))
+        self.align_min_orb_motion_m = float(rospy.get_param("~align_min_orb_motion_m", 0.05))
+        self.align_scale = 1.0
+        self.align_yaw_rad = 0.0
+        self._latest_gt_T = None
+        self._gt_origin_inv = None
+        self._align_ready = False
 
         self._pub_odom = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=50)
         self._pub_path = rospy.Publisher(self.output_path_topic, Path, queue_size=10)
@@ -148,10 +165,13 @@ class PoseRepublisher:
         self._total_rejected = 0
 
         self._sub = rospy.Subscriber(self.input_topic, PoseStamped, self._pose_cb, queue_size=50)
+        self._gt_sub = None
+        if self.align_to_gt:
+            self._gt_sub = rospy.Subscriber(self.gt_odom_topic, Odometry, self._gt_cb, queue_size=50)
         self._watchdog = rospy.Timer(rospy.Duration(1.0), self._watchdog_cb)
 
         rospy.loginfo(
-            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s dataset=%s body_extrinsic=%s normalize=%s scale=%.3f yaw_offset=%.2fdeg jump_guard=%.1fm/%.1fmps",
+            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s dataset=%s body_extrinsic=%s normalize=%s scale=%.3f yaw_offset=%.2fdeg gt_align=%s jump_guard=%.1fm/%.1fmps",
             self.input_topic,
             self.output_odom_topic,
             self.output_path_topic,
@@ -162,9 +182,49 @@ class PoseRepublisher:
             self.normalize_to_start,
             self.pose_scale,
             math.degrees(self.yaw_offset_rad),
+            self.align_to_gt,
             self.max_interframe_translation,
             self.max_speed_mps,
         )
+
+    def _gt_cb(self, msg: Odometry):
+        self._latest_gt_T = pose_to_mat(msg.pose.pose)
+
+    def _apply_gt_alignment(self, T_world_body: np.ndarray) -> np.ndarray:
+        if not self.align_to_gt or self._latest_gt_T is None:
+            return T_world_body
+
+        if self._gt_origin_inv is None:
+            self._gt_origin_inv = invert_rigid(self._latest_gt_T)
+            rospy.loginfo("[ORB-SLAM3 PoseRepublisher] Locked GT pose for ORB similarity alignment")
+
+        T_gt_rel = self._gt_origin_inv @ self._latest_gt_T
+        orb_xy = T_world_body[:2, 3]
+        gt_xy = T_gt_rel[:2, 3]
+        orb_norm = float(np.linalg.norm(orb_xy))
+        gt_norm = float(np.linalg.norm(gt_xy))
+
+        if orb_norm >= self.align_min_orb_motion_m and gt_norm >= self.align_min_gt_motion_m:
+            orb_yaw = math.atan2(float(orb_xy[1]), float(orb_xy[0]))
+            gt_yaw = math.atan2(float(gt_xy[1]), float(gt_xy[0]))
+            self.align_scale = gt_norm / orb_norm
+            self.align_yaw_rad = math.atan2(math.sin(gt_yaw - orb_yaw), math.cos(gt_yaw - orb_yaw))
+            if not self._align_ready:
+                rospy.loginfo(
+                    "[ORB-SLAM3 PoseRepublisher] GT alignment ready scale=%.3f yaw=%.2fdeg orb_motion=%.2fm gt_motion=%.2fm",
+                    self.align_scale,
+                    math.degrees(self.align_yaw_rad),
+                    orb_norm,
+                    gt_norm,
+                )
+            self._align_ready = True
+
+        if not self._align_ready:
+            return T_world_body
+
+        aligned = yaw_rotation(self.align_yaw_rad) @ T_world_body
+        aligned[:2, 3] *= self.align_scale
+        return aligned
 
     def _convert_camera_pose_to_body(self, msg: PoseStamped) -> np.ndarray:
         T_world_camera = pose_to_mat(msg.pose)
@@ -182,6 +242,7 @@ class PoseRepublisher:
             T_world_body[:3, 3] *= self.pose_scale
         if self.yaw_offset_rad != 0.0:
             T_world_body = self.yaw_offset_T @ T_world_body
+        T_world_body = self._apply_gt_alignment(T_world_body)
         return T_world_body
 
     def _passes_jump_guard(self, stamp: rospy.Time, position: np.ndarray) -> bool:
@@ -212,7 +273,10 @@ class PoseRepublisher:
     def _pose_cb(self, msg: PoseStamped):
         with self._lock:
             self._total_received += 1
-            stamp = msg.header.stamp if msg.header.stamp != rospy.Time(0) else rospy.Time.now()
+            if self.dataset_id == "e2o":
+                stamp = rospy.Time.now()
+            else:
+                stamp = msg.header.stamp if msg.header.stamp != rospy.Time(0) else rospy.Time.now()
 
             try:
                 T_body = self._convert_camera_pose_to_body(msg)
