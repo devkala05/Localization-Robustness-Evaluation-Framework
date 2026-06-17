@@ -21,7 +21,7 @@ image1_topic: '/camera/right/image_raw'
 depth_topic: '/camera/depth/image_rect_raw'
 depth_scale: 0.001
 color_topic: '/camera/right/image_raw'
-result_path: '/data/results/adaptive_w_lvio/lvio_fusion_e2o_mono_depth_result.csv'
+result_path: '/data/output/adaptive_w_lvio/lvio_fusion_e2o_mono_depth_result.csv'
 ground_truth_path: '/workspace/e20_GT_scripts/gt_one_full_loop_fastlivo2_lidar103.csv'
 
 undistort: 0

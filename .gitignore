@@ -182,3 +182,4 @@ credentials/
 /data/results/**
 /data/**/*.bag
 /data/**/*.mcap
+!/data/results/**/.gitkeep

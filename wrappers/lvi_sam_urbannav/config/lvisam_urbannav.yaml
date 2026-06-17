@@ -10,7 +10,7 @@ lvi_sam:
   pointCloudTopic: "/cloud_registered_raw"
   imuTopic: "/livox/imu"
   odomTopic: "/lvi_sam/lidar/odometry/imu"
-  gpsTopic: "/odometry/gps"
+  gpsTopic: "/lvi_sam/gps_disabled"
 
   # Visual-LiDAR coupling. imageProjection consumes the VINS propagated
   # odometry above for scan initial guess/deskew, and mapOptimization adds a
@@ -32,8 +32,9 @@ lvi_sam:
   lidarMinRange: 1.0
   lidarMaxRange: 1000.0
 
-  # GPS is optional. When ./run --gps on is used, the common GPS layer publishes
-  # /odometry/gps for LVI-SAM/LIO-SAM-style native GPS factors.
+  # GPS is handled by the benchmark common external fusion layer for fair
+  # with_gps/without_gps comparison across all algorithms. Native GPS factors
+  # are intentionally disabled here to avoid double-counting GPS.
   useImuHeadingInitialization: false
   useGpsElevation: false
   gpsCovThreshold: 2.0

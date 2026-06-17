@@ -39,9 +39,9 @@ Every integration publishes the same benchmark surface:
 Recorded trajectories are stored under:
 
 ```text
-data/results/<result_id>/per_<N>_<result_id>_<timestamp>/trajectory.csv
-data/results/<result_id>/per_<N>/trajectory.csv
-data/results/<result_id>/robustness_ranking.txt
+data/results/<dataset>/<result_id>/<with_gps|without_gps>/per_<N>/<YYYY-MM-DD_HH-MM-SS>/trajectory.csv
+data/results/<dataset>/<result_id>/<with_gps|without_gps>/per_<N>/<YYYY-MM-DD_HH-MM-SS>/metrics.json
+data/results/<dataset>/<result_id>/<with_gps|without_gps>/per_<N>/<YYYY-MM-DD_HH-MM-SS>/analysis.txt
 ```
 
 ## Removed Algorithms

@@ -19,7 +19,8 @@ ALGOS=(
   r3live
 )
 
-# Run order: for each algo -> build once -> per 0 gps off/on -> per 1 gps off/on ... per 6 gps off/on
+# Run order: for each algo -> build once -> dataset -> per 0 gps off/on -> ... -> per 6 gps off/on
+DATASETS=(urbannav e2o)
 PERS=(0 1 2 3 4 5 6)
 GPS_MODES=(off on)
 
@@ -27,10 +28,15 @@ GPS_MODES=(off on)
 #   START_ALGO=rtabmap ./run_all_algos_new_terminals.sh   # skip algos before rtabmap
 #   START_PER=3 ./run_all_algos_new_terminals.sh          # for every algo, start from per 3
 #   GPS_LIST="on" ./run_all_algos_new_terminals.sh        # run only GPS on
+#   DATASET_LIST="e2o" ./run_all_algos_new_terminals.sh   # run only one dataset
 #   ALGO_LIST="lvisam rtabmap" ./run_all_algos_new_terminals.sh
 if [ -n "${ALGO_LIST:-}" ]; then
   # shellcheck disable=SC2206
   ALGOS=(${ALGO_LIST})
+fi
+if [ -n "${DATASET_LIST:-}" ]; then
+  # shellcheck disable=SC2206
+  DATASETS=(${DATASET_LIST})
 fi
 if [ -n "${PER_LIST:-}" ]; then
   # shellcheck disable=SC2206
@@ -64,6 +70,13 @@ done
 if [ -n "${START_ALGO:-}" ]; then
   validate_algo_name "${START_ALGO}"
 fi
+
+for dataset in "${DATASETS[@]}"; do
+  case "${dataset}" in
+    urbannav|e2o) ;;
+    *) echo "ERROR: dataset must be urbannav/e2o, got '${dataset}'" >&2; exit 2 ;;
+  esac
+done
 
 for per in "${PERS[@]}"; do
   if ! [[ "${per}" =~ ^[0-6]$ ]]; then
@@ -210,11 +223,13 @@ for algo in "${ALGOS[@]}"; do
   fi
   open_terminal_wait "BUILD ${algo}" "${build_script}"
 
-  for per in "${PERS[@]}"; do
-    for gps in "${GPS_MODES[@]}"; do
-      title="RUN ${algo} per_${per} gps_${gps} eval_full"
-      cmd="./run --algo ${algo} --per ${per} --gps ${gps} --eval"
-      open_terminal_wait "${title}" "${cmd}"
+  for dataset in "${DATASETS[@]}"; do
+    for per in "${PERS[@]}"; do
+      for gps in "${GPS_MODES[@]}"; do
+        title="RUN ${dataset} ${algo} per_${per} gps_${gps} eval_full"
+        cmd="./run --dataset ${dataset} --algo ${algo} --per ${per} --gps ${gps} --eval"
+        open_terminal_wait "${title}" "${cmd}"
+      done
     done
   done
 

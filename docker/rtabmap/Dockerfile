@@ -71,7 +71,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     catkin config --extend /opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav rtabmap_urbannav --no-status"
 
-RUN mkdir -p /data /data/results/rtab_map /data/output
+RUN mkdir -p /data /data/results/analysis /data/results/e2o /data/results/urbannav /data/output
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source ${CATKIN_WS}/devel/setup.bash" >> /root/.bashrc && \

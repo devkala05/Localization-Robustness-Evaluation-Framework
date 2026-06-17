@@ -8,6 +8,7 @@
   <arg name="max_cov_xy" default="100.0"/>
   <arg name="max_cov_z" default="400.0"/>
   <arg name="frame_id" default="gnss_antenna"/>
+  <arg name="time_offset_sec" default="0.0"/>
 
   <group if="$(arg gps_enable)">
     <!-- CSV/file mode. For UrbanNav-HK_TST this is the expected path. -->
@@ -17,6 +18,7 @@
         <param name="output_topic" value="/gps/fix_raw"/>
         <param name="frame_id" value="$(arg frame_id)"/>
         <param name="required" value="$(arg gps_required)"/>
+        <param name="time_offset_sec" value="$(arg time_offset_sec)"/>
       </node>
     </group>
 
@@ -27,6 +29,7 @@
       <param name="status_topic" value="/gps/status"/>
       <param name="max_cov_xy" value="$(arg max_cov_xy)"/>
       <param name="max_cov_z" value="$(arg max_cov_z)"/>
+      <param name="output_frame_id" value="$(arg frame_id)"/>
     </node>
   </group>
 </launch>

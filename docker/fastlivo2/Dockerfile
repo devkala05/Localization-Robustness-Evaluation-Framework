@@ -100,7 +100,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     catkin build fast_livo --no-status && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav fast_livo2_wrapper --no-status"
 
-RUN mkdir -p /data /data/results/fast_livo2 /data/output
+RUN mkdir -p /data /data/results/analysis /data/results/e2o /data/results/urbannav /data/output
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source ${CATKIN_WS}/devel/setup.bash" >> /root/.bashrc && \

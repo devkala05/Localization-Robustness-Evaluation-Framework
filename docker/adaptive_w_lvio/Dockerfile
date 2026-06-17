@@ -114,7 +114,7 @@ RUN /bin/bash -c "set -e; \
        find ${CATKIN_WS}/logs/lvio_fusion_node ${CATKIN_WS}/logs/localization_benchmark -maxdepth 1 -type f -name '*.log' -print -exec sh -c 'echo ===== $1 =====; tail -n 240 $1' sh {} \; 2>/dev/null || true; \
        false)"
 
-RUN mkdir -p /data /data/results/adaptive_w_lvio /data/output
+RUN mkdir -p /data /data/results/analysis /data/results/e2o /data/results/urbannav /data/output
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source ${CATKIN_WS}/devel/setup.bash" >> /root/.bashrc && \

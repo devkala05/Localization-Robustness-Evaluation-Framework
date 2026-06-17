@@ -41,7 +41,7 @@ bag_topics:
 
 paths:
   perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations
-  segments_yaml: /root/catkin_ws/src/localization_benchmark/config/datasets/e2o/road_segments.yaml
+  segments_yaml: /root/catkin_ws/src/localization_benchmark/config/segments/e2o_segments.yaml
 
 calibration:
   camera_right:

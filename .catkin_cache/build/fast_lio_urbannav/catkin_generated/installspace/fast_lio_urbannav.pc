@@ -1,0 +1,8 @@
+prefix=/root/catkin_ws/install
+
+Name: fast_lio_urbannav
+Description: Description of fast_lio_urbannav
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

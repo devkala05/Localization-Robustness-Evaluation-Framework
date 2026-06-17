@@ -29,9 +29,19 @@ Equivalent explicit command:
 ./run --dataset e2o --algo fastlio2 --per 0 --gps on --eval
 ```
 
-Use `--gps-required` when a missing or rejected GPS stream should fail the run instead of falling back to local odometry.
+Use `--gps-required` for CSV mode when an explicit GNSS file must be present. If GPS messages are absent or rejected during runtime, `output_selector.py` reports `output=local_fallback` on the algorithm status topic instead of silently pretending GPS was used.
 
-For E2O, `--gps on` defaults to live topic mode using `/mavros/global_position/global` from `data/e2o/one_full_loop.bag`.
+For E2O, `--gps on` defaults to topic mode using `/mavros/global_position/global`; the run scripts now append that topic to `rosbag play` automatically when GPS is enabled.
+
+
+Optional tuning flags:
+
+```bash
+./run --algo fastlio2 --per 0 --gps on --gps-max-cov-xy 25 --gps-max-cov-z 100 --eval
+./run --algo fastlio2 --per 0 --gps on --gps-time-offset-sec 18 --eval
+```
+
+`--gps-time-offset-sec` is only for CSV replay when your CSV timestamps need a constant correction. Leave it at `0` when the CSV already uses ROS/Unix bag time.
 
 ## CSV Schema
 
@@ -58,4 +68,4 @@ The repository also includes `tools/nmea_to_gnss_csv.py` for NMEA-derived CSV ge
 /<algo>/path/output
 ```
 
-CSV replay publishes `NavSatFix.header.frame_id=gnss_antenna`, matching the UrbanNav static sensor TF. If GPS is enabled but absent or rejected and `--gps-required` is not set, `output_selector.py` keeps publishing local odometry on `/<algo>/odometry/output`.
+CSV replay and topic GPS are normalized to `NavSatFix.header.frame_id=gnss_antenna`, matching the benchmark static sensor TF. If GPS is enabled but absent or rejected and `--gps-required` is not set, `output_selector.py` keeps publishing local odometry on `/<algo>/odometry/output`.

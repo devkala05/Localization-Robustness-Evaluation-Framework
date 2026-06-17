@@ -23,7 +23,7 @@ navsat_topic: '/gps/fix'
 image0_topic: '/camera/left/image_raw'
 image1_topic: '/camera/right/image_raw'
 color_topic: '/camera/left/image_raw'
-result_path: '/data/results/adaptive_w_lvio/lvio_fusion_result.csv'
+result_path: '/data/output/adaptive_w_lvio/lvio_fusion_result.csv'
 ground_truth_path: '/data/UrbanNav_TST_GT_raw.txt'
 
 # cameras parameters

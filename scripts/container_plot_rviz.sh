@@ -25,7 +25,7 @@ if [ ! -f "${RVIZ_CONFIG}" ]; then
   exit 1
 fi
 
-python3 /workspace/wrappers/localization_benchmark/scripts/offline_rviz_paths.py "$@" >/tmp/offline_plot_publisher.log 2>&1 &
+python3 /workspace/wrappers/localization_benchmark/scripts/offline_rviz_paths.py --dataset-config-dir /workspace/wrappers/localization_benchmark/config/datasets "$@" >/tmp/offline_plot_publisher.log 2>&1 &
 sleep 2
 
 echo "Offline trajectory RViz running."
@@ -35,6 +35,6 @@ echo "  /tmp/offline_plot_publisher.log"
 echo "Topics:"
 echo "  /ground_truth_path"
 echo "  /offline/trajectory_markers"
-echo "  /offline/<algo>/path"
+echo "  /offline/<dataset>/<algo>/<with_gps|without_gps>/per_<N>/path"
 
 LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe rviz -d "${RVIZ_CONFIG}"

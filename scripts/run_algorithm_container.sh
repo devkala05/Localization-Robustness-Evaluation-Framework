@@ -36,7 +36,7 @@ case "${ALGO}" in
 esac
 if [ -n "${CONTAINER_NAME:-}" ]; then CONTAINER="${CONTAINER_NAME}"; elif [ "${MODE}" = "per" ]; then CONTAINER="${DATASET_ID}_${ALGO}_run_${PER}"; else CONTAINER="${DATASET_ID}_${ALGO}_shell"; fi
 if [ -z "${DISPLAY:-}" ] && [ -S /tmp/.X11-unix/X1 ]; then export DISPLAY=:1; fi
-mkdir -p "${SCRIPT_DIR}/data/results/${DATASET_ID}/${RESULT_DIR}" "${SCRIPT_DIR}/data/output"
+mkdir -p "${SCRIPT_DIR}/data/results/analysis" "${SCRIPT_DIR}/data/results/e2o" "${SCRIPT_DIR}/data/results/urbannav" "${SCRIPT_DIR}/data/output"
 chmod +x "${SCRIPT_DIR}"/scripts/*.sh 2>/dev/null || true
 chmod +x "${SCRIPT_DIR}"/wrappers/localization_benchmark/scripts/*.py 2>/dev/null || true
 chmod +x "${SCRIPT_DIR}"/wrappers/fast-lio_urbannav/scripts/*.py 2>/dev/null || true
@@ -58,7 +58,7 @@ exec docker run "${TTY_ARGS[@]}" \
   -e SKIP_RUNTIME_BUILD="${SKIP_RUNTIME_BUILD}" -e BAG_RATE="${BAG_RATE}" -e GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG}" \
   -e GPS_ENABLE="${GPS_ENABLE:-off}" -e GPS_SOURCE="${GPS_SOURCE:-auto}" -e GPS_FILE="${GPS_FILE:-}" \
   -e GPS_TOPIC="${GPS_TOPIC:-/gps/fix_raw}" -e GPS_REQUIRED="${GPS_REQUIRED:-false}" -e GPS_USE_Z="${GPS_USE_Z:-off}" \
-  -e GPS_ALPHA="${GPS_ALPHA:-0.08}" -e RTK_MODE="${RTK_MODE:-auto}" \
+  -e GPS_ALPHA="${GPS_ALPHA:-0.08}" -e GPS_MAX_COV_XY="${GPS_MAX_COV_XY:-100.0}" -e GPS_MAX_COV_Z="${GPS_MAX_COV_Z:-400.0}" -e GPS_TIME_OFFSET_SEC="${GPS_TIME_OFFSET_SEC:-0.0}" -e RTK_MODE="${RTK_MODE:-auto}" \
   -e STEREO_SWAP_BOOL="${STEREO_SWAP_BOOL}" -e R3LIVE_RUN_VISUAL="${R3LIVE_RUN_VISUAL}" \
   -e ORB_MONO_SCALE="${ORB_MONO_SCALE:-}" -e ORB_YAW_OFFSET_DEG="${ORB_YAW_OFFSET_DEG:-}" \
   -e BAG_PATH_OVERRIDE="${BAG_PATH_OVERRIDE:-}" -e GT_PATH_OVERRIDE="${GT_PATH_OVERRIDE:-}" \

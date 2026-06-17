@@ -1,0 +1,56 @@
+In file included from /usr/include/boost/preprocessor/tuple/elem.hpp:23,
+                 from /usr/include/boost/preprocessor/arithmetic/add.hpp:21,
+                 from /usr/include/boost/mpl/aux_/preprocessor/def_params_tail.hpp:66,
+                 from /usr/include/boost/mpl/aux_/na_spec.hpp:28,
+                 from /usr/include/boost/mpl/next_prior.hpp:18,
+                 from /usr/include/boost/mpl/next.hpp:17,
+                 from /usr/include/boost/mpl/list/aux_/push_front.hpp:18,
+                 from /usr/include/boost/mpl/list/list0.hpp:19,
+                 from /usr/include/boost/mpl/list/list10.hpp:18,
+                 from /usr/include/boost/mpl/list/list20.hpp:18,
+                 from /usr/include/boost/mpl/list.hpp:36,
+                 from /usr/include/boost/math/policies/policy.hpp:9,
+                 from /usr/include/boost/math/policies/error_handling.hpp:21,
+                 from /usr/include/boost/math/special_functions/round.hpp:14,
+                 from /opt/ros/noetic/include/ros/time.h:58,
+                 from /opt/ros/noetic/include/ros/ros.h:38,
+                 from /root/catkin_ws/src/FAST_LIO/src/preprocess.h:5,
+                 from /root/catkin_ws/src/FAST_LIO/src/preprocess.cpp:1:
+/root/catkin_ws/src/FAST_LIO/src/preprocess.h:56:6: warning: ‘using uint16_t = uint16_t’ is deprecated: use std::uint16_t instead of pcl::uint16_t [-Wdeprecated-declarations]
+   56 |     (uint16_t, ring, ring)
+      |      ^~~~~~~~
+In file included from /usr/include/pcl-1.10/pcl/PCLPointField.h:10,
+                 from /usr/include/pcl-1.10/pcl/conversions.h:46,
+                 from /opt/ros/noetic/include/pcl_conversions/pcl_conversions.h:44,
+                 from /root/catkin_ws/src/FAST_LIO/src/preprocess.h:6,
+                 from /root/catkin_ws/src/FAST_LIO/src/preprocess.cpp:1:
+/usr/include/pcl-1.10/pcl/pcl_macros.h:94:9: note: declared here
+   94 |   using uint16_t [[deprecated("use std::uint16_t instead of pcl::uint16_t")]] = std::uint16_t;
+      |         ^~~~~~~~
+In file included from /usr/include/boost/preprocessor/tuple/elem.hpp:23,
+                 from /usr/include/boost/preprocessor/arithmetic/add.hpp:21,
+                 from /usr/include/boost/mpl/aux_/preprocessor/def_params_tail.hpp:66,
+                 from /usr/include/boost/mpl/aux_/na_spec.hpp:28,
+                 from /usr/include/boost/mpl/next_prior.hpp:18,
+                 from /usr/include/boost/mpl/next.hpp:17,
+                 from /usr/include/boost/mpl/list/aux_/push_front.hpp:18,
+                 from /usr/include/boost/mpl/list/list0.hpp:19,
+                 from /usr/include/boost/mpl/list/list10.hpp:18,
+                 from /usr/include/boost/mpl/list/list20.hpp:18,
+                 from /usr/include/boost/mpl/list.hpp:36,
+                 from /usr/include/boost/math/policies/policy.hpp:9,
+                 from /usr/include/boost/math/policies/error_handling.hpp:21,
+                 from /usr/include/boost/math/special_functions/round.hpp:14,
+                 from /opt/ros/noetic/include/ros/time.h:58,
+                 from /opt/ros/noetic/include/ros/ros.h:38,
+                 from /root/catkin_ws/src/FAST_LIO/src/laserMapping.cpp:44:
+/root/catkin_ws/src/FAST_LIO/src/preprocess.h:56:6: warning: ‘using uint16_t = uint16_t’ is deprecated: use std::uint16_t instead of pcl::uint16_t [-Wdeprecated-declarations]
+   56 |     (uint16_t, ring, ring)
+      |      ^~~~~~~~
+In file included from /usr/include/pcl-1.10/pcl/point_types.h:42,
+                 from /root/catkin_ws/src/FAST_LIO/include/common_lib.h:6,
+                 from /root/catkin_ws/src/FAST_LIO/src/IMU_Processing.hpp:11,
+                 from /root/catkin_ws/src/FAST_LIO/src/laserMapping.cpp:46:
+/usr/include/pcl-1.10/pcl/pcl_macros.h:94:9: note: declared here
+   94 |   using uint16_t [[deprecated("use std::uint16_t instead of pcl::uint16_t")]] = std::uint16_t;
+      |         ^~~~~~~~

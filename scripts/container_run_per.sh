@@ -21,7 +21,8 @@ if [ -z "${ALGO_LAUNCH}" ] || [ -z "${ALGO_OUTPUT_TOPIC}" ]; then
 fi
 
 DATASET_ID="${DATASET_ID:-urbannav}"
-DATASET_RESULTS_ROOT="${DATASET_RESULTS_ROOT:-/data/results/${DATASET_ID}}"
+RESULTS_BASE="${RESULTS_BASE:-/data/results}"
+DATASET_RESULTS_ROOT="${DATASET_RESULTS_ROOT:-${RESULTS_BASE}/${DATASET_ID}}"
 DATASET_FRAME_ID="${DATASET_FRAME_ID:-camera_init}"
 DATASET_LIDAR_MODEL="${DATASET_LIDAR_MODEL:-velodyne_32}"
 DATASET_SCAN_LINE="${DATASET_SCAN_LINE:-32}"
@@ -34,7 +35,14 @@ if [ -z "${ALGO_BAG_TOPICS}" ]; then
     ALGO_BAG_TOPICS="/velodyne_points /imu/data /zed2/camera/right/image_raw"
 fi
 
-SESSION="${DATASET_ID}_${ALGO_RESULT_ID}_per_${PER}"
+GPS_ENABLE="${GPS_ENABLE:-off}"
+case "${GPS_ENABLE}" in
+    on|true|1|yes) GPS_BOOL="true"; GPS_FOLDER="with_gps" ;;
+    off|false|0|no) GPS_BOOL="false"; GPS_FOLDER="without_gps" ;;
+    *) echo "ERROR: GPS_ENABLE/GPS --gps must be on/off"; exit 2 ;;
+esac
+STAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+SESSION="${DATASET_ID}_${ALGO_RESULT_ID}_${GPS_FOLDER}_per_${PER}"
 SETUP="source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash"
 ROS_ENV="export ROS_MASTER_URI=${ROS_MASTER_URI_VALUE} && export ROS_HOSTNAME=localhost"
 BAG_PATH="${BAG_PATH_OVERRIDE:-/data/UrbanNav-HK_TST-20210517_sensors.bag}"
@@ -42,26 +50,50 @@ BAG_RATE="${BAG_RATE:-0.5}"
 GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}"
 GT_PATH="${GT_PATH_OVERRIDE:-/data/UrbanNav_TST_GT_raw.txt}"
 CONFIG_PATH="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations}/per_${PER}.yaml"
-RESULT_DIR="${DATASET_RESULTS_ROOT}/${ALGO_RESULT_ID}/per_${PER}"
-BASELINE_CSV="${DATASET_RESULTS_ROOT}/${ALGO_RESULT_ID}/per_0/trajectory.csv"
+RESULT_GROUP_DIR="${DATASET_RESULTS_ROOT}/${ALGO_RESULT_ID}/${GPS_FOLDER}"
+PERTURBATION_RESULT_DIR="${RESULT_GROUP_DIR}/per_${PER}"
+RESULT_DIR="${PERTURBATION_RESULT_DIR}/${STAMP}"
+BASELINE_CSV=""
+BASELINE_ROOT="${RESULT_GROUP_DIR}/per_0"
+if [ -d "${BASELINE_ROOT}" ]; then
+    BASELINE_LATEST="$(find "${BASELINE_ROOT}" -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
+    if [ -n "${BASELINE_LATEST}" ] && [ -f "${BASELINE_LATEST}/trajectory.csv" ]; then
+        BASELINE_CSV="${BASELINE_LATEST}/trajectory.csv"
+    fi
+fi
 RVIZ_CONFIG="${ALGO_RVIZ_CONFIG:-/root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz}"
-GPS_ENABLE="${GPS_ENABLE:-off}"
 GPS_SOURCE="${GPS_SOURCE:-auto}"
 GPS_FILE="${GPS_FILE:-}"
 GPS_TOPIC="${GPS_TOPIC:-/gps/fix_raw}"
 GPS_REQUIRED="${GPS_REQUIRED:-false}"
 GPS_USE_Z="${GPS_USE_Z:-off}"
 GPS_ALPHA="${GPS_ALPHA:-0.08}"
-
-case "${GPS_ENABLE}" in
-    on|true|1|yes) GPS_BOOL="true" ;;
-    off|false|0|no) GPS_BOOL="false" ;;
-    *) echo "ERROR: GPS_ENABLE/GPS --gps must be on/off"; exit 2 ;;
-esac
+GPS_MAX_COV_XY="${GPS_MAX_COV_XY:-100.0}"
+GPS_MAX_COV_Z="${GPS_MAX_COV_Z:-400.0}"
+GPS_TIME_OFFSET_SEC="${GPS_TIME_OFFSET_SEC:-0.0}"
 case "${GPS_USE_Z}" in
     on|true|1|yes) GPS_USE_Z_BOOL="true" ;;
     *) GPS_USE_Z_BOOL="false" ;;
 esac
+
+append_unique_topic() {
+    local list="$1"
+    local topic="$2"
+    [ -z "$topic" ] && { echo "$list"; return; }
+    case " $list " in
+        *" $topic "*) echo "$list" ;;
+        *) echo "${list} ${topic}" ;;
+    esac
+}
+
+# When GPS is replayed from a bag topic (E2O), include that NavSatFix topic in
+# rosbag play. Without this, --gps on can silently save under with_gps while
+# output_selector only falls back to local odometry. CSV GPS sources do not need
+# an extra bag topic because gnss_solution_replayer publishes /gps/fix_raw from file.
+if [ "${GPS_BOOL}" = "true" ] && [ "${GPS_SOURCE}" = "topic" ]; then
+    ALGO_BAG_TOPICS="$(append_unique_topic "${ALGO_BAG_TOPICS:-}" "${GPS_TOPIC:-}")"
+fi
+
 
 source /opt/ros/noetic/setup.bash
 cd /root/catkin_ws
@@ -87,7 +119,7 @@ fi
 test -f "${BAG_PATH}"
 test -f "${GT_PATH}"
 test -f "${CONFIG_PATH}"
-mkdir -p "${RESULT_DIR}"
+mkdir -p "${RESULTS_BASE}/analysis" "${RESULTS_BASE}/e2o" "${RESULTS_BASE}/urbannav" "${RESULT_DIR}"
 
 if [ "${ALGO_STANDARD_NS}" = "rtabmap" ]; then
     RTABMAP_DATABASE_PATH="${RESULT_DIR}/rtabmap.db"
@@ -154,7 +186,7 @@ if [ "${DATASET_ID}" = "e2o" ]; then
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml"
             ;;
         orbslam3)
-            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-1.0} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-0.0} align_to_gt:=true dataset_id:=${DATASET_ID}"
+            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-1.0}} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-0.0}} align_to_gt:=${ORB_ALIGN_TO_GT:-false} dataset_id:=${DATASET_ID}"
             ;;
     esac
 fi
@@ -193,10 +225,10 @@ fi
 tmux send-keys -t "${STD_PANE}" "${SETUP} && ${ROS_ENV} && rosrun localization_benchmark standard_output_republisher.py _source_topic:=${ALGO_OUTPUT_TOPIC} _algo_ns:=${ALGO_STANDARD_NS} _local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} _local_path_topic:=${ALGO_LOCAL_PATH_TOPIC} _output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} _output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} _status_topic:=/${ALGO_STANDARD_NS}/benchmark_status _gps_enabled:=${GPS_BOOL} _publish_tf:=${STD_PUBLISH_TF:-true} _tf_child_frame:=body ${STD_EXTRA_ARGS}" Enter
 
 GPS_PANE="$(tmux split-window -v -t "${STD_PANE}" -P -F "#{pane_id}")"
-tmux send-keys -t "${GPS_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_provider.launch gps_enable:=${GPS_BOOL} gps_source:=${GPS_SOURCE} gps_file:=${GPS_FILE} gps_topic:=${GPS_TOPIC} gps_required:=${GPS_REQUIRED} && true" Enter
+tmux send-keys -t "${GPS_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_provider.launch gps_enable:=${GPS_BOOL} gps_source:=${GPS_SOURCE} gps_file:=${GPS_FILE} gps_topic:=${GPS_TOPIC} gps_required:=${GPS_REQUIRED} max_cov_xy:=${GPS_MAX_COV_XY} max_cov_z:=${GPS_MAX_COV_Z} frame_id:=gnss_antenna time_offset_sec:=${GPS_TIME_OFFSET_SEC} && true" Enter
 
 SELECT_PANE="$(tmux new-window -t "${SESSION}" -n "select_record" -P -F "#{pane_id}")"
-tmux send-keys -t "${SELECT_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_fusion.launch gps_enable:=${GPS_BOOL} algo_ns:=${ALGO_STANDARD_NS} local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} status_topic:=${ALGO_STATUS_TOPIC} use_z:=${GPS_USE_Z_BOOL} position_alpha:=${GPS_ALPHA}" Enter
+tmux send-keys -t "${SELECT_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark gps_fusion.launch gps_enable:=${GPS_BOOL} algo_ns:=${ALGO_STANDARD_NS} local_odom_topic:=${ALGO_LOCAL_ODOM_TOPIC} gps_fix_topic:=/gps/fix imu_topic:=${ALGO_NATIVE_IMU_TOPIC} output_odom_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} output_path_topic:=${ALGO_SELECTED_PATH_TOPIC} status_topic:=${ALGO_STATUS_TOPIC} use_z:=${GPS_USE_Z_BOOL} position_alpha:=${GPS_ALPHA}" Enter
 RECORDER_PANE="$(tmux split-window -h -t "${SELECT_PANE}" -P -F "#{pane_id}")"
 tmux send-keys -t "${RECORDER_PANE}" "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark record_output.launch algorithm:=${ALGO_RESULT_ID} run_id:=${PER} source_topic:=${ALGO_SELECTED_OUTPUT_TOPIC} csv_path:=${RESULT_DIR}/trajectory.csv" Enter
 
@@ -207,14 +239,15 @@ STATUS_PANE="$(tmux new-window -t "${SESSION}" -n "status" -P -F "#{pane_id}")"
 tmux send-keys -t "${STATUS_PANE}" "${SETUP} && ${ROS_ENV} && watch -n 2 'echo RESULT; [ -f ${RESULT_DIR}/trajectory.csv ] && wc -l ${RESULT_DIR}/trajectory.csv || true; echo; echo LOCAL ${ALGO_LOCAL_ODOM_TOPIC}; echo OUTPUT ${ALGO_SELECTED_OUTPUT_TOPIC}; echo GPS ${GPS_BOOL} ${GPS_SOURCE}; echo; echo TOPICS; rostopic list | egrep \"velodyne_points|mycar|cloud_registered|livox|Odometry|odometry|path$|camera/right|camera/image|ground_truth|gps\" || true; echo; echo RATES; timeout 1 rostopic hz ${ALGO_NATIVE_LIDAR_TOPIC} ${ALGO_NATIVE_IMU_TOPIC} ${ALGO_LOCAL_ODOM_TOPIC} ${ALGO_SELECTED_OUTPUT_TOPIC} /camera/right/image_raw /camera/image_raw /gps/fix 2>/dev/null || true'" Enter
 
 RVIZ_PANE="$(tmux new-window -t "${SESSION}" -n "rviz" -P -F "#{pane_id}")"
-tmux send-keys -t "${RVIZ_PANE}" "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=${DATASET_FRAME_ID} _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG} _publish_full_path:=true & rosrun localization_benchmark bag_clock_marker.py _frame_id:=${DATASET_FRAME_ID} & rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=${DATASET_FRAME_ID} & rosrun localization_benchmark path_from_csv.py _csv_path:=${RESULT_DIR}/trajectory.csv _topic:=/benchmark/selected_run_path _frame_id:=${DATASET_FRAME_ID} & LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe rviz -d ${RVIZ_CONFIG}" Enter
+tmux send-keys -t "${RVIZ_PANE}" "${SETUP} && ${ROS_ENV} && rosrun fast_lio_urbannav ground_truth_path_node.py _ground_truth_path:=${GT_PATH} _topic:=/ground_truth_path _odom_topic:=/ground_truth_odometry _frame_id:=${DATASET_FRAME_ID} _publish_rate:=10.0 _yaw_offset_deg:=${GT_YAW_OFFSET_DEG} _publish_full_path:=true & rosrun localization_benchmark bag_clock_marker.py _frame_id:=${DATASET_FRAME_ID} & if [ -n '${BASELINE_CSV}' ] && [ -f '${BASELINE_CSV}' ]; then rosrun localization_benchmark path_from_csv.py _csv_path:=${BASELINE_CSV} _topic:=/benchmark/baseline_path _frame_id:=${DATASET_FRAME_ID} & fi; rosrun localization_benchmark path_from_csv.py _csv_path:=${RESULT_DIR}/trajectory.csv _topic:=/benchmark/selected_run_path _frame_id:=${DATASET_FRAME_ID} & LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe rviz -d ${RVIZ_CONFIG}" Enter
 
 tmux select-window -t "${SESSION}:5"
 echo "[benchmark] mode=interactive dataset=${DATASET_ID} algo=${ALGO_DISPLAY} key=${ALGO_ID} case=per_${PER}"
 echo "[benchmark] launch=roslaunch ${ALGO_LAUNCH} ${ALGO_LAUNCH_ARGS}"
 echo "[benchmark] topics native=${ALGO_OUTPUT_TOPIC} selected=${ALGO_SELECTED_OUTPUT_TOPIC}"
 echo "[benchmark] lidar=${DATASET_LIDAR_MODEL} scan_line=${DATASET_SCAN_LINE}"
-echo "[benchmark] gps=${GPS_BOOL} source=${GPS_SOURCE} file=${GPS_FILE:-none}"
+echo "[benchmark] gps=${GPS_BOOL} folder=${GPS_FOLDER} source=${GPS_SOURCE} file=${GPS_FILE:-none}"
+echo "[benchmark] result_dir=${RESULT_DIR}"
 echo "[benchmark] csv=${RESULT_DIR}/trajectory.csv"
 echo "[benchmark] tmux=run,algo,select_record,bag,status,rviz detach=Ctrl-B-d"
 if [ "${ATTACH}" = "--attach" ]; then

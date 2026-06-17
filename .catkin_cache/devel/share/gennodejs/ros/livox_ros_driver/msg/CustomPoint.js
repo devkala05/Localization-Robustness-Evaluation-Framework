@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/livox_ros_driver/share/gennodejs/ros/livox_ros_driver/msg/CustomPoint.js

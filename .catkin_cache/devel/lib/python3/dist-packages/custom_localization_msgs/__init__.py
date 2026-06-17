@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/lib/python3/dist-packages/custom_localization_msgs/__init__.py

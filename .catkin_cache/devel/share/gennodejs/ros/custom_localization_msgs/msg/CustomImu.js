@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/share/gennodejs/ros/custom_localization_msgs/msg/CustomImu.js

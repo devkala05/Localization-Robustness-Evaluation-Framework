@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/fast_lio/share/roseus/ros/fast_lio/msg/Pose6D.l

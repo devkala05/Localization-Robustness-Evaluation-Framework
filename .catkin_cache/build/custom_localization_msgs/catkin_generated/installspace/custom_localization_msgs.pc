@@ -1,0 +1,8 @@
+prefix=/root/catkin_ws/install
+
+Name: custom_localization_msgs
+Description: Description of custom_localization_msgs
+Version: 0.1.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: geometry_msgs message_runtime sensor_msgs std_msgs

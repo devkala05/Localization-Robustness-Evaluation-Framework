@@ -37,4 +37,4 @@ Results are written to `data/results/lvi_sam/`.
 
 ## Notes
 
-GPS mode uses LVI-SAM's configured GPS-prior path where available, with the benchmark external fusion path as the maintained fallback surface. Runtime logs should still be checked for VINS health because LVI-SAM can down-weight or skip visual constraints when the visual frontend fails.
+GPS mode uses the benchmark common external GPS fusion layer, same as the other algorithms. Native LVI-SAM GPS factors are disabled in the wrapper to avoid double-counting GPS. Runtime logs should still be checked for VINS health because LVI-SAM can down-weight or skip visual constraints when the visual frontend fails.

@@ -67,7 +67,7 @@ algorithms:
     selected_path_topic: /lvisam/path/output
     status_topic: /lvisam/status
     gps_supported: true
-    gps_strategy: native_lvisam_gps_prior_with_external_fallback
+    gps_strategy: external_fusion
     adapter_args: camera_frame_id:=camera_right_optical publish_camera:=true publish_camera_info:=true
     launch_args: run_visual:=true
   fast_livo2:
@@ -230,7 +230,7 @@ algorithms:
     notes: ORB-SLAM3 default is Stereo-Inertial using the upstream ORB_SLAM3 Stereo_Inertial
       ROS executable, vocabulary, UrbanNav stereo calibration, and /imu. Set ORB_MODE=stereo
       or mono only for visual-only ablations. --gps on uses conservative external
-      fusion on the corrected body odometry output.
+      fusion on the corrected body odometry output. For E2O mono, online GT alignment is disabled by default; set ORB_ALIGN_TO_GT=true only for visualization/diagnostic scale alignment, not for benchmark claims.
   r3live:
     display_name: R3LIVE
     result_id: r3live

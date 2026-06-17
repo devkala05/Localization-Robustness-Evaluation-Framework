@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/include/custom_localization_msgs/CustomImage.h

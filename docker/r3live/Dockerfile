@@ -140,7 +140,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     catkin build r3live --no-status && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav r3live_urbannav --no-status"
 
-RUN mkdir -p /data /data/results/r3live /data/output
+RUN mkdir -p /data /data/results/analysis /data/results/e2o /data/results/urbannav /data/output
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source ${CATKIN_WS}/devel/setup.bash" >> /root/.bashrc && \

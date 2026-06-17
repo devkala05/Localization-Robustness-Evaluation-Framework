@@ -1,0 +1,8 @@
+prefix=/root/catkin_ws/devel/.private/localization_benchmark
+
+Name: localization_benchmark
+Description: Description of localization_benchmark
+Version: 0.1.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

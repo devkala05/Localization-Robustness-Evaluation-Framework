@@ -4,7 +4,7 @@
   <arg name="algorithm" default="fast_lio2"/>
   <arg name="run_id" default="1"/>
   <arg name="source_topic" default="/Odometry"/>
-  <arg name="csv_path" default="/data/results/$(arg algorithm)/run_$(arg run_id)/trajectory.csv"/>
+  <arg name="csv_path" default="/data/results/urbannav/$(arg algorithm)/without_gps/per_$(arg run_id)/manual/trajectory.csv"/>
 
   <node name="localization_output_recorder"
         pkg="localization_benchmark"

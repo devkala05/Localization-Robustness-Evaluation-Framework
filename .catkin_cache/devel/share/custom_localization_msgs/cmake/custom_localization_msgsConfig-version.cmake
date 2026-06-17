@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/share/custom_localization_msgs/cmake/custom_localization_msgsConfig-version.cmake

@@ -10,19 +10,26 @@ DOCKER_MEMORY="${DOCKER_MEMORY:-8g}"
 usage() {
   cat <<'EOF'
 Usage:
-  ./plot.sh --per 0 --algo all
-  ./plot.sh --per 0 --algo fast_lio2,lvisam,r3live
+  ./plot.sh
+  ./plot.sh --algo fastlio2 --per 0 --gps on
+  ./plot.sh --algo fastlio2,lvisam --per 0,3 --gps off
+  ./plot.sh --dataset e2o --algo all --per all --gps all
 
-Default behavior opens RViz and publishes saved CSV trajectories:
-  data/results/<algo>/per_<N>/trajectory.csv
+Default behavior:
+  Opens RViz and plots exactly one latest timestamped result for every available
+  dataset/algo/gps/per combination under:
+    data/results/<dataset>/<algo>/<with_gps|without_gps>/per_<N>/<date-time>/trajectory.csv
 
-Options:
-  --per N                 Required. Perturbation/run id.
-  --algo all|name,list    Required-ish. Default all.
-  --results-root PATH     Default data/results on host, /data/results in Docker.
-  --gt PATH               Default data/UrbanNav_TST_GT_raw.txt on host, /data/... in Docker.
-  --static                Old matplotlib backend: save PNGs instead of RViz.
-  --no-docker             Run ROS/RViz on host instead of Docker. Requires sourced ROS Noetic.
+Filters can be combined or used separately:
+  --algo      all|fastlio2|lvisam|fastlivo2|rtabmap|adaptive_w_lvio|orbslam3|r3live|comma-list
+  --per       all|0..6|comma-list
+  --gps       all|on|off|with_gps|without_gps
+  --dataset   all|e2o|urbannav
+
+Other options:
+  --results-root PATH   Default data/results on host, /data/results in Docker
+  --no-docker           Run ROS/RViz on host instead of Docker; requires ROS Noetic
+  -h, --help            Show this help
 
 Env:
   PLOT_IMAGE=fastlio2-urbannav:latest
@@ -30,13 +37,10 @@ Env:
 EOF
 }
 
-STATIC="false"
 NO_DOCKER="false"
 ARGS=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --static|--matplotlib|--png)
-      STATIC="true"; shift;;
     --no-docker|--host)
       NO_DOCKER="true"; shift;;
     -h|--help)
@@ -45,10 +49,6 @@ while [ "$#" -gt 0 ]; do
       ARGS+=("$1"); shift;;
   esac
 done
-
-if [ "${STATIC}" = "true" ]; then
-  exec python3 "${SCRIPT_DIR}/wrappers/localization_benchmark/scripts/trajectory_analysis.py" plot3d "${ARGS[@]}" --no-show
-fi
 
 # Translate common host-relative paths into Docker paths unless user explicitly set absolute paths.
 DOCKER_ARGS=()
@@ -68,18 +68,6 @@ while [ $i -lt ${#ARGS[@]} ]; do
       DOCKER_ARGS+=("--results-root=${val}")
       i=$((i+1))
       ;;
-    --gt)
-      next="${ARGS[$((i+1))]:-}"
-      if [[ "$next" == data/* ]]; then next="/data/${next#data/}"; fi
-      DOCKER_ARGS+=("$a" "$next")
-      i=$((i+2))
-      ;;
-    --gt=*)
-      val="${a#*=}"
-      if [[ "$val" == data/* ]]; then val="/data/${val#data/}"; fi
-      DOCKER_ARGS+=("--gt=${val}")
-      i=$((i+1))
-      ;;
     *)
       DOCKER_ARGS+=("$a")
       i=$((i+1))
@@ -94,7 +82,7 @@ if [ "${NO_DOCKER}" = "true" ]; then
   ROSCORE_PID=$!
   trap 'kill ${ROSCORE_PID} 2>/dev/null || true; pkill -TERM -f offline_rviz_paths.py >/dev/null 2>&1 || true' EXIT INT TERM
   sleep 2
-  python3 "${SCRIPT_DIR}/wrappers/localization_benchmark/scripts/offline_rviz_paths.py" "${ARGS[@]}" &
+  python3 "${SCRIPT_DIR}/wrappers/localization_benchmark/scripts/offline_rviz_paths.py" "${ARGS[@]}" --dataset-config-dir "${SCRIPT_DIR}/wrappers/localization_benchmark/config/datasets" &
   sleep 2
   exec rviz -d "${SCRIPT_DIR}/wrappers/localization_benchmark/config/offline_trajectory_compare.rviz"
 fi
@@ -123,7 +111,6 @@ exec docker run "${TTY_ARGS[@]}" --rm \
   --memory="${DOCKER_MEMORY}" \
   -e DISPLAY="${DISPLAY:-:0}" \
   -e ROS_PORT="${ROS_PORT:-11321}" \
-  -e GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}" \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
   -v "${SCRIPT_DIR}/data":/data \
   -v "${SCRIPT_DIR}":/workspace \

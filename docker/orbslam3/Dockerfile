@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglfw3-dev \
     libegl1-mesa-dev \
     libepoxy-dev \
-    python3-numpy python3-scipy \
+    python3-numpy python3-scipy python3-matplotlib \
     tmux vim htop tree \
     && rm -rf /var/lib/apt/lists/*
 
@@ -104,7 +104,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     catkin config --extend /opt/ros/${ROS_DISTRO} -DCMAKE_BUILD_TYPE=Release && \
     catkin build custom_localization_msgs localization_benchmark fast_lio_urbannav orbslam3_urbannav -j4 -p4"
 
-RUN mkdir -p /data /data/output /data/results/orb_slam3
+RUN mkdir -p /data /data/results/analysis /data/results/e2o /data/results/urbannav /data/output
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc && \
     echo "source ${CATKIN_WS}/devel/setup.bash" >> /root/.bashrc && \

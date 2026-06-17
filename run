@@ -2,7 +2,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALGO=""; PER=""; MODE=""; EVAL="false"; DURATION="0"; DATASET="${DATASET:-urbannav}"
-GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC="/gps/fix_raw"; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; RTK_MODE="auto"
+GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC="/gps/fix_raw"; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; GPS_MAX_COV_XY="100.0"; GPS_MAX_COV_Z="400.0"; GPS_TIME_OFFSET_SEC="0.0"; RTK_MODE="auto"
 ORB_MODE="${ORB_MODE:-stereo_inertial}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
 usage(){ cat <<'EOF'
 UrbanNav Localization Benchmark
@@ -36,6 +36,9 @@ while [ "$#" -gt 0 ]; do
     --gps-required) GPS_REQUIRED="true"; shift;;
     --gps-use-z) GPS_USE_Z="${2:-}"; shift 2;; --gps-use-z=*) GPS_USE_Z="${1#*=}"; shift;;
     --gps-alpha) GPS_ALPHA="${2:-}"; shift 2;; --gps-alpha=*) GPS_ALPHA="${1#*=}"; shift;;
+    --gps-max-cov-xy) GPS_MAX_COV_XY="${2:-}"; shift 2;; --gps-max-cov-xy=*) GPS_MAX_COV_XY="${1#*=}"; shift;;
+    --gps-max-cov-z) GPS_MAX_COV_Z="${2:-}"; shift 2;; --gps-max-cov-z=*) GPS_MAX_COV_Z="${1#*=}"; shift;;
+    --gps-time-offset-sec) GPS_TIME_OFFSET_SEC="${2:-}"; shift 2;; --gps-time-offset-sec=*) GPS_TIME_OFFSET_SEC="${1#*=}"; shift;;
     --rtk) RTK_MODE="${2:-}"; shift 2;; --rtk=*) RTK_MODE="${1#*=}"; shift;;
     --eval|--summary|--evaluate) EVAL="true"; shift;;
     --duration|--seconds) DURATION="${2:-}"; shift 2;; --duration=*|--seconds=*) DURATION="${1#*=}"; shift;;
@@ -66,7 +69,7 @@ if [ "${ORB_MODE}" = "stereo" ] && [ -n "${DATASET_ORB_MODE}" ]; then ORB_MODE="
 if [ "${STEREO_SWAP}" = "true" ] && [ -n "${DATASET_STEREO_SWAP}" ]; then STEREO_SWAP="${DATASET_STEREO_SWAP}"; fi
 case "${STEREO_SWAP}" in on|true|1|yes) STEREO_SWAP_BOOL="true";; *) STEREO_SWAP_BOOL="false";; esac
 case "${R3LIVE_VIO}" in on|true|1|yes) R3LIVE_RUN_VISUAL="true";; *) R3LIVE_RUN_VISUAL="false";; esac
-export GPS_ENABLE GPS_SOURCE GPS_FILE GPS_TOPIC GPS_REQUIRED GPS_USE_Z GPS_ALPHA RTK_MODE ORB_MODE STEREO_SWAP_BOOL R3LIVE_RUN_VISUAL
+export GPS_ENABLE GPS_SOURCE GPS_FILE GPS_TOPIC GPS_REQUIRED GPS_USE_Z GPS_ALPHA GPS_MAX_COV_XY GPS_MAX_COV_Z GPS_TIME_OFFSET_SEC RTK_MODE ORB_MODE STEREO_SWAP_BOOL R3LIVE_RUN_VISUAL
 export ORB_MONO_SCALE="${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-}}"
 export ORB_YAW_OFFSET_DEG="${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-}}"
 export DATASET_ID DATASET_NAME DATASET_BAG_PATH DATASET_GT_PATH DATASET_RESULTS_ROOT DATASET_FRAME_ID DATASET_BAG_TOPICS

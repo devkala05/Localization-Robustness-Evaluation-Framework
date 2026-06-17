@@ -27,10 +27,8 @@ catkin_install_python(PROGRAMS
   scripts/graphgnss_to_csv.py
   scripts/path_from_csv.py
   scripts/evaluate_run.py
-  scripts/summarize_robustness.py
   scripts/bag_clock_marker.py
   scripts/time_sync_monitor.py
-  scripts/trajectory_analysis.py
   scripts/offline_rviz_paths.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

@@ -78,7 +78,7 @@ Most build scripts also accept `--no-cache`.
 ./run --algo orbslam3 --per 0 --gps off --orb-mode stereo --eval
 ```
 
-Perturbation IDs are `0..6`. `--eval` records a timestamped result folder, updates `data/results/<result_id>/per_<N>/trajectory.csv`, runs evaluation, and refreshes `robustness_ranking.txt`. Add `--duration 30` for a short run; omit it or pass `0` for the full bag.
+Perturbation IDs are `0..6`. `--eval` records exactly one timestamped result folder per run under `data/results/<dataset>/<result_id>/<with_gps|without_gps>/per_<N>/<YYYY-MM-DD_HH-MM-SS>/`. It does not create `per_<N>/trajectory.csv` aliases or ranking text files. Add `--duration 30` for a short run; omit it or pass `0` for the full bag.
 
 Useful options:
 
@@ -89,13 +89,35 @@ Useful options:
 ./run --algo <name> --per <0..6> --bag data/custom.bag --gt data/custom_gt.txt
 ```
 
+## Result Layout
+
+The result root is intentionally fixed to three top-level folders:
+
+```text
+data/results/
+  analysis/
+  e2o/<algo>/<with_gps|without_gps>/per_<0..6>/<YYYY-MM-DD_HH-MM-SS>/
+  urbannav/<algo>/<with_gps|without_gps>/per_<0..6>/<YYYY-MM-DD_HH-MM-SS>/
+```
+
+Each timestamp folder contains the run CSV and evaluation files such as `trajectory.csv`, `metrics.json`, `analysis.txt`, and metric CSVs. Runtime evaluation no longer writes PNG plots; use `./plot.sh` for RViz plotting.
+
+```bash
+./plot.sh
+./plot.sh --dataset e2o --algo fastlio2 --per 0 --gps on
+./plot.sh --algo fastlio2,lvisam --per 0,3 --gps off
+```
+
+`./plot.sh` always chooses only the latest timestamp folder for each selected dataset/algo/gps/per combination, so repeated runs do not appear as duplicate plots.
+
 ## Run Full Matrix
 
 `run_all_algos_new_terminals.sh` builds each algorithm once, then runs every selected perturbation and GPS mode sequentially in a new terminal:
 
 ```bash
 ./run_all_algos_new_terminals.sh
-DATASET=e2o ./run_all_algos_new_terminals.sh
+DATASET_LIST="e2o" ./run_all_algos_new_terminals.sh
+ALGO_LIST="fastlio2 lvisam" PER_LIST="0 1" GPS_LIST="off" ./run_all_algos_new_terminals.sh
 ```
 
 Default matrix:

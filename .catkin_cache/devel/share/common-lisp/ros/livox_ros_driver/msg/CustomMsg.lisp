@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/livox_ros_driver/share/common-lisp/ros/livox_ros_driver/msg/CustomMsg.lisp
