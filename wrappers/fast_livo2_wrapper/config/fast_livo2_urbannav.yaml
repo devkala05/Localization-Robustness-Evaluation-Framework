@@ -1,0 +1,175 @@
+# fast_livo2_urbannav.yaml
+# ============================================================
+# FAST-LIVO2 configuration for the UrbanNav-HK-TST dataset
+#
+# Sensors:
+#   LiDAR  : Velodyne VLP-16 (centre LiDAR)  — 10 Hz, 16 rings, 360°
+#   IMU    : Xsens MTi-G-710                 — 200 Hz
+#   Camera : ZED2 right camera               — ~10 Hz, 672×376 px
+#
+# Body frame = IMU frame  (FAST-LIVO2 convention)
+#
+# All extrinsic values from extrinsic.yaml (UrbanNav-HK-TST calibration).
+# Camera intrinsics from zed2_intrinsics.yaml (right camera block).
+# IMU noise from xsens_imu_param.yaml.
+#
+# Black-box constraint: this file configures FAST-LIVO2 without modifying
+# any of its source code. FAST-LIVO2 reads these params from the ROS param
+# server (rosparam load) at startup.
+# ============================================================
+
+common:
+    # ── Input topics (wrapper publishes on these) ─────────────────────────────
+    lid_topic:   "/livox/lidar"            # wrapper republishes /velodyne_points here
+    imu_topic:   "/livox/imu"              # wrapper republishes /imu/data here
+    img_topic:   "/camera/right/image_raw" # wrapper republishes ZED2 right cam here
+
+    # Simulated time from rosbag /clock
+    time_sync_en:  false   # hardware-synchronised bag; no SW sync needed
+    img_en:        1       # 1 = use camera  (set 0 to disable visual tracking)
+    lidar_en:      1       # 1 = use LiDAR
+    ros_driver_bug_fix: false
+
+preprocess:
+    lidar_type:   2      # 2 = Velodyne  (1=Livox, 2=Velodyne, 3=Ouster)
+    scan_line:    32     # UrbanNav center /velodyne_points uses rings 0..31
+    blind:        0.5    # ignore points closer than 0.5 m (vehicle body)
+
+mapping:
+    # ── IMU noise parameters (Xsens MTi-G-710) ───────────────────────────────
+    # Source: xsens_imu_param.yaml (UrbanNav calibration)
+    # These are RMS noise densities averaged across all three axes.
+    acc_cov:     0.01119741     # accelerometer noise density  (m/s²/√Hz)
+    gyr_cov:     0.01027090     # gyroscope noise density      (rad/s/√Hz)
+    b_acc_cov:   1.175177e-04   # accelerometer bias random walk (m/s³/√Hz)
+    b_gyr_cov:   9.135538e-05   # gyroscope bias random walk   (rad/s²/√Hz)
+
+    fov_degree:   360.0          # Velodyne VLP-16 is full 360° horizontal
+    det_range:    80.0           # maximum detection range (m)
+    extrinsic_est_en: false      # extrinsics known from calibration — do not estimate
+
+    # ── Extrinsic: body (IMU) → LiDAR ────────────────────────────────────────
+    # Source: CENTER_LiDAR_T_IMU (extrinsic.yaml)
+    # FAST-LIVO2 applies p_imu = R_li * p_lidar + P_li.
+    # CENTER_LIDAR_T_IMU is a pure +0.28 m z translation from LiDAR to IMU.
+    #   rotation:    identity
+    extrinsic_T:  [ 0.0, 0.0, 0.28 ]
+    extrinsic_R:  [ 1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1 ]
+
+imu:
+    imu_en: true
+    imu_int_frame: 30
+    gravity_est_en: true
+    ba_bg_est_en: true
+    # FAST-LIVO2 treats these as estimator tuning weights, not raw IMU
+    # datasheet noise densities. Native configs use acc_cov 0.5..2.0 and
+    # gyr_cov 0.1..0.3. The raw Xsens densities are documented above in
+    # mapping/, but are too small here and make the filter over-trust IMU.
+    acc_cov:     0.5
+    gyr_cov:     0.3
+    b_acc_cov:   0.0001
+    b_gyr_cov:   0.0001
+
+extrin_calib:
+    # FAST-LIVO2 expects LiDAR and camera extrinsics under this namespace.
+    extrinsic_T:  [ 0.0, 0.0, 0.28 ]
+    extrinsic_R:  [ 1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1 ]
+    # FAST-LIVO2 applies p_cam = R_cl * p_lidar + P_cl.
+    # UrbanNav supplies sensor->IMU/body transforms, so compose:
+    #   T_cam_lidar = inv(RIGHT_CAMERA_T_IMU) * CENTER_LiDAR_T_IMU.
+    Pcl:  [ -0.034160570698, -3.28115047369, -0.718453283642 ]
+    Rcl:  [  9.987287145275e-01, -5.036717737594e-02,  2.025394142408e-03,
+             1.528763777760e-03, -9.896768625981e-03, -9.999498571689e-01,
+             5.038469668027e-02,  9.986817317914e-01, -9.807187491442e-03 ]
+
+time_offset:
+    imu_time_offset: 0.0
+    img_time_offset: 0.0
+    lidar_time_offset: 0.0
+    exposure_time_init: 0.0
+
+vio:
+    max_iterations: 5
+    outlier_threshold: 1000
+    img_point_cov: 1000
+    patch_size: 8
+    patch_pyrimid_level: 4
+    normal_en: true
+    raycast_en: false
+    inverse_composition_en: false
+    exposure_estimate_en: true
+    inv_expo_cov: 0.1
+
+lio:
+    max_iterations: 5
+    dept_err: 0.02
+    beam_err: 0.05
+    min_eigen_value: 0.005
+    voxel_size: 1.0
+    max_layer: 2
+    max_points_num: 50
+    layer_init_num: [5, 5, 5, 5, 5]
+
+local_map:
+    map_sliding_en: false
+    half_map_size: 100
+    sliding_thresh: 8
+
+camera:
+    # ── ZED2 right camera intrinsics (672×376 resolution) ────────────────────
+    # Source: zed2_intrinsics.yaml / right camera block
+    img_topic:   "/camera/right/image_raw"
+
+    # Intrinsic matrix K:  [ fx,  0,  cx ]
+    #                       [  0, fy,  cy ]
+    #                       [  0,  0,   1 ]
+    fx:    264.2125       # focal length x  (px)
+    fy:    264.155        # focal length y  (px)
+    cx:    341.635        # principal point x  (px)
+    cy:    183.993        # principal point y  (px)
+
+    # Distortion from zed2_intrinsics.yaml / right camera block.
+    distortion_model: "plumb_bob"
+    distortion_coeffs: [ -0.0423469, 0.0115525, 0.0, 0.0, 0.0 ]
+
+    # Image dimensions
+    image_width:  672
+    image_height: 376
+
+    # ── Extrinsic: right camera -> body/IMU ─────────────────────────────
+    # Source: RIGHT_CAMERA_T_IMU (UrbanNav extrinsic.yaml), used raw here
+    # when a FAST-LIVO2 build reads camera/cam_ext_* as camera->body.
+    cam_ext_T:  [ 0.0753322976296, 0.68331281093, -3.00796276495 ]
+    cam_ext_R:  [  9.987287145275e-01,  1.528763777760e-03,  5.038469668027e-02,
+                  -5.036717737594e-02, -9.896768625981e-03,  9.986817317914e-01,
+                   2.025394142408e-03, -9.999498571689e-01, -9.807187491442e-03 ]
+
+laserMapping:
+    # Camera model schema consumed by vikit_common camera_loader.
+    cam_model: Pinhole
+    cam_width: 672
+    cam_height: 376
+    scale: 1.0
+    cam_fx: 264.2125
+    cam_fy: 264.155
+    cam_cx: 341.635
+    cam_cy: 183.993
+    cam_d0: -0.0423469
+    cam_d1: 0.0115525
+    cam_d2: 0.0
+    cam_d3: 0.0
+
+publish:
+    path_en:               true   # /path  (nav_msgs/Path)
+    scan_publish_en:       true   # /cloud_registered  (current scan in world frame)
+    dense_publish_en:      false  # dense map (expensive; enable if needed)
+    scan_bodyframe_pub_en: true   # /cloud_registered_body  (scan in body frame)
+
+pcd_save:
+    pcd_save_en:  true
+    interval:     -1             # -1 = save on shutdown only (not during run)
+    pcd_path:     "/data/output/fast_livo2_map.pcd"

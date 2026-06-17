@@ -1,0 +1,93 @@
+<!-- full_pipeline.launch
+     ════════════════════════════════════════════════════════════════
+     FAST-LIVO2 Black-Box Testing Pipeline — Full Automation
+     ════════════════════════════════════════════════════════════════
+
+     Single launch command for the complete pipeline:
+       1. Static TF broadcaster (sensor calibration)
+       2. Topic bridge (UrbanNav topics → FAST-LIVO2 topics)
+       3. Output recorder (FAST-LIVO2 outputs → CSV/TUM/bag)
+       4. FAST-LIVO2 algorithm (black-box binary, unmodified)
+       5. Rosbag player (delayed, to let all nodes initialise)
+       6. RViz visualisation (optional)
+
+     Usage:
+       roslaunch fast_livo2_wrapper full_pipeline.launch \
+           bag_path:=/data/UrbanNav-HK_TST-20210517_sensors.bag
+
+       roslaunch fast_livo2_wrapper full_pipeline.launch \
+           bag_path:=/data/my.bag \
+           rate:=0.5 \
+           rviz:=false \
+           output_dir:=/data/results
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ── Top-level arguments ────────────────────────────────────────── -->
+  <arg name="bag_path"     default="/data/UrbanNav-HK_TST-20210517_sensors.bag"/>
+  <arg name="rate"         default="1.0"    doc="Rosbag playback speed multiplier"/>
+  <arg name="start_delay"  default="8.0"    doc="Seconds to wait before playing bag"/>
+  <arg name="start_offset" default="0.0"    doc="Skip first N seconds of bag"/>
+  <arg name="loop"         default="false"  doc="Loop the bag"/>
+
+  <arg name="output_dir"   default="/data/output" doc="Directory for all results"/>
+  <arg name="record_bag"   default="true"   doc="Record output topics to .bag"/>
+
+  <arg name="rviz"         default="true"   doc="Launch RViz visualisation"/>
+
+  <!-- FAST-LIVO2 config and PCD output -->
+  <arg name="config_path"
+       default="$(find fast_livo2_wrapper)/config/fast_livo2_urbannav.yaml"/>
+  <arg name="pcd_path"     default="$(arg output_dir)/fast_livo2_map.pcd"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1 + 2: TF broadcaster + topic bridge
+       ══════════════════════════════════════════════════════════════════ -->
+  <include file="$(find fast_livo2_wrapper)/launch/topic_bridge.launch"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       3: Output recorder
+       ══════════════════════════════════════════════════════════════════ -->
+  <include file="$(find fast_livo2_wrapper)/launch/record_outputs.launch">
+    <arg name="output_dir"  value="$(arg output_dir)"/>
+    <arg name="record_bag"  value="$(arg record_bag)"/>
+  </include>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       4: FAST-LIVO2 (black-box binary)
+       ══════════════════════════════════════════════════════════════════ -->
+  <include file="$(find fast_livo2_wrapper)/launch/fast_livo2.launch">
+    <arg name="config_path" value="$(arg config_path)"/>
+    <arg name="pcd_path"    value="$(arg pcd_path)"/>
+  </include>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       5: Rosbag player
+          Only the three allowed sensor streams are played.
+          Delayed by start_delay to let all nodes initialise.
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="bag_player"
+        pkg="fast_livo2_wrapper"
+        type="bag_player.py"
+        output="screen">
+    <param name="bag_path"     value="$(arg bag_path)"/>
+    <param name="rate"         value="$(arg rate)"/>
+    <param name="start_delay"  value="$(arg start_delay)"/>
+    <param name="start_offset" value="$(arg start_offset)"/>
+    <param name="loop"         value="$(arg loop)"/>
+    <param name="use_sim_time" value="true"/>
+  </node>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       6: RViz (optional)
+       ══════════════════════════════════════════════════════════════════ -->
+  <group if="$(arg rviz)">
+    <node name="rviz"
+          pkg="rviz"
+          type="rviz"
+          args="-d $(find fast_livo2_wrapper)/config/fast_livo2.rviz"
+          output="screen"/>
+  </group>
+
+</launch>

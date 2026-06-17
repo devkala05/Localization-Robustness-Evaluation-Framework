@@ -1,0 +1,136 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# ORB-SLAM3 Stereo Camera Configuration
+# Dataset  : UrbanNav-HK-TST-20210517
+# Camera   : ZED2 stereo pair
+# Source   : zed2_intrinsics.yaml and /zed2/camera/right/camera_info projection matrix
+# Frames   : /camera/left/image_raw + /camera/right/image_raw
+#--------------------------------------------------------------------------------------------
+
+Camera.type: "PinHole"
+
+# ORB-SLAM3 stereo config uses the left camera intrinsics as the reference.
+Camera.fx: 264.9425
+Camera.fy: 264.79
+Camera.cx: 334.3975
+Camera.cy: 183.162
+
+# Left camera distortion from zed2_intrinsics.yaml.
+Camera.k1: -0.0442856
+Camera.k2:  0.0133574
+Camera.p1:  0.0
+Camera.p2:  0.0
+
+Camera.width:  672
+Camera.height: 376
+Camera.fps: 15
+
+# UrbanNav ZED2 images are bgr8 and the wrapper preserves the pixel order.
+Camera.RGB: 0
+
+# Stereo baseline-times-focal-length from the uploaded UrbanNav extrinsics.
+# Normal order: Camera1=physical LEFT, Camera2=physical RIGHT.
+# T_c1_c2 = inv(LEFT_CAMERA_T_IMU) * RIGHT_CAMERA_T_IMU has x = +0.159112028095 m.
+Camera.bf: 42.1555385036
+
+ThDepth: 40.0
+
+# Exact stereo transform from Camera1 (physical LEFT) to Camera2 (physical RIGHT).
+# T_c1_c2 = inv(LEFT_CAMERA_T_IMU) * RIGHT_CAMERA_T_IMU.
+Stereo.T_c1_c2: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [0.999996818057, 0.000264621249501, 0.00250875486826, 0.159112028095,
+         -0.000269580513097, 0.999998010087, 0.00197665082485, -0.00241686255784,
+         -0.00250822681224, -0.00197732084669, 0.999994899487, 0.0292505343018,
+         0.0, 0.0, 0.0, 1.0]
+
+#--------------------------------------------------------------------------------------------
+# Rectification parameters consumed by native ORB_SLAM3/Stereo when do_rectify=true
+# Source: /zed2/camera/{left,right}/camera_info in the UrbanNav bag
+#--------------------------------------------------------------------------------------------
+
+LEFT.height: 376
+LEFT.width: 672
+LEFT.K: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [264.9425, 0.0, 334.3975,
+         0.0, 264.79, 183.162,
+         0.0, 0.0, 1.0]
+LEFT.D: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: d
+  data: [-0.0442856, 0.0133574, 0.0, 0.0, 0.0]
+LEFT.R: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [0.9999928182812586, -0.00018091850887242292, -0.00378558508011918,
+         0.00017773459026030814, 0.9999996302421909, -0.0008413833234560463,
+         0.003785735902185804, 0.0008407044514645563, 0.9999924806815821]
+LEFT.P: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: d
+  data: [264.9425, 0.0, 334.3975, 0.0,
+         0.0, 264.79, 183.162, 0.0,
+         0.0, 0.0, 1.0, 0.0]
+
+RIGHT.height: 376
+RIGHT.width: 672
+RIGHT.K: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [264.2125, 0.0, 341.635,
+         0.0, 264.155, 183.993,
+         0.0, 0.0, 1.0]
+RIGHT.D: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: d
+  data: [-0.0423469, 0.0115525, 0.0, 0.0, 0.0]
+RIGHT.R: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [0.9999928182812586, -0.00018091850887242292, -0.00378558508011918,
+         0.00017773459026030814, 0.9999996302421909, -0.0008413833234560463,
+         0.003785735902185804, 0.0008407044514645563, 0.9999924806815821]
+RIGHT.P: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: d
+  data: [264.2125, 0.0, 341.635, -42.1555385036,
+         0.0, 264.155, 183.993, 0.0,
+         0.0, 0.0, 1.0, 0.0]
+
+#--------------------------------------------------------------------------------------------
+# ORB Extractor Parameters
+#--------------------------------------------------------------------------------------------
+
+ORBextractor.nFeatures:    2200
+ORBextractor.scaleFactor:  1.2
+ORBextractor.nLevels:      8
+ORBextractor.iniThFAST:    12
+ORBextractor.minThFAST:    5
+
+#--------------------------------------------------------------------------------------------
+# Viewer
+#--------------------------------------------------------------------------------------------
+
+Viewer.KeyFrameSize:       0.05
+Viewer.KeyFrameLineWidth:  1
+Viewer.GraphLineWidth:     0.9
+Viewer.PointSize:          2
+Viewer.CameraSize:         0.08
+Viewer.CameraLineWidth:    3
+Viewer.ViewpointX:         0
+Viewer.ViewpointY:         -0.7
+Viewer.ViewpointZ:         -1.8
+Viewer.ViewpointF:         500

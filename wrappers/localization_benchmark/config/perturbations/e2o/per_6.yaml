@@ -1,0 +1,9 @@
+name: sensor_blackout_windows
+description: Turn selected sensors fully off for manual timestamp windows. Timestamps adapted to E2O GT start; verify against
+  the actual bag clock.
+perturbations:
+- name: lidar_off_window
+  sensor: lidar
+  type: sensor_off
+  start: 1723528228.157124
+  end: 1723528333.157124

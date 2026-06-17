@@ -1,0 +1,62 @@
+<!-- orbslam3_urbannav.launch
+     Launches native ORB-SLAM3 ROS nodes for UrbanNav.
+
+     mode:=mono             ORB_SLAM3/Mono, visual-only right camera.
+     mode:=stereo           ORB_SLAM3/Stereo, visual-only swapped ZED2 pair.
+     mode:=mono_inertial    ORB_SLAM3/Mono_Inertial, right camera + IMU.
+     mode:=stereo_inertial  ORB_SLAM3/Stereo_Inertial, swapped ZED2 pair + IMU.
+
+     Native ORB-SLAM3 executables are launched through a tiny shell shim in
+     this package so manual runs do not depend on ROS_PACKAGE_PATH finding the
+     non-catkin ORB_SLAM3 example package.
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="orb_slam3_root" default="$(optenv ORB_SLAM3_ROOT /root/ORB_SLAM3)"/>
+  <arg name="vocabulary" default="$(arg orb_slam3_root)/Vocabulary/ORBvoc.txt"/>
+
+  <arg name="mode" default="stereo_inertial"/>
+  <arg name="mono_camera_config" default="$(find orbslam3_urbannav)/config/zed2_right_mono_orbslam3.yaml"/>
+  <arg name="mono_inertial_camera_config" default="$(find orbslam3_urbannav)/config/zed2_stereo_inertial_urbannav_swapped_orbslam3.yaml"/>
+  <arg name="stereo_camera_config" default="$(find orbslam3_urbannav)/config/zed2_stereo_urbannav_swapped_orbslam3.yaml"/>
+  <arg name="stereo_inertial_camera_config" default="$(find orbslam3_urbannav)/config/zed2_stereo_inertial_urbannav_swapped_orbslam3.yaml"/>
+  <arg name="stereo_do_rectify" default="$(optenv ORB_STEREO_DO_RECTIFY false)"/>
+  <arg name="do_equalize" default="false"/>
+
+  <group if="$(eval arg('mode') == 'mono')">
+    <node name="orbslam3_mono" pkg="orbslam3_urbannav" type="run_orbslam3_native.py"
+          output="screen" required="false"
+          args="Mono $(arg vocabulary) $(arg mono_camera_config)">
+      <remap from="/camera/image_raw" to="/camera/image_raw"/>
+    </node>
+  </group>
+
+  <group if="$(eval arg('mode') == 'mono_inertial')">
+    <node name="orbslam3_mono_inertial" pkg="orbslam3_urbannav" type="run_orbslam3_native.py"
+          output="screen" required="false"
+          args="Mono_Inertial $(arg vocabulary) $(arg mono_inertial_camera_config) $(arg do_equalize)">
+      <remap from="/camera/image_raw" to="/camera/image_raw"/>
+      <remap from="/imu" to="/imu"/>
+    </node>
+  </group>
+
+  <group if="$(eval arg('mode') == 'stereo')">
+    <node name="orbslam3_stereo" pkg="orbslam3_urbannav" type="run_orbslam3_native.py"
+          output="screen" required="false"
+          args="Stereo $(arg vocabulary) $(arg stereo_camera_config) $(arg stereo_do_rectify)">
+      <remap from="/camera/left/image_raw" to="/camera/left/image_raw"/>
+      <remap from="/camera/right/image_raw" to="/camera/right/image_raw"/>
+    </node>
+  </group>
+
+  <group if="$(eval arg('mode') == 'stereo_inertial')">
+    <node name="orbslam3_stereo_inertial" pkg="orbslam3_urbannav" type="run_orbslam3_native.py"
+          output="screen" required="false"
+          args="Stereo_Inertial $(arg vocabulary) $(arg stereo_inertial_camera_config) $(arg stereo_do_rectify) $(arg do_equalize)">
+      <remap from="/camera/left/image_raw" to="/camera/left/image_raw"/>
+      <remap from="/camera/right/image_raw" to="/camera/right/image_raw"/>
+      <remap from="/imu" to="/imu"/>
+    </node>
+  </group>
+</launch>

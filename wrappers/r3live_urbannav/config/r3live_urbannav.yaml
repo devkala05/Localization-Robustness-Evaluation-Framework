@@ -1,0 +1,124 @@
+# r3live_urbannav.yaml
+# UrbanNav-HK-TST R3LIVE parameters.
+# IMPORTANT: upstream hku-mars/r3live reads a mix of root keys
+# (LiDAR_pointcloud_topic, IMU_topic, Image_topic) and namespaces
+# (r3live_vio/*, r3live_lio/*).  The older wrapper-only keys under
+# r3live_common/vio/lio are kept for documentation, but these duplicated
+# upstream keys are the ones that prevent R3LIVE from falling back to
+# /laser_cloud_flat and /camera/image_color or crashing with image_width=0.
+r3live_common:
+  lid_topic: /livox/lidar
+  imu_topic: /livox/imu
+  img_topic: /camera/image_raw
+  lidar_type: 0
+  scan_line: 32
+  blind: 0.5
+  cut_frame_num: 3
+  pcd_save_en: false
+  pcd_path: /data/output/r3live_map.pcd
+  dense_publish_en: false
+  record_offline_map: 0
+  pub_pt_minimum_views: 3
+  minimum_pts_size: 0.05
+  image_downsample_ratio: 1
+  estimate_i2c_extrinsic: 0
+  estimate_intrinsic: 0
+  maximum_vio_tracked_pts: 600
+  append_global_map_point_step: 4
+  if_dump_log: 0
+lio:
+  acc_cov: 0.5
+  gyr_cov: 0.3
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+  extrinsic_T:
+  - 0.0
+  - 0.0
+  - 0.28
+  extrinsic_R:
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  max_iterations: 5
+  fov_degree: 360.0
+  det_range: 80.0
+  extrinsic_est_en: false
+vio:
+  cam_fx: 264.2125
+  cam_fy: 264.155
+  cam_cx: 341.635
+  cam_cy: 183.993
+  image_width: 672
+  image_height: 376
+  cam_d0: -0.0423469
+  cam_d1: 0.0115525
+  cam_d2: 0.0
+  cam_d3: 0.0
+  # p_cam = camera_ext_R * p_lidar + camera_ext_t
+  # T_cam_lidar = inv(RIGHT_CAMERA_T_IMU) * CENTER_LiDAR_T_IMU.
+  cam_ext_R: &id001
+  - 0.998728714527
+  - -0.0503671773759
+  - 0.00202539414241
+  - 0.00152876377776
+  - -0.00989676862598
+  - -0.999949857169
+  - 0.0503846966803
+  - 0.998681731791
+  - -0.00980718749144
+  cam_ext_T: &id002
+  - -0.034160570698
+  - -3.28115047369
+  - -0.718453283642
+  max_iterations: 5
+  patch_size: 8
+  patch_pyrimid_level: 4
+  outlier_threshold: 1000
+  img_point_cov: 1000
+  exposure_estimate_en: true
+  inv_expo_cov: 0.1
+LiDAR_pointcloud_topic: /livox/lidar
+IMU_topic: /livox/imu
+Image_topic: /camera/image_raw
+Image_compressed_topic: /camera/image_raw/compressed
+r3live_vio:
+  image_width: 672
+  image_height: 376
+  camera_intrinsic:
+  - 264.2125
+  - 0.0
+  - 341.635
+  - 0.0
+  - 264.155
+  - 183.993
+  - 0.0
+  - 0.0
+  - 1.0
+  camera_dist_coeffs:
+  - -0.0423469
+  - 0.0115525
+  - 0.0
+  - 0.0
+  - 0.0
+  camera_ext_R: *id001
+  camera_ext_t: *id002
+r3live_lio:
+  lio_update_point_step: 1
+  max_iteration: 5
+  lidar_time_delay: 0
+  filter_size_corner: 0.3
+  filter_size_surf: 0.3
+  filter_size_surf_z: 0.3
+  filter_size_map: 0.4
+  fov_degree: 360.0
+Lidar_front_end:
+  lidar_type: 0
+  N_SCANS: 32
+  using_raw_point: 1
+  point_step: 1

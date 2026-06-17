@@ -1,0 +1,25 @@
+name: imu_noise_and_dropout
+description: IMU noise/dropout windows. Edit timestamps after inspecting RViz time. Timestamps adapted to E2O GT start; verify
+  against the actual bag clock.
+perturbations:
+- name: imu_gaussian_noise
+  sensor: imu
+  type: gaussian_noise
+  start: 1723528226.157124
+  end: 1723528232.157124
+  angular_velocity_stddev:
+  - 0.01
+  - 0.01
+  - 0.02
+  linear_acceleration_stddev:
+  - 0.1
+  - 0.1
+  - 0.1
+  seed: 301
+- name: imu_message_dropout
+  sensor: imu
+  type: dropout
+  start: 1723528250.157124
+  end: 1723528255.157124
+  drop_rate: 0.2
+  seed: 302

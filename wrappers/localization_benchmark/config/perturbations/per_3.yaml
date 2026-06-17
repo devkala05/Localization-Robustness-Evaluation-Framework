@@ -1,0 +1,18 @@
+name: imu_noise_and_dropout
+description: IMU noise/dropout windows. Edit timestamps after inspecting RViz time.
+perturbations:
+  - name: imu_gaussian_noise
+    sensor: imu
+    type: gaussian_noise
+    start: 1621218788.0
+    end: 1621218794.0
+    angular_velocity_stddev: [0.01, 0.01, 0.02]
+    linear_acceleration_stddev: [0.10, 0.10, 0.10]
+    seed: 301
+  - name: imu_message_dropout
+    sensor: imu
+    type: dropout
+    start: 1621218812.0
+    end: 1621218817.0
+    drop_rate: 0.20
+    seed: 302

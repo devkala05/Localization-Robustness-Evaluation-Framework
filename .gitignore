@@ -1,0 +1,160 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# =========================
+# ROS / Catkin
+# =========================
+devel/
+devel_isolated/
+build/
+build_isolated/
+install/
+install_isolated/
+log/
+logs/
+.catkin_tools/
+catkin_generated/
+.cmake_tools/
+*.bag.active
+
+# Keep source CMakeLists/package files
+!src/**/CMakeLists.txt
+!src/**/package.xml
+
+# =========================
+# ROS Runtime / RViz
+# =========================
+.ros/
+*.rviz~
+*.urdf~
+*.launch~
+*.yaml~
+
+# =========================
+# Docker / Build Artifacts
+# =========================
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+docker/**/build/
+docker/**/.cache/
+docker/**/tmp/
+
+# =========================
+# CMake / C++ Build
+# =========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# =========================
+# ORB-SLAM3 / SLAM Generated
+# =========================
+KeyFrameTrajectory*.txt
+CameraTrajectory*.txt
+kf_*.txt
+trajectory*.txt
+*.db
+*.bin
+*.osa
+*.voc.tmp
+
+# Keep ORB vocabulary if intentionally tracked
+# Uncomment if vocabulary is too large and should not be committed:
+# ORBvoc.txt
+# ORBvoc.txt.tar.gz
+
+# =========================
+# Dataset / Bags / Outputs
+# =========================
+data/
+datasets/
+bags/
+rosbags/
+*.bag
+*.mcap
+results/
+outputs/
+runs/
+benchmark_results/
+golden/
+metrics/
+plots/
+reports/generated/
+
+# =========================
+# Logs
+# =========================
+*.log
+*.err
+*.out
+
+# =========================
+# Temporary Files
+# =========================
+tmp/
+temp/
+.cache/
+.cache-*/
+*.tmp
+*.bak
+
+# =========================
+# Large ML / Model Files
+# =========================
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.weights
+*.engine
+
+# =========================
+# Secrets / Local Config
+# =========================
+.env
+.env.*
+!.env.example
+config/local.yaml
+config/private.yaml
+secrets/
+credentials/
+*.key
+*.pem

@@ -1,0 +1,16 @@
+name: camera_motion_and_frame_drop
+description: Camera motion blur/dropout. FAST-LIO2 itself is LiDAR-IMU, but this is kept for visual checks and future visual algorithms.
+perturbations:
+  - name: motion_blur
+    sensor: camera_right
+    type: motion_blur
+    start: 1621218792.0
+    end: 1621218800.0
+    kernel_size: 11
+  - name: camera_frame_dropout
+    sensor: camera_right
+    type: frame_dropout
+    start: 1621218810.0
+    end: 1621218815.0
+    drop_rate: 0.35
+    seed: 501

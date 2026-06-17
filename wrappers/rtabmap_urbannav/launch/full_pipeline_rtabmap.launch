@@ -1,0 +1,34 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="rtabmap_database_path" default="/data/output/rtabmap_urbannav.db"/>
+  <arg name="delete_db_on_start" default="true"/>
+  <arg name="input_cloud_topic" default="/cloud_registered_raw"/>
+  <arg name="scan_cloud_topic" default="/rtabmap/scan_cloud"/>
+  <arg name="icp_odom_topic" default="/rtabmap/icp_odom"/>
+  <arg name="input_rgb_topic" default="/camera/right/image_raw"/>
+  <arg name="input_camera_info_topic" default="/camera/right/camera_info"/>
+  <arg name="subscribe_rgb" default="false"/>
+  <arg name="map_frame_id" default="map"/>
+  <arg name="odom_frame_id" default="camera_init"/>
+  <arg name="base_frame_id" default="body"/>
+  <arg name="publish_icp_tf" default="true"/>
+
+  <!-- Standalone RTAB-Map pipeline:
+       raw/perturbed LiDAR scan_cloud -> RTAB-Map icp_odometry -> RTAB-Map mapper.
+       No FAST-LIO2 launch and no /Odometry dependency. -->
+  <include file="$(find rtabmap_urbannav)/launch/rtabmap_urbannav.launch">
+    <arg name="database_path" value="$(arg rtabmap_database_path)"/>
+    <arg name="delete_db_on_start" value="$(arg delete_db_on_start)"/>
+    <arg name="input_cloud_topic" value="$(arg input_cloud_topic)"/>
+    <arg name="scan_cloud_topic" value="$(arg scan_cloud_topic)"/>
+    <arg name="icp_odom_topic" value="$(arg icp_odom_topic)"/>
+    <arg name="input_rgb_topic" value="$(arg input_rgb_topic)"/>
+    <arg name="input_camera_info_topic" value="$(arg input_camera_info_topic)"/>
+    <arg name="subscribe_rgb" value="$(arg subscribe_rgb)"/>
+    <arg name="map_frame_id" value="$(arg map_frame_id)"/>
+    <arg name="odom_frame_id" value="$(arg odom_frame_id)"/>
+    <arg name="base_frame_id" value="$(arg base_frame_id)"/>
+    <arg name="publish_icp_tf" value="$(arg publish_icp_tf)"/>
+  </include>
+</launch>

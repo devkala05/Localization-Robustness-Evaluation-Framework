@@ -1,0 +1,100 @@
+segments:
+  - name: warmup
+    type: straight
+    start: 1621218776.071249
+    end: 1621218787.571249
+
+  - name: left_turn
+    type: turn_left
+    start: 1621218788.071249
+    end: 1621218791.571249
+
+  - name: straight
+    type: straight
+    start: 1621218791.571249
+    end: 1621218810.071249
+
+  - name: stop
+    type: stop
+    start: 1621218810.071249
+    end: 1621218846.071249
+
+  - name: right_turn
+    type: turn_right
+    start: 1621218846.071249
+    end: 1621218859.571249
+
+  - name: straight
+    type: straight
+    start: 1621218859.571249
+    end: 1621218899.071249
+  
+  - name: under_bridge
+    type: under_bridge
+    start: 1621218899.071249
+    end: 1621218901.371249
+
+  - name: straight
+    type: straight
+    start: 1621218901.371249
+    end: 1621218907.371249
+  
+  - name: slight_right
+    type: turn_slight_right
+    start: 1621218907.371249
+    end: 1621218916.841249
+
+  - name: stop
+    type: stop
+    start: 1621218916.841249
+    end: 1621218969.071249
+  
+  - name: straight
+    type: straight
+    start: 1621218969.071249
+    end: 1621218978.701249
+
+  - name: right_turn
+    type: turn_right
+    start: 1621218978.701249
+    end: 1621218984.391249
+
+  - name: straight
+    type: straight
+    start: 1621218984.391249
+    end: 1621219025.451249
+
+  - name: stop
+    type: stop
+    start: 1621219025.451249
+    end: 1621219041.071249
+
+  - name: straight
+    type: straight
+    start: 1621219041.071249
+    end: 1621219073.261249
+
+  - name: stop
+    type: stop
+    start: 1621219073.261249
+    end: 1621219088.071249
+
+  - name: straight
+    type: straight
+    start: 1621219088.071249
+    end: 1621219104.071249
+
+  - name: right_turn
+    type: turn_right
+    start: 1621219104.071249
+    end: 1621219108.071249
+
+  - name: straight
+    type: straight
+    start: 1621219108.071249
+    end: 1621219133.071249
+
+  - name: under_bridge
+    type: under_bridge
+    start: 1621219133.071249
+    end: 1621219136.071249

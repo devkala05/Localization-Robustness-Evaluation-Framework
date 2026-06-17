@@ -1,0 +1,5 @@
+# Reserved for robot_localization global EKF. The production wrapper exposes a
+# conservative loose-fusion fallback through simple_gps_fusion_node.py.
+frequency: 30
+sensor_timeout: 0.5
+two_d_mode: false

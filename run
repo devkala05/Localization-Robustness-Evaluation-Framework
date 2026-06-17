@@ -1,0 +1,82 @@
+#!/bin/bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALGO=""; PER=""; MODE=""; EVAL="false"; DURATION="0"; DATASET="${DATASET:-urbannav}"
+GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC="/gps/fix_raw"; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; RTK_MODE="auto"
+ORB_MODE="${ORB_MODE:-stereo_inertial}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
+usage(){ cat <<'EOF'
+UrbanNav Localization Benchmark
+
+Usage:
+  ./run --dataset <urbannav|e2o> --algo <name> --per <0..6> [--gps on|off] [--eval] [--duration SEC]
+  ./run --algo <name> --shell
+  ./run --list
+
+Canonical algorithm names:
+  fastlio2
+  lvisam
+  fastlivo2
+  rtabmap
+  adaptive_w_lvio
+  orbslam3
+  r3live
+EOF
+}
+canonical_algo(){ case "$1" in fastlio2|lvisam|fastlivo2|rtabmap|adaptive_w_lvio|orbslam3|r3live) echo "$1";; *) echo "";; esac; }
+if [ "${1:-}" = "--list" ]; then printf "%s\n" fastlio2 lvisam fastlivo2 rtabmap adaptive_w_lvio orbslam3 r3live; exit 0; fi
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --algo) ALGO="${2:-}"; shift 2;; --algo=*) ALGO="${1#*=}"; shift;;
+    --dataset) DATASET="${2:-}"; shift 2;; --dataset=*) DATASET="${1#*=}"; shift;;
+    --per) MODE="per"; PER="${2:-}"; shift 2;; --per=*) MODE="per"; PER="${1#*=}"; shift;;
+    --gps) GPS="${2:-}"; shift 2;; --gps=*) GPS="${1#*=}"; shift;;
+    --gps-source) GPS_SOURCE="${2:-}"; shift 2;; --gps-source=*) GPS_SOURCE="${1#*=}"; shift;;
+    --gps-file) GPS_FILE="${2:-}"; shift 2;; --gps-file=*) GPS_FILE="${1#*=}"; shift;;
+    --gps-topic) GPS_TOPIC="${2:-}"; shift 2;; --gps-topic=*) GPS_TOPIC="${1#*=}"; shift;;
+    --gps-required) GPS_REQUIRED="true"; shift;;
+    --gps-use-z) GPS_USE_Z="${2:-}"; shift 2;; --gps-use-z=*) GPS_USE_Z="${1#*=}"; shift;;
+    --gps-alpha) GPS_ALPHA="${2:-}"; shift 2;; --gps-alpha=*) GPS_ALPHA="${1#*=}"; shift;;
+    --rtk) RTK_MODE="${2:-}"; shift 2;; --rtk=*) RTK_MODE="${1#*=}"; shift;;
+    --eval|--summary|--evaluate) EVAL="true"; shift;;
+    --duration|--seconds) DURATION="${2:-}"; shift 2;; --duration=*|--seconds=*) DURATION="${1#*=}"; shift;;
+    --orb-mode) ORB_MODE="${2:-}"; shift 2;; --orb-mode=*) ORB_MODE="${1#*=}"; shift;;
+    --stereo-swap) STEREO_SWAP="${2:-}"; shift 2;; --stereo-swap=*) STEREO_SWAP="${1#*=}"; shift;;
+    --r3live-vio) if [ "${2:-}" ] && [[ "${2:-}" != --* ]]; then R3LIVE_VIO="${2}"; shift 2; else R3LIVE_VIO="on"; shift; fi;; --r3live-vio=*) R3LIVE_VIO="${1#*=}"; shift;;
+    --bag) BAG="${2:-}"; shift 2;; --bag=*) BAG="${1#*=}"; shift;;
+    --gt) GT="${2:-}"; shift 2;; --gt=*) GT="${1#*=}"; shift;;
+    --skip-build) SKIP_BUILD="--skip-build"; shift;; --runtime-build) SKIP_BUILD="--runtime-build"; shift;;
+    --shell) MODE="shell"; shift;;
+    -h|--help) usage; exit 0;;
+    *) echo "ERROR: unknown argument $1"; usage; exit 2;;
+  esac
+done
+ALGO="$(canonical_algo "${ALGO}")"
+[ -n "${ALGO}" ] || { echo "ERROR: --algo must be one canonical name. Run ./run --list"; exit 2; }
+DATASET_CONFIG_DIR="${SCRIPT_DIR}/wrappers/localization_benchmark/config/datasets"
+eval "$(python3 "${SCRIPT_DIR}/scripts/dataset_config.py" --dataset "${DATASET}" --config-dir "${DATASET_CONFIG_DIR}" --algo "${ALGO}")"
+if [ "${MODE}" != "shell" ]; then [ -n "${PER}" ] || { echo "ERROR: --per is required"; exit 2; }; [[ "${PER}" =~ ^[0-6]$ ]] || { echo "ERROR: --per must be 0..6"; exit 2; }; fi
+case "${GPS}" in on|true|1|yes) GPS_ENABLE="on";; off|false|0|no) GPS_ENABLE="off";; *) echo "ERROR: --gps must be on/off"; exit 2;; esac
+if [ "${GPS_SOURCE}" = "auto" ]; then GPS_SOURCE="${DATASET_GPS_SOURCE}"; fi
+if [ -z "${GPS_FILE}" ]; then GPS_FILE="${DATASET_GPS_FILE}"; fi
+if [ "${GPS_TOPIC}" = "/gps/fix_raw" ] && [ -n "${DATASET_GPS_TOPIC}" ]; then GPS_TOPIC="${DATASET_GPS_TOPIC}"; fi
+[[ "${GPS_FILE}" == data/* ]] && GPS_FILE="/data/${GPS_FILE#data/}"
+[[ "${BAG}" == data/* ]] && BAG="/data/${BAG#data/}"
+[[ "${GT}" == data/* ]] && GT="/data/${GT#data/}"
+if [ "${ORB_MODE}" = "stereo" ] && [ -n "${DATASET_ORB_MODE}" ]; then ORB_MODE="${DATASET_ORB_MODE}"; fi
+if [ "${STEREO_SWAP}" = "true" ] && [ -n "${DATASET_STEREO_SWAP}" ]; then STEREO_SWAP="${DATASET_STEREO_SWAP}"; fi
+case "${STEREO_SWAP}" in on|true|1|yes) STEREO_SWAP_BOOL="true";; *) STEREO_SWAP_BOOL="false";; esac
+case "${R3LIVE_VIO}" in on|true|1|yes) R3LIVE_RUN_VISUAL="true";; *) R3LIVE_RUN_VISUAL="false";; esac
+export GPS_ENABLE GPS_SOURCE GPS_FILE GPS_TOPIC GPS_REQUIRED GPS_USE_Z GPS_ALPHA RTK_MODE ORB_MODE STEREO_SWAP_BOOL R3LIVE_RUN_VISUAL
+export DATASET_ID DATASET_NAME DATASET_BAG_PATH DATASET_GT_PATH DATASET_RESULTS_ROOT DATASET_FRAME_ID DATASET_BAG_TOPICS
+export DATASET_GT_FORMAT DATASET_USE_CLOCK_STAMP DATASET_WORLD_FRAME DATASET_BODY_FRAME DATASET_LIDAR_FRAME DATASET_IMU_FRAME DATASET_CAMERA_FRAME
+export DATASET_LIDAR_MODEL DATASET_SCAN_LINE DATASET_GT_YAW_OFFSET_DEG DATASET_PERTURBATIONS_DIR DATASET_SEGMENTS_YAML DATASET_POINT_TIME_FIELD DATASET_POINT_TIME_UNIT
+export DATASET_SOURCE_LIDAR_TOPIC DATASET_SOURCE_IMU_TOPIC DATASET_SOURCE_CAMERA_TOPIC DATASET_SOURCE_LEFT_CAMERA_TOPIC DATASET_SOURCE_GPS_TOPIC
+export DATASET_CAMERA_RIGHT_K DATASET_CAMERA_RIGHT_D DATASET_CAMERA_RIGHT_WIDTH DATASET_CAMERA_RIGHT_HEIGHT DATASET_CAMERA_LEFT_K DATASET_CAMERA_LEFT_D
+export BAG_PATH_OVERRIDE="${BAG:-${DATASET_BAG_PATH}}"
+export GT_PATH_OVERRIDE="${GT:-${DATASET_GT_PATH}}"
+export GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-${DATASET_GT_YAW_OFFSET_DEG:-0.0}}"
+ARGS=(--algo "${ALGO}"); if [ "${MODE}" = "shell" ]; then ARGS+=(--shell); else ARGS+=(--per "${PER}"); fi
+[ "${EVAL}" = "true" ] && ARGS+=(--eval)
+[ "${DURATION}" != "0" ] && ARGS+=(--duration "${DURATION}")
+[ -n "${SKIP_BUILD}" ] && ARGS+=("${SKIP_BUILD}")
+exec "${SCRIPT_DIR}/scripts/run_algorithm_container.sh" "${ARGS[@]}"
