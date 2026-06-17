@@ -120,18 +120,22 @@ if [ "${ALGO_STANDARD_NS}" = "r3live" ]; then
     # Do not use FAST-LIO2 fallback for benchmark output. If native R3LIVE does
     # not publish, the watchdog/mux will show that clearly instead of recording
     # a FAST-LIO2 trajectory as R3LIVE.
-    ALGO_LAUNCH_ARGS="enable_fastlio_fallback:=false run_visual:=${R3LIVE_VISUAL_BOOL} native_role:=${R3LIVE_NATIVE_ROLE}"
+    ALGO_LAUNCH_ARGS="enable_fastlio_fallback:=false run_visual:=${R3LIVE_VISUAL_BOOL} native_role:=${R3LIVE_NATIVE_ROLE} dataset_id:=${DATASET_ID} lidar_type:=2"
 fi
 
-if [ "${ALGO_STANDARD_NS}" = "lvisam" ] && [ "${DATASET_SCAN_LINE}" = "16" ]; then
-    ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS/run_visual:=true/run_visual:=false}"
+if [ "${ALGO_STANDARD_NS}" = "lvisam" ] && [ "${DATASET_ID}" = "e2o" ]; then
+    # Keep LVISAM visual frontend enabled. The old scan-line based branch
+    # disabled run_visual for every 16-line dataset, reducing LVI-SAM to
+    # LiDAR-IMU and breaking the visual/lidar frame consistency.
     ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} lidar_param_file:=/root/catkin_ws/src/lvi_sam_urbannav/config/lvisam_e2o.yaml"
     ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} vins_param_file:=/root/catkin_ws/src/lvi_sam_urbannav/config/params_camera_e2o_front.yaml"
 fi
 
 STD_EXTRA_ARGS=""
-if [ "${ALGO_STANDARD_NS}" = "lvisam" ] && [ "${DATASET_SCAN_LINE}" = "16" ]; then
-    STD_EXTRA_ARGS="_rebase_origin:=true _origin_min_norm:=0.5"
+if [ "${ALGO_STANDARD_NS}" = "lvisam" ]; then
+    # Do not rotate only the benchmark odometry to GT in RViz. LVISAM's native
+    # map/cloud/path are in odom/map; evaluation aligns trajectories offline.
+    STD_EXTRA_ARGS="_align_to_gt:=false _rebase_origin:=false _fixed_frame:=odom _preserve_native_child_frame:=true"
 fi
 
 case "${ALGO_STANDARD_NS}" in
@@ -155,11 +159,18 @@ if [ "${DATASET_ID}" = "e2o" ]; then
             # Standalone RTAB-Map ICP uses the common raw/perturbed scan_cloud topic.
             # No FAST-LIO2 config or scan_line argument is passed.
             ;;
+        adaptive_w_lvio)
+            if [ "${ADAPTIVE_LVIO_MONO_DEPTH:-false}" = "true" ]; then
+                ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} use_native_lvio_fusion:=true config_file:=/root/catkin_ws/src/adaptive_w_lvio_urbannav/config/lvio_fusion_e2o_mono_depth.yaml"
+            else
+                ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} use_native_lvio_fusion:=false"
+            fi
+            ;;
         r3live)
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml"
             ;;
         orbslam3)
-            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-1.0} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-0.0} align_to_gt:=true"
+            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-1.0} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-0.0} align_to_gt:=true dataset_id:=${DATASET_ID}"
             ;;
     esac
 fi
@@ -180,10 +191,10 @@ export ROS_MASTER_URI=${ROS_MASTER_URI_VALUE}
 export ROS_HOSTNAME=localhost
 rosparam set /use_sim_time true
 
-bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_TF_COMMAND}" &
+bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_TF_COMMAND} _dataset_id:=${DATASET_ID}" &
 PIDS+=("$!")
 
-bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch dataset:=${DATASET_NAME:-${DATASET_ID}} source_lidar_topic:=${DATASET_SOURCE_LIDAR_TOPIC:-/velodyne_points} source_imu_topic:=${DATASET_SOURCE_IMU_TOPIC:-/imu/data} source_camera_topic:=${DATASET_SOURCE_CAMERA_TOPIC:-/zed2/camera/right/image_raw} source_left_camera_topic:=${DATASET_SOURCE_LEFT_CAMERA_TOPIC:-} use_clock_stamp:=${DATASET_USE_CLOCK_STAMP:-false} lidar_sensor_name:=${DATASET_LIDAR_FRAME:-velodyne} imu_sensor_name:=${DATASET_IMU_FRAME:-body} camera_sensor_name:=camera_right left_camera_sensor_name:=camera_left" &
+bash -lc "${SETUP} && ${ROS_ENV} && roslaunch localization_benchmark custom_bridge.launch dataset:=${DATASET_NAME:-${DATASET_ID}} source_lidar_topic:=${DATASET_SOURCE_LIDAR_TOPIC:-/velodyne_points} source_imu_topic:=${DATASET_SOURCE_IMU_TOPIC:-/imu/data} source_camera_topic:=${DATASET_SOURCE_CAMERA_TOPIC:-/zed2/camera/right/image_raw} source_left_camera_topic:=${DATASET_SOURCE_LEFT_CAMERA_TOPIC:-} use_clock_stamp:=${DATASET_USE_CLOCK_STAMP:-false} lidar_sensor_name:=${DATASET_LIDAR_FRAME:-velodyne} imu_sensor_name:=${DATASET_IMU_FRAME:-body} camera_sensor_name:=camera_right left_camera_sensor_name:=camera_left monotonic_clock_stamp:=true min_stamp_step_sec:=0.000001" &
 PIDS+=("$!")
 
 bash -lc "${SETUP} && ${ROS_ENV} && ${ALGO_ADAPTER_LAUNCH} run_id:=${PER} perturbation_config:=${CONFIG_PATH} native_lidar_topic:=${ALGO_NATIVE_LIDAR_TOPIC} native_imu_topic:=${ALGO_NATIVE_IMU_TOPIC} native_camera_topic:=${ALGO_NATIVE_CAMERA_TOPIC} point_time_scale:=${ALGO_POINT_TIME_SCALE} ring_count:=${DATASET_SCAN_LINE} camera_right_k:='${DATASET_CAMERA_RIGHT_K:-}' camera_right_d:='${DATASET_CAMERA_RIGHT_D:-}' camera_left_k:='${DATASET_CAMERA_LEFT_K:-}' camera_left_d:='${DATASET_CAMERA_LEFT_D:-}' camera_frame_id:=${DATASET_CAMERA_FRAME:-camera_right_optical} ${ALGO_ADAPTER_ARGS}" &
@@ -196,7 +207,7 @@ STD_PUBLISH_TF=true
 # RTAB-Map and Adaptive-W already publish or manage their own local frame outputs.
 # Keep BenchmarkOutput TF off for them to avoid duplicate camera_init->body authority
 # and TF_REPEATED_DATA warnings.
-if [ "${ALGO_STANDARD_NS}" = "rtabmap" ] || [ "${ALGO_STANDARD_NS}" = "adaptive_w_lvio" ]; then
+if [ "${ALGO_STANDARD_NS}" = "rtabmap" ] || [ "${ALGO_STANDARD_NS}" = "adaptive_w_lvio" ] || [ "${ALGO_STANDARD_NS}" = "lvisam" ] || [ "${ALGO_STANDARD_NS}" = "r3live" ]; then
     STD_PUBLISH_TF=false
 fi
 

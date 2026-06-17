@@ -29,6 +29,10 @@ class DatasetCustomBridge:
         self.camera_sensor_name = rospy.get_param("~camera_sensor_name", "camera_right")
         self.left_camera_sensor_name = rospy.get_param("~left_camera_sensor_name", "camera_left")
         self.use_clock_stamp = self._as_bool(rospy.get_param("~use_clock_stamp", False))
+        self.monotonic_clock_stamp = self._as_bool(rospy.get_param("~monotonic_clock_stamp", True))
+        self.min_stamp_step_sec = float(rospy.get_param("~min_stamp_step_sec", 1.0e-6))
+        self._last_stamp_by_stream = {}
+        self._stamp_adjust_counts = {}
 
         self.lidar_pub = rospy.Publisher(
             rospy.get_param("~custom_lidar_topic", "/mycar/lidar/custom_points"),
@@ -53,10 +57,10 @@ class DatasetCustomBridge:
         self._subscribe_optional(self.camera_left_topic, Image, self.camera_left_cb, 20, "left camera")
         rospy.Timer(rospy.Duration(5.0), self.log_rates)
         rospy.loginfo(
-            "[DatasetCustomBridge] dataset=%s lidar=%s imu=%s camera=%s left=%s use_clock_stamp=%s",
+            "[DatasetCustomBridge] dataset=%s lidar=%s imu=%s camera=%s left=%s use_clock_stamp=%s monotonic=%s",
             self.dataset, self.lidar_topic, self.imu_topic,
             self.camera_topic or "disabled", self.camera_left_topic or "disabled",
-            self.use_clock_stamp,
+            self.use_clock_stamp, self.monotonic_clock_stamp,
         )
 
     @staticmethod
@@ -78,18 +82,34 @@ class DatasetCustomBridge:
             return value
         return str(value).strip().lower() in ("1", "true", "yes", "on")
 
-    def _bridge_header(self, header):
-        if not self.use_clock_stamp:
-            return header
+    def _bridge_header(self, header, stream_name):
         out = Header()
         out.seq = header.seq
-        out.stamp = rospy.Time.now()
+        out.stamp = rospy.Time.now() if self.use_clock_stamp else header.stamp
         out.frame_id = header.frame_id
+
+        # Some E2O bags have sensor-header stamps that are not usable together
+        # with /clock. Re-stamping with rospy.Time.now() fixes cross-sensor sync,
+        # but multiple callbacks can still see the same simulated time. LVI-SAM
+        # and ORB/VINS require strictly increasing IMU stamps, so enforce a tiny
+        # per-stream monotonic increment without changing message order.
+        if self.monotonic_clock_stamp:
+            last = self._last_stamp_by_stream.get(stream_name)
+            if last is not None and out.stamp <= last:
+                out.stamp = last + rospy.Duration.from_sec(self.min_stamp_step_sec)
+                count = self._stamp_adjust_counts.get(stream_name, 0) + 1
+                self._stamp_adjust_counts[stream_name] = count
+                if count <= 5 or count % 1000 == 0:
+                    rospy.logwarn(
+                        "[DatasetCustomBridge] adjusted non-increasing %s stamp to %.9f count=%d",
+                        stream_name, out.stamp.to_sec(), count,
+                    )
+            self._last_stamp_by_stream[stream_name] = out.stamp
         return out
 
     def lidar_cb(self, msg):
         out = CustomPointCloud()
-        out.header = self._bridge_header(msg.header)
+        out.header = self._bridge_header(msg.header, "lidar")
         out.dataset = self.dataset
         out.sensor_name = self.lidar_sensor_name
         out.source_topic = self.lidar_topic
@@ -101,7 +121,7 @@ class DatasetCustomBridge:
 
     def imu_cb(self, msg):
         out = CustomImu()
-        out.header = self._bridge_header(msg.header)
+        out.header = self._bridge_header(msg.header, "imu")
         out.dataset = self.dataset
         out.sensor_name = self.imu_sensor_name
         out.source_topic = self.imu_topic
@@ -113,7 +133,7 @@ class DatasetCustomBridge:
 
     def _make_custom_image(self, msg, sensor_name, source_topic):
         out = CustomImage()
-        out.header = self._bridge_header(msg.header)
+        out.header = self._bridge_header(msg.header, sensor_name)
         out.dataset = self.dataset
         out.sensor_name = sensor_name
         out.source_topic = source_topic

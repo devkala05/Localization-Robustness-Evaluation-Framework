@@ -31,6 +31,13 @@ def yaw_quaternion(yaw):
     q.z = math.sin(0.5 * yaw)
     return q
 
+def as_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    return bool(value)
+
 class StandardOutputRepublisher:
     def __init__(self):
         self.source_topic = rospy.get_param('~source_topic')
@@ -40,16 +47,28 @@ class StandardOutputRepublisher:
         self.output_odom_topic = rospy.get_param('~output_odom_topic', f'/{self.algo_ns}/odometry/output')
         self.output_path_topic = rospy.get_param('~output_path_topic', f'/{self.algo_ns}/path/output')
         self.status_topic = rospy.get_param('~status_topic', f'/{self.algo_ns}/benchmark_status')
-        self.gps_enabled = bool(rospy.get_param('~gps_enabled', False))
+        self.gps_enabled = as_bool(rospy.get_param('~gps_enabled', False))
         self.fixed_frame = rospy.get_param('~fixed_frame', 'camera_init')
         self.child_frame = rospy.get_param('~child_frame', 'body')
-        self.publish_tf = bool(rospy.get_param('~publish_tf', True))
+        self.publish_tf = as_bool(rospy.get_param('~publish_tf', True))
         self.tf_parent_frame = rospy.get_param('~tf_parent_frame', '')
         self.tf_child_frame = rospy.get_param('~tf_child_frame', self.child_frame)
-        self.preserve_native_child_frame = bool(rospy.get_param('~preserve_native_child_frame', False))
-        self.rebase_origin = bool(rospy.get_param('~rebase_origin', False))
+        self.preserve_native_child_frame = as_bool(rospy.get_param('~preserve_native_child_frame', False))
+        self.rebase_origin = as_bool(rospy.get_param('~rebase_origin', False))
+        self.align_to_gt = as_bool(rospy.get_param('~align_to_gt', False))
+        self.ground_truth_odom_topic = rospy.get_param('~ground_truth_odom_topic', '/ground_truth_odometry')
+        self.align_min_motion = float(rospy.get_param('~align_min_motion', 1.0))
+        self.use_motion_yaw = as_bool(rospy.get_param('~use_motion_yaw', False))
         self.origin_min_norm = float(rospy.get_param('~origin_min_norm', 0.0))
         self.origin = None
+        self.gt_origin = None
+        self.latest_gt = None
+        self.align_ready = False
+        self.align_yaw_delta = 0.0
+        self.align_native_anchor = None
+        self.align_gt_anchor = None
+        self.last_motion_xy = None
+        self.last_motion_yaw = None
         self.tf_broadcaster = tf2_ros.TransformBroadcaster() if self.publish_tf else None
         self.last_tf_stamp_by_edge = {}
         self.min_path_step = float(rospy.get_param('~min_path_step', 0.02))
@@ -65,32 +84,96 @@ class StandardOutputRepublisher:
         self.count = 0
         self.last_log = 0.0
         rospy.Subscriber(self.source_topic, Odometry, self.cb, queue_size=200)
+        if self.align_to_gt:
+            rospy.Subscriber(self.ground_truth_odom_topic, Odometry, self.gt_cb, queue_size=100)
         self.status_pub.publish(String(data='waiting_for_native_odometry'))
         rospy.loginfo('[BenchmarkOutput] source=%s local=%s output=%s gps=%s tf=%s', self.source_topic, self.local_odom_topic, self.output_odom_topic, self.gps_enabled, self.publish_tf)
 
+    def gt_cb(self, msg):
+        self.latest_gt = msg
+
     def maybe_rebase(self, odom):
-        if not self.rebase_origin:
+        if not self.rebase_origin and not self.align_to_gt:
             return odom
         p = odom.pose.pose.position
         q = odom.pose.pose.orientation
         pose_norm = math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z)
         if self.origin is None:
+            if self.align_to_gt and self.latest_gt is None:
+                return None
             if pose_norm < self.origin_min_norm:
                 return None
             self.origin = (p.x, p.y, p.z, yaw_from_quaternion(q))
+            if self.align_to_gt:
+                gp = self.latest_gt.pose.pose.position
+                gq = self.latest_gt.pose.pose.orientation
+                self.gt_origin = (gp.x, gp.y, gp.z, yaw_from_quaternion(gq))
+                self.align_ready = self.align_min_motion <= 0.0
+                self.align_yaw_delta = self.gt_origin[3] - self.origin[3]
             rospy.loginfo(
-                '[BenchmarkOutput] rebasing origin at stamp=%.9f xyz=(%.3f, %.3f, %.3f) yaw=%.3f',
+                '[BenchmarkOutput] aligning origin at stamp=%.9f xyz=(%.3f, %.3f, %.3f) yaw=%.3f gt=%s',
                 odom.header.stamp.to_sec(), p.x, p.y, p.z, self.origin[3],
+                'yes' if self.align_to_gt else 'no',
             )
         ox, oy, oz, oyaw = self.origin
         dx = p.x - ox
         dy = p.y - oy
-        c = math.cos(-oyaw)
-        s = math.sin(-oyaw)
-        odom.pose.pose.position.x = c * dx - s * dy
-        odom.pose.pose.position.y = s * dx + c * dy
-        odom.pose.pose.position.z = p.z - oz
-        odom.pose.pose.orientation = yaw_quaternion(yaw_from_quaternion(q) - oyaw)
+        dz = p.z - oz
+        if self.align_to_gt and self.gt_origin is not None:
+            gx, gy, gz, gyaw = self.gt_origin
+            if not self.align_ready:
+                gp = self.latest_gt.pose.pose.position if self.latest_gt is not None else None
+                if gp is None:
+                    return None
+                nd = math.sqrt(dx * dx + dy * dy)
+                gdx = gp.x - gx
+                gdy = gp.y - gy
+                gd = math.sqrt(gdx * gdx + gdy * gdy)
+                if nd < self.align_min_motion or gd < self.align_min_motion:
+                    return None
+                self.align_yaw_delta = math.atan2(gdy, gdx) - math.atan2(dy, dx)
+                gq = self.latest_gt.pose.pose.orientation
+                self.align_native_anchor = (p.x, p.y, p.z)
+                self.align_gt_anchor = (gp.x, gp.y, gp.z, yaw_from_quaternion(gq))
+                self.last_motion_xy = None
+                self.last_motion_yaw = self.align_gt_anchor[3]
+                self.align_ready = True
+                rospy.loginfo(
+                    '[BenchmarkOutput] motion yaw alignment ready native_motion=%.3f gt_motion=%.3f yaw_delta=%.2f deg',
+                    nd, gd, math.degrees(self.align_yaw_delta),
+                )
+            if self.align_native_anchor is None or self.align_gt_anchor is None:
+                self.align_native_anchor = (ox, oy, oz)
+                self.align_gt_anchor = (gx, gy, gz, gyaw)
+            ax, ay, az = self.align_native_anchor
+            gx, gy, gz, gyaw = self.align_gt_anchor
+            dx = p.x - ax
+            dy = p.y - ay
+            dz = p.z - az
+            yaw_delta = self.align_yaw_delta
+            c = math.cos(yaw_delta)
+            s = math.sin(yaw_delta)
+            odom.pose.pose.position.x = gx + c * dx - s * dy
+            odom.pose.pose.position.y = gy + s * dx + c * dy
+            odom.pose.pose.position.z = gz + dz
+            if self.use_motion_yaw:
+                xy = (odom.pose.pose.position.x, odom.pose.pose.position.y)
+                if self.last_motion_xy is not None:
+                    mdx = xy[0] - self.last_motion_xy[0]
+                    mdy = xy[1] - self.last_motion_xy[1]
+                    if math.sqrt(mdx * mdx + mdy * mdy) >= self.min_path_step:
+                        self.last_motion_yaw = math.atan2(mdy, mdx)
+                odom.pose.pose.orientation = yaw_quaternion(self.last_motion_yaw if self.last_motion_yaw is not None else gyaw)
+                self.last_motion_xy = xy
+            else:
+                odom.pose.pose.orientation = yaw_quaternion(yaw_from_quaternion(q) + yaw_delta)
+        else:
+            c = math.cos(-oyaw)
+            s = math.sin(-oyaw)
+            odom.pose.pose.position.x = c * dx - s * dy
+            odom.pose.pose.position.y = s * dx + c * dy
+            odom.pose.pose.position.z = dz
+            odom.pose.pose.orientation = yaw_quaternion(yaw_from_quaternion(q) - oyaw)
         return odom
 
     def publish_local_tf(self, odom):
@@ -130,6 +213,8 @@ class StandardOutputRepublisher:
         out = self.maybe_rebase(out)
         if out is None:
             return
+        if self.rebase_origin or self.align_to_gt:
+            out.header.frame_id = self.fixed_frame
         self.local_pub.publish(out)
         if self.publish_tf:
             self.publish_local_tf(out)

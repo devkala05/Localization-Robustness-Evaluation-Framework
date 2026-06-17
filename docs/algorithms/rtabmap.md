@@ -1,6 +1,6 @@
-# RTAB-Map ICP
+# RTAB-Map Visual+ICP
 
-RTAB-Map is integrated as a standalone LiDAR ICP pipeline for the benchmark. It no longer launches FAST-LIO2 and it does not subscribe to FAST-LIO2 `/Odometry`.
+RTAB-Map is integrated as a standalone visual+LiDAR ICP pipeline for the benchmark. It no longer launches FAST-LIO2 and it does not subscribe to FAST-LIO2 `/Odometry`.
 
 ## Pipeline
 
@@ -9,6 +9,12 @@ RTAB-Map is integrated as a standalone LiDAR ICP pipeline for the benchmark. It 
   -> /rtabmap/scan_cloud        # sanitized raw/perturbed PointCloud2
   -> rtabmap_odom/icp_odometry
   -> /rtabmap/icp_odom          # RTAB-Map's own ICP odometry
+
+/zed2/camera/right/image_raw
+  -> /camera/right/image_raw
+  -> /camera/right/camera_info
+
+/rtabmap/icp_odom + /rtabmap/scan_cloud + /camera/right/image_raw
   -> rtabmap_slam/rtabmap
   -> /rtabmap/mapPath
   -> /rtabmap/odometry/mapping  # benchmark-normalized output
@@ -26,9 +32,11 @@ RTAB-Map is integrated as a standalone LiDAR ICP pipeline for the benchmark. It 
 
 ```text
 /cloud_registered_raw
+/camera/right/image_raw
+/camera/right/camera_info
 ```
 
-Camera topics are not required in the default standalone ICP mode. The common benchmark adapter still exists, but for RTAB-Map ICP it is configured with `publish_camera:=false publish_camera_info:=false`.
+The common benchmark adapter publishes the right camera image and generated CameraInfo for RTAB-Map. The RTAB-Map node uses `subscribe_rgb:=true` and `Reg/Strategy=2`, so visual features are used together with ICP registration.
 
 ## Outputs
 

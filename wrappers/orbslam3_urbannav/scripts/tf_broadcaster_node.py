@@ -108,7 +108,7 @@ def build_static_transforms():
     if dataset_id == "e2o":
         # E2O mono camera image is already published in camera_right_optical.
         tfs.append(make_tf(np.eye(4), "body", "velodyne"))
-        tfs.append(make_tf(E2O_FRONT_CAMERA_T_LIDAR103, "body", "camera_right"))
+        tfs.append(make_tf(invert_rigid(E2O_FRONT_CAMERA_T_LIDAR103), "body", "camera_right"))
         tfs.append(make_tf(np.eye(4), "camera_right", "camera_right_optical"))
         tfs.append(make_tf(np.eye(4), "body", "gnss_antenna"))
         tfs.append(make_tf(np.eye(4), "body", "gps_link"))

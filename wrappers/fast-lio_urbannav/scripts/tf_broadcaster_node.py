@@ -91,6 +91,7 @@ CAM_TO_OPTICAL = np.array([
 
 # E2O front-camera calibration used by the working E2O FAST-LIVO2 reference.
 # Convention: p_camera = E2O_FRONT_CAMERA_T_LIDAR103 * p_lidar103.
+# ROS static TF body->camera must store T_body_camera, so invert this matrix.
 E2O_FRONT_CAMERA_T_LIDAR103 = np.array([
     [-0.18256836, -0.98306216, -0.01604916,  0.07383026],
     [ 0.11110754, -0.00440978, -0.99379861, -0.53581120],
@@ -169,7 +170,7 @@ def build_static_transforms():
         # E2O working reference treats lidar103 as body origin. Do not reuse
         # UrbanNav's +0.28 m LiDAR/IMU lever arm or ZED2 camera calibration.
         tfs.append(make_stamped_tf(np.eye(4), "body", "velodyne"))
-        tfs.append(make_stamped_tf(E2O_FRONT_CAMERA_T_LIDAR103, "body", "camera_right"))
+        tfs.append(make_stamped_tf(invert_rigid(E2O_FRONT_CAMERA_T_LIDAR103), "body", "camera_right"))
         tfs.append(make_stamped_tf(np.eye(4), "camera_right", "camera_right_optical"))
         tfs.append(make_stamped_tf(np.eye(4), "body", "gnss_antenna"))
     else:

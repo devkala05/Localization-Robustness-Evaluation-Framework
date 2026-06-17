@@ -1,12 +1,12 @@
 dataset:
   id: e2o
   name: e2o_faculty_loop
-  bag_path: /data/e2o/raw/one_full_loop.bag
-  ground_truth_path: /workspace/e20_GT_scripts/gt_one_full_loop_fastlivo2_lidar103.csv
+  bag_path: /data/one_full_loop.bag
+  ground_truth_path: /workspace/data/gt_one_full_loop_fastlivo2_lidar103.csv
   results_root: /data/results/e2o
   frame_id: camera_init
   gt_format: auto
-  use_clock_stamp: false
+  use_clock_stamp: true
   gps_source: topic
   gps_topic: /mavros/global_position/global
   default_orb_mode: mono
@@ -19,7 +19,7 @@ frames:
   body: body
   lidar: velodyne103
   imu: body
-  camera_right: camera_color_optical_frame
+  camera_right: camera_right_optical
 
 lidar:
   model: velodyne_16
@@ -37,7 +37,7 @@ source_topics:
 bag_topics:
   default: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
   orbslam3: /camera/color/image_raw /mavros/imu/data
-  rtabmap: /lidar103/velodyne_points
+  rtabmap: /lidar103/velodyne_points /camera/color/image_raw
 
 paths:
   perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations

@@ -96,8 +96,8 @@ Visualization Manager:
           Value: false
         Value: false
     - Class: rviz/PointCloud2
-      Name: Raw Velodyne Bag Cloud
-      Enabled: true
+      Name: Raw Velodyne Bag Cloud (input, hidden)
+      Enabled: false
       Topic: /velodyne_points
       Style: Points
       Size (Pixels): 3
@@ -106,8 +106,8 @@ Visualization Manager:
       Color Transformer: Intensity
       Decay Time: 0
     - Class: rviz/PointCloud2
-      Name: R3LIVE Input Cloud /livox/lidar
-      Enabled: true
+      Name: R3LIVE Input Cloud /livox/lidar (input, hidden)
+      Enabled: false
       Topic: /livox/lidar
       Style: Points
       Size (Pixels): 3
@@ -116,35 +116,38 @@ Visualization Manager:
       Color Transformer: Intensity
       Decay Time: 0
     - Class: rviz/PointCloud2
-      Name: R3LIVE Cloud Registered candidate
+      Name: R3LIVE Current LiDAR Scan Only
       Enabled: true
-      Topic: /cloud_registered
+      Topic: /r3live/cloud_registered_fixed
       Style: Points
       Size (Pixels): 3
       Size (m): 0.05
       Alpha: 0.9
       Color Transformer: Intensity
-      Decay Time: 5
+      Decay Time: 0
+      Queue Size: 1
     - Class: rviz/PointCloud2
-      Name: R3LIVE Laser Surround candidate
-      Enabled: true
-      Topic: /laser_cloud_surround
+      Name: R3LIVE Laser Surround Fixed (accumulated map, hidden)
+      Enabled: false
+      Topic: /r3live/laser_cloud_surround_fixed
       Style: Points
       Size (Pixels): 2
       Size (m): 0.04
       Alpha: 0.9
       Color Transformer: Intensity
-      Decay Time: 5
+      Decay Time: 0
+      Queue Size: 1
     - Class: rviz/PointCloud2
-      Name: R3LIVE RGB Map candidate
+      Name: R3LIVE RGB Map Fixed (accumulated map, hidden)
       Enabled: false
-      Topic: /RGB_map
+      Topic: /r3live/rgb_map_fixed
       Style: Points
       Size (Pixels): 2
       Size (m): 0.04
       Alpha: 0.9
       Color Transformer: RGB8
       Decay Time: 0
+      Queue Size: 1
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera/image_raw

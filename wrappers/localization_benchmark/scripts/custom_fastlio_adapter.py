@@ -137,6 +137,10 @@ class CustomFastLioAdapter:
         # disabled for normal FAST-LIO2/LVI-SAM runs and enable it only for R3LIVE.
         self.add_normal_fields = bool(rospy.get_param("~add_normal_fields", False))
         self.curvature_from_time = bool(rospy.get_param("~curvature_from_time", True))
+        self.enforce_monotonic_imu = bool(rospy.get_param("~enforce_monotonic_imu", True))
+        self.min_imu_dt_sec = float(rospy.get_param("~min_imu_dt_sec", 1.0e-6))
+        self._last_native_imu_stamp = None
+        self._imu_stamp_adjust_count = 0
         self.drop_nan_points = bool(rospy.get_param("~drop_nan_points", True))
         self.ring_count = int(rospy.get_param("~ring_count", 0) or 0)
         self._point_time_checked = False
@@ -505,12 +509,13 @@ class CustomFastLioAdapter:
     def scale_point_time_if_needed(self, cloud):
         """Scale Velodyne per-point relative time exactly once when required.
 
-        UrbanNav stores the PointCloud2 FLOAT32 `time` field in seconds. FAST-LIVO2,
-        FAST-LIVO, and R3LIVE Velodyne readers expect microseconds, so their registry
-        entries set point_time_scale=1e6. This function samples the incoming field first and
-        only scales when it still looks seconds-like (<=1.0). If another bridge has
-        already converted to microseconds, the values are larger and are forwarded
-        unchanged to avoid nanosecond-level double scaling.
+        UrbanNav/E2O store the PointCloud2 FLOAT32 `time` field in seconds. Different
+        native algorithms expect different units: FAST-LIVO2 uses microseconds, while
+        upstream R3LIVE stores the relative point time in pcl::PointXYZINormal.curvature
+        and then divides by 1000, so it expects milliseconds. The algorithm registry
+        supplies the correct point_time_scale for each case. This function samples the
+        incoming field first and only scales when it still looks seconds-like (<=1.0).
+        If another bridge has already converted the values, they are forwarded unchanged.
         """
         if abs(self.point_time_scale - 1.0) < 1e-12:
             return cloud
@@ -598,17 +603,31 @@ class CustomFastLioAdapter:
         out.is_dense = cloud.is_dense
         return out
 
+    def _make_monotonic_imu_header(self, header):
+        out = patched_header(header, "body")
+        if self.enforce_monotonic_imu:
+            if self._last_native_imu_stamp is not None and out.stamp <= self._last_native_imu_stamp:
+                out.stamp = self._last_native_imu_stamp + rospy.Duration.from_sec(self.min_imu_dt_sec)
+                self._imu_stamp_adjust_count += 1
+                if self._imu_stamp_adjust_count <= 5 or self._imu_stamp_adjust_count % 1000 == 0:
+                    rospy.logwarn(
+                        "[CustomFastLioAdapter] adjusted non-increasing native IMU stamp to %.9f count=%d",
+                        out.stamp.to_sec(), self._imu_stamp_adjust_count,
+                    )
+            self._last_native_imu_stamp = out.stamp
+        return out
+
     def imu_cb(self, msg):
         stamp = msg.header.stamp.to_sec()
         active = self.config.active_for("imu", stamp)
         if not active:
-            out = msg.imu
-            out.header = patched_header(msg.header, "body")
+            out = copy.deepcopy(msg.imu)
+            out.header = self._make_monotonic_imu_header(msg.header)
             self.imu_pub.publish(out)
             return
 
         out = copy.deepcopy(msg.imu)
-        out.header = patched_header(msg.header, "body")
+        out.header = self._make_monotonic_imu_header(msg.header)
         for perturbation in active:
             ptype = perturbation.get("type")
             if ptype == "sensor_off":

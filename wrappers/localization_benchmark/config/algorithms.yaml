@@ -30,7 +30,8 @@ algorithms:
     gps_strategy: external_fusion
     adapter_args: ''
     launch_args: ''
-    notes: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared external loose/global fusion.
+    notes: FAST-LIO2 has no native GPS input in this wrapper; --gps on uses shared
+      external loose/global fusion.
   lvi_sam:
     display_name: LVI-SAM
     result_id: lvi_sam
@@ -44,7 +45,8 @@ algorithms:
     - fast_lio_urbannav
     - lvi_sam_urbannav
     build_jobs: 4
-    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false _publish_camera_init_map:=true _publish_base_link_body:=true
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=false
+      _publish_camera_init_map:=true _publish_base_link_body:=true
     adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
     launch: lvi_sam_urbannav lvisam_urbannav.launch
     output_topic: /lvi_sam/lidar/mapping/odometry
@@ -53,9 +55,11 @@ algorithms:
     native_imu_topic: /livox/imu
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1.0
-    rviz_config: /root/catkin_ws/src/localization_benchmark/config/benchmark_paths.rviz
-    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics, but final mapping stays LiDAR-IMU
-      dominant only when VINS is unhealthy. VINS graph constraints are enabled so the final graph uses camera-derived relative pose factors.
+    rviz_config: /root/catkin_ws/src/lvi_sam_urbannav/config/lvisam_urbannav.rviz
+    notes: Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics,
+      but final mapping stays LiDAR-IMU dominant only when VINS is unhealthy. VINS
+      graph constraints are enabled so the final graph uses camera-derived relative
+      pose factors.
     standard_topic_ns: lvisam
     local_odom_topic: /lvisam/odometry/local
     local_path_topic: /lvisam/path/local
@@ -88,9 +92,10 @@ algorithms:
     native_imu_topic: /livox/imu
     native_camera_topic: /camera/right/image_raw
     point_time_scale: 1000000.0
+    rviz_config: /root/catkin_ws/src/fast_livo2_wrapper/config/fastlivo2_benchmark.rviz
     enabled: true
-    notes: FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter path. --gps on uses shared external loose/global
-      fusion.
+    notes: FAST-LIVO2 uses point_time_scale=1000000.0 only in the benchmark adapter
+      path. --gps on uses shared external loose/global fusion.
     standard_topic_ns: fastlivo2
     local_odom_topic: /fastlivo2/odometry/local
     local_path_topic: /fastlivo2/path/local
@@ -112,7 +117,8 @@ algorithms:
     - fast_lio_urbannav
     - rtabmap_urbannav
     build_jobs: 4
-    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=true _publish_camera_init_map:=false _publish_base_link_body:=false
+    tf_command: rosrun fast_lio_urbannav tf_broadcaster_node.py _publish_map_odom:=true
+      _publish_camera_init_map:=false _publish_base_link_body:=false
     adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
     launch: rtabmap_urbannav full_pipeline_rtabmap.launch
     output_topic: /rtabmap/odometry/mapping
@@ -131,11 +137,13 @@ algorithms:
     status_topic: /rtabmap/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: publish_camera:=false publish_camera_info:=false
-    launch_args: ''
-    notes: 'Standalone RTAB-Map LiDAR pipeline: raw/perturbed scan_cloud is sanitized, RTAB-Map icp_odometry produces /rtabmap/icp_odom,
-      and the mapper consumes that odometry. It no longer launches FAST-LIO2 and does not subscribe to FAST-LIO2 /Odometry.'
-    bag_topics: /velodyne_points
+    adapter_args: camera_frame_id:=camera_right_optical publish_camera:=true publish_camera_info:=true
+    launch_args: subscribe_rgb:=true
+    notes: 'RTAB-Map visual+ICP pipeline: raw/perturbed scan_cloud is sanitized, RTAB-Map
+      icp_odometry produces /rtabmap/icp_odom, and the mapper consumes that odometry
+      together with the right camera image/camera_info. It no longer launches FAST-LIO2
+      and does not subscribe to FAST-LIO2 /Odometry.'
+    bag_topics: /velodyne_points /zed2/camera/right/image_raw
   adaptive_w_lvio:
     display_name: Adaptive-W LVIO
     result_id: adaptive_w_lvio
@@ -161,7 +169,12 @@ algorithms:
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
     enabled: true
-    notes: 'Native lvio_fusion integration from jypjypjypjyp/lvio_fusion. The wrapper launches the upstream lvio_fusion_node on the perturbed UrbanNav stereo camera, LiDAR, and IMU topics, then republished the native path to benchmark odometry/path topics. FAST-LIO2 is not launched or subscribed.'
+    notes: Adaptive-W LVIO wrapper. Stereo datasets launch upstream lvio_fusion_node
+      on perturbed LiDAR, IMU, and stereo camera topics, then republish the native
+      path to benchmark odometry/path topics. Mono-camera E2O defaults to the independent
+      adaptive_w_lvio_node fallback; set ADAPTIVE_LVIO_MONO_DEPTH=true to try patched
+      native lvio_fusion with /camera/depth/image_rect_raw. FAST-LIO2 is not launched
+      or subscribed.
     standard_topic_ns: adaptive_w_lvio
     local_odom_topic: /adaptive_w_lvio/odometry/local
     local_path_topic: /adaptive_w_lvio/path/local
@@ -184,9 +197,11 @@ algorithms:
     - fast_lio_urbannav
     - orbslam3_urbannav
     build_jobs: 4
-    tf_command: rosrun orbslam3_urbannav tf_broadcaster_node.py _world_frame_id:=camera_init _camera_frame_id:=camera_right
-    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch publish_left_camera:=true stereo_swap_lr:=true
-      native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info
+    tf_command: rosrun orbslam3_urbannav tf_broadcaster_node.py _world_frame_id:=camera_init
+      _camera_frame_id:=camera_right
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+      publish_left_camera:=true stereo_swap_lr:=true native_camera_topic:=/camera/right/image_raw
+      native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info
       native_left_camera_info_topic:=/camera/left/camera_info native_mono_camera_topic:=/camera/image_raw
     launch: orbslam3_urbannav full_pipeline_orb.launch
     output_topic: /orbslam3/odometry/mapping
@@ -207,11 +222,15 @@ algorithms:
     status_topic: /orbslam3/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: publish_left_camera:=true stereo_swap_lr:=${STEREO_SWAP_BOOL:-true} native_camera_topic:=/camera/right/image_raw
-      native_left_camera_topic:=/camera/left/image_raw native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info
+    adapter_args: publish_left_camera:=true stereo_swap_lr:=${STEREO_SWAP_BOOL:-true}
+      native_camera_topic:=/camera/right/image_raw native_left_camera_topic:=/camera/left/image_raw
+      native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info
       native_mono_camera_topic:=/camera/image_raw
     launch_args: mode:=${ORB_MODE:-stereo_inertial}
-    notes: ORB-SLAM3 default is Stereo-Inertial using the upstream ORB_SLAM3 Stereo_Inertial ROS executable, vocabulary, UrbanNav stereo calibration, and /imu. Set ORB_MODE=stereo or mono only for visual-only ablations. --gps on uses conservative external fusion on the corrected body odometry output.
+    notes: ORB-SLAM3 default is Stereo-Inertial using the upstream ORB_SLAM3 Stereo_Inertial
+      ROS executable, vocabulary, UrbanNav stereo calibration, and /imu. Set ORB_MODE=stereo
+      or mono only for visual-only ablations. --gps on uses conservative external
+      fusion on the corrected body odometry output.
   r3live:
     display_name: R3LIVE
     result_id: r3live
@@ -227,19 +246,22 @@ algorithms:
     - r3live_urbannav
     build_jobs: 4
     tf_command: 'true'
-    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch native_mono_camera_topic:=/camera/image_raw
+    adapter_launch: roslaunch localization_benchmark custom_fastlio_adapter.launch
+      native_mono_camera_topic:=/camera/image_raw
     launch: r3live_urbannav r3live_urbannav.launch
     output_topic: /r3live/odometry/mapping
     path_topic: /r3live/mapping/path
     native_lidar_topic: /livox/lidar
     native_imu_topic: /livox/imu
     native_camera_topic: /camera/right/image_raw
-    point_time_scale: 1.0
+    point_time_scale: 1000.0
     bag_topics: /velodyne_points /imu/data /zed2/camera/right/image_raw
     rviz_config: /root/catkin_ws/src/r3live_urbannav/config/r3live_urbannav.rviz
     enabled: true
-    notes: Native R3LIVE wrapper. Uses r3live_mapping with sensor_msgs/PointCloud2 input (lidar_type=0); FAST-LIO2 fallback
-      is disabled and Docker fails if upstream r3live does not compile.
+    notes: Native R3LIVE wrapper. Uses r3live_mapping with Velodyne-compatible
+      PCL PointXYZINormal input. Adapter converts per-point time seconds to milliseconds
+      because upstream R3LIVE computes scan end time as curvature/1000. FAST-LIO2
+      fallback is disabled and Docker fails if upstream r3live does not compile.
     standard_topic_ns: r3live
     local_odom_topic: /r3live/odometry/local
     local_path_topic: /r3live/path/local
@@ -248,6 +270,7 @@ algorithms:
     status_topic: /r3live/status
     gps_supported: true
     gps_strategy: external_fusion
-    adapter_args: native_mono_camera_topic:=/camera/image_raw publish_camera:=true publish_camera_info:=true camera_frame_id:=camera_right_optical
-      add_normal_fields:=true curvature_from_time:=true
+    adapter_args: native_mono_camera_topic:=/camera/image_raw publish_camera:=true
+      publish_camera_info:=true camera_frame_id:=camera_right_optical add_normal_fields:=true
+      curvature_from_time:=true
     launch_args: enable_fastlio_fallback:=false run_visual:=true native_role:=mapping

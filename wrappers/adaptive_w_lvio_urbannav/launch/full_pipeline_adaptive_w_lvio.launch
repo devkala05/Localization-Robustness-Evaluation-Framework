@@ -3,12 +3,15 @@
 
   <!-- This launch intentionally does not include FAST-LIO2. The benchmark runner
        starts the common bag bridge and perturbation adapter; this file starts
-       native lvio_fusion only. -->
+       native lvio_fusion by default, or the benchmark independent node for
+       mono-camera datasets such as E2O. -->
   <arg name="config_file" default="$(find adaptive_w_lvio_urbannav)/config/lvio_fusion_urbannav.yaml"/>
   <arg name="publish_tf" default="false"/>
+  <arg name="use_native_lvio_fusion" default="true"/>
 
   <include file="$(find adaptive_w_lvio_urbannav)/launch/adaptive_w_lvio.launch">
     <arg name="config_file" value="$(arg config_file)"/>
     <arg name="publish_tf" value="$(arg publish_tf)"/>
+    <arg name="use_native_lvio_fusion" value="$(arg use_native_lvio_fusion)"/>
   </include>
 </launch>

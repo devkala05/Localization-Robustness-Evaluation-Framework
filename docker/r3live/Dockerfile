@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-tf \
     ros-noetic-tf2-ros \
     ros-noetic-tf2-geometry-msgs \
+    ros-noetic-tf2-sensor-msgs \
     ros-noetic-tf-conversions \
     ros-noetic-eigen-conversions \
     ros-noetic-rviz \

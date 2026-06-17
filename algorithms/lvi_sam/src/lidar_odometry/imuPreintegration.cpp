@@ -1,5 +1,7 @@
 #include "utility.h"
 
+#include <algorithm>
+
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -66,6 +68,8 @@ public:
     gtsam::Values graphValues;
 
     const double delta_t = 0;
+    const double minImuDt = 1.0e-6;
+    double lastAcceptedImuTime = -1;
 
     int key = 1;
     int imuPreintegrationResetId = 0;
@@ -119,6 +123,8 @@ public:
     void resetParams()
     {
         lastImuT_imu = -1;
+        lastImuT_opt = -1;
+        lastAcceptedImuTime = -1;
         doneFirstOpt = false;
         systemInitialized = false;
     }
@@ -236,10 +242,26 @@ public:
             if (imuTime < currentCorrectionTime - delta_t)
             {
                 double dt = (lastImuT_opt < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_opt);
-                imuIntegratorOpt_->integrateMeasurement(
-                        gtsam::Vector3(thisImu->linear_acceleration.x, thisImu->linear_acceleration.y, thisImu->linear_acceleration.z),
-                        gtsam::Vector3(thisImu->angular_velocity.x,    thisImu->angular_velocity.y,    thisImu->angular_velocity.z), dt);
-                
+                if (dt <= minImuDt)
+                {
+                    ROS_WARN_THROTTLE(2.0, "Skipping non-increasing IMU in optimization queue: imu=%.9f last=%.9f dt=%.9e", imuTime, lastImuT_opt, dt);
+                    lastImuT_opt = std::max(lastImuT_opt, imuTime);
+                    imuQueOpt.pop_front();
+                    continue;
+                }
+                try
+                {
+                    imuIntegratorOpt_->integrateMeasurement(
+                            gtsam::Vector3(thisImu->linear_acceleration.x, thisImu->linear_acceleration.y, thisImu->linear_acceleration.z),
+                            gtsam::Vector3(thisImu->angular_velocity.x,    thisImu->angular_velocity.y,    thisImu->angular_velocity.z), dt);
+                }
+                catch (const std::exception& e)
+                {
+                    ROS_WARN("IMU optimization preintegration rejected measurement, resetting: %s", e.what());
+                    imuQueOpt.pop_front();
+                    resetParams();
+                    return;
+                }
                 lastImuT_opt = imuTime;
                 imuQueOpt.pop_front();
             }
@@ -321,7 +343,12 @@ public:
                 sensor_msgs::Imu *thisImu = &imuQueImu[i];
                 double imuTime = ROS_TIME(thisImu);
                 double dt = (lastImuQT < 0) ? (1.0 / 500.0) :(imuTime - lastImuQT);
-
+                if (dt <= minImuDt)
+                {
+                    ROS_WARN_THROTTLE(2.0, "Skipping non-increasing IMU during repropagation: imu=%.9f last=%.9f dt=%.9e", imuTime, lastImuQT, dt);
+                    lastImuQT = std::max(lastImuQT, imuTime);
+                    continue;
+                }
                 imuIntegratorImu_->integrateMeasurement(gtsam::Vector3(thisImu->linear_acceleration.x, thisImu->linear_acceleration.y, thisImu->linear_acceleration.z),
                                                         gtsam::Vector3(thisImu->angular_velocity.x,    thisImu->angular_velocity.y,    thisImu->angular_velocity.z), dt);
                 lastImuQT = imuTime;
@@ -355,6 +382,13 @@ public:
     void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg)
     {
         sensor_msgs::Imu thisImu = imuConverter(*imuMsg);
+        double rawImuTime = ROS_TIME(&thisImu);
+        if (lastAcceptedImuTime >= 0 && rawImuTime <= lastAcceptedImuTime)
+        {
+            ROS_WARN_THROTTLE(2.0, "Dropping non-increasing IMU: current=%.9f last=%.9f dt=%.9e", rawImuTime, lastAcceptedImuTime, rawImuTime - lastAcceptedImuTime);
+            return;
+        }
+        lastAcceptedImuTime = rawImuTime;
         // publish static tf
         tfMap2Odom.sendTransform(tf::StampedTransform(map_to_odom, thisImu.header.stamp, "map", "odom"));
 
@@ -366,11 +400,25 @@ public:
 
         double imuTime = ROS_TIME(&thisImu);
         double dt = (lastImuT_imu < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_imu);
+        if (dt <= minImuDt)
+        {
+            ROS_WARN_THROTTLE(2.0, "Skipping IMU odometry integration with non-positive dt: imu=%.9f last=%.9f dt=%.9e", imuTime, lastImuT_imu, dt);
+            return;
+        }
         lastImuT_imu = imuTime;
 
         // integrate this single imu message
-        imuIntegratorImu_->integrateMeasurement(gtsam::Vector3(thisImu.linear_acceleration.x, thisImu.linear_acceleration.y, thisImu.linear_acceleration.z),
-                                                gtsam::Vector3(thisImu.angular_velocity.x,    thisImu.angular_velocity.y,    thisImu.angular_velocity.z), dt);
+        try
+        {
+            imuIntegratorImu_->integrateMeasurement(gtsam::Vector3(thisImu.linear_acceleration.x, thisImu.linear_acceleration.y, thisImu.linear_acceleration.z),
+                                                    gtsam::Vector3(thisImu.angular_velocity.x,    thisImu.angular_velocity.y,    thisImu.angular_velocity.z), dt);
+        }
+        catch (const std::exception& e)
+        {
+            ROS_WARN("IMU odometry preintegration rejected measurement, resetting: %s", e.what());
+            resetParams();
+            return;
+        }
 
         // predict odometry
         gtsam::NavState currentState = imuIntegratorImu_->predict(prevStateOdom, prevBiasOdom);

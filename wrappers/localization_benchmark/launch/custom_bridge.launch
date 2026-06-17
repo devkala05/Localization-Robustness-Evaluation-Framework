@@ -10,6 +10,8 @@
   <arg name="camera_sensor_name" default="camera_right"/>
   <arg name="left_camera_sensor_name" default="camera_left"/>
   <arg name="use_clock_stamp" default="false"/>
+  <arg name="monotonic_clock_stamp" default="true"/>
+  <arg name="min_stamp_step_sec" default="0.000001"/>
 
   <node name="dataset_custom_bridge" pkg="localization_benchmark"
         type="urbannav_custom_bridge.py" output="screen">
@@ -23,5 +25,7 @@
     <param name="camera_sensor_name" value="$(arg camera_sensor_name)"/>
     <param name="left_camera_sensor_name" value="$(arg left_camera_sensor_name)"/>
     <param name="use_clock_stamp" value="$(arg use_clock_stamp)"/>
+    <param name="monotonic_clock_stamp" value="$(arg monotonic_clock_stamp)"/>
+    <param name="min_stamp_step_sec" value="$(arg min_stamp_step_sec)"/>
   </node>
 </launch>

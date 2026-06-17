@@ -1,11 +1,20 @@
 # R3LIVE E2O one_full_loop parameters.
-# Mirrors the working FAST-LIVO2 E2O calibration: lidar103 is the body origin,
-# IMU is treated body-aligned, and front camera uses lidar103->camera R/t.
+#
+# Important differences from FAST-LIVO2:
+# - FAST-LIVO2 expects the supplied LiDAR->camera optical calibration
+#   p_camera = R_cl * p_lidar + t_cl.
+# - Upstream R3LIVE stores the camera pose in the LiDAR/IMU body frame and uses
+#   R_world_camera = R_world_body * camera_ext_R,
+#   t_world_camera = R_world_body * camera_ext_t + t_world_body.
+#   Therefore R3LIVE needs the inverse calibration T_lidar_camera.
+#
+# E2O lidar103 is the body/IMU origin. LiDAR input is Velodyne-style 16-scan
+# PointCloud2 converted to PCL PointXYZINormal by the benchmark adapter.
 r3live_common:
   lid_topic: /livox/lidar
   imu_topic: /livox/imu
   img_topic: /camera/image_raw
-  lidar_type: 0
+  lidar_type: 2
   scan_line: 16
   blind: 0.5
   cut_frame_num: 3
@@ -26,8 +35,20 @@ lio:
   gyr_cov: 0.3
   b_acc_cov: 0.0001
   b_gyr_cov: 0.0001
-  extrinsic_T: [0.0, 0.0, 0.0]
-  extrinsic_R: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  extrinsic_T:
+  - 0.0
+  - 0.0
+  - 0.0
+  extrinsic_R:
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
   max_iterations: 5
   fov_degree: 360.0
   det_range: 80.0
@@ -43,20 +64,20 @@ vio:
   cam_d1: 0.08456123
   cam_d2: -0.00046157
   cam_d3: 0.00656211
-  cam_ext_R: &e2o_cam_R
+  cam_ext_R: &id001
   - -0.18256836
-  - -0.98306216
-  - -0.01604916
   - 0.11110754
-  - -0.00440978
-  - -0.99379861
   - 0.97689503
+  - -0.98306216
+  - -0.00440978
   - -0.18321936
+  - -0.01604916
+  - -0.99379861
   - 0.1100307
-  cam_ext_T: &e2o_cam_T
-  - 0.07383026
-  - -0.5358112
-  - -0.31010858
+  cam_ext_T: &id002
+  - 0.37595526
+  - 0.01339903
+  - -0.49718205
   max_iterations: 5
   patch_size: 8
   patch_pyrimid_level: 4
@@ -87,8 +108,8 @@ r3live_vio:
   - -0.00046157
   - 0.00656211
   - -0.03406049
-  camera_ext_R: *e2o_cam_R
-  camera_ext_t: *e2o_cam_T
+  camera_ext_R: *id001
+  camera_ext_t: *id002
 r3live_lio:
   lio_update_point_step: 1
   max_iteration: 5
@@ -99,7 +120,7 @@ r3live_lio:
   filter_size_map: 0.4
   fov_degree: 360.0
 Lidar_front_end:
-  lidar_type: 0
+  lidar_type: 2
   N_SCANS: 16
   using_raw_point: 1
   point_step: 1

@@ -13,6 +13,8 @@
   <arg name="pcd_save_en" default="false"/>
   <arg name="pcd_path" default="/data/output/r3live_map.pcd"/>
   <arg name="scan_line" default="32"/>
+  <arg name="lidar_type" default="2"/>
+  <arg name="dataset_id" default="urbannav"/>
 
   <rosparam command="load" file="$(arg config_path)"/>
 
@@ -27,6 +29,8 @@
   <param name="r3live_common/pcd_path" value="$(arg pcd_path)"/>
   <param name="r3live_common/run_visual" value="$(arg run_visual)"/>
   <param name="r3live_common/scan_line" value="$(arg scan_line)"/>
+  <param name="r3live_common/lidar_type" value="$(arg lidar_type)"/>
+  <param name="Lidar_front_end/lidar_type" value="$(arg lidar_type)"/>
   <param name="Lidar_front_end/N_SCANS" value="$(arg scan_line)"/>
 
   <!-- Optional debug fallback only. Default false so r3live results are not FAST-LIO2. -->
@@ -48,12 +52,20 @@
     <param name="output_path_topic" value="/r3live/mapping/path"/>
     <param name="fixed_frame" value="camera_init"/>
     <param name="child_frame" value="body"/>
-    <param name="tf_pairs" value="camera_init:body,map:body,camera_init:camera_odom_frame,map:camera_odom_frame"/>
+    <param name="tf_pairs" value="camera_init:body,map:body,world:body,camera_init:camera_odom_frame,map:camera_odom_frame,world:camera_odom_frame"/>
     <param name="use_tf_fallback" value="true"/>
     <param name="odom_stale_sec" value="0.75"/>
   </node>
 
-  <node name="r3live_tf_broadcaster" pkg="r3live_urbannav" type="tf_broadcaster_node.py" output="screen"/>
+  <node name="r3live_tf_broadcaster" pkg="r3live_urbannav" type="tf_broadcaster_node.py" output="screen">
+    <param name="dataset_id" value="$(arg dataset_id)"/>
+  </node>
+
+
+  <node name="r3live_cloud_fixed_frame" pkg="r3live_urbannav" type="cloud_fixed_frame_node.py" output="screen">
+    <param name="fixed_frame" value="camera_init"/>
+    <param name="cloud_topics" value="/cloud_registered:/r3live/cloud_registered_fixed"/>
+  </node>
 
   <node name="r3live_watchdog" pkg="r3live_urbannav" type="watchdog_node.py" output="screen">
     <param name="period" value="3.0"/>

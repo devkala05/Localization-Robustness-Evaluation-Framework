@@ -21,6 +21,7 @@
   <arg name="normalize_to_start" default="true"/>
   <arg name="max_interframe_translation" default="5.0"/>
   <arg name="max_speed_mps" default="45.0"/>
+  <arg name="dataset_id" default="$(optenv DATASET_ID urbannav)"/>
 
   <!-- Native ORB-SLAM3 node. Input images are produced by custom_fastlio_adapter:
        stereo: /camera/left/image_raw + /camera/right/image_raw
@@ -52,6 +53,7 @@
     <param name="gt_odom_topic" value="$(arg gt_odom_topic)"/>
     <param name="align_min_gt_motion_m" value="$(arg align_min_gt_motion_m)"/>
     <param name="align_min_orb_motion_m" value="$(arg align_min_orb_motion_m)"/>
+    <param name="dataset_id" value="$(arg dataset_id)"/>
     <!-- Dynamic camera_init->body TF is published by standard_output_republisher.
          Keep this node odometry/path-only to avoid TF_REPEATED_DATA duplicate TFs. -->
     <param name="publish_tf" value="false"/>

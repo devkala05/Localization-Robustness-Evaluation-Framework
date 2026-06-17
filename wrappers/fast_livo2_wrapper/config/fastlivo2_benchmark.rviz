@@ -1,0 +1,115 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Time
+    Name: Time
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 10
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Name: Grid
+      Plane: XY
+    - Class: rviz/Path
+      Color: 25; 255; 80
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: Ground Truth Path
+      Topic: /ground_truth_path
+    - Class: rviz/Odometry
+      Color: 255; 160; 20
+      Enabled: true
+      Keep: 1
+      Name: Ground Truth Pose
+      Position Tolerance: 0.05
+      Shape: Arrow
+      Topic: /ground_truth_odometry
+    - Class: rviz/Path
+      Color: 40; 140; 255
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.08
+      Name: FAST-LIVO2 Output Path
+      Topic: /fastlivo2/path/output
+    - Class: rviz/Odometry
+      Color: 40; 140; 255
+      Enabled: true
+      Keep: 1
+      Name: FAST-LIVO2 Output Pose
+      Position Tolerance: 0.05
+      Shape: Arrow
+      Topic: /fastlivo2/odometry/output
+    - Class: rviz/Path
+      Color: 255; 220; 30
+      Enabled: false
+      Line Style: Lines
+      Line Width: 0.04
+      Name: FAST-LIVO2 Native Path
+      Topic: /path
+    - Class: rviz/Odometry
+      Color: 255; 220; 30
+      Enabled: false
+      Keep: 1
+      Name: FAST-LIVO2 Native Odometry
+      Position Tolerance: 0.1
+      Shape: Arrow
+      Topic: /Odometry
+    - Class: rviz/PointCloud2
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Name: FAST-LIVO2 Registered Cloud
+      Queue Size: 10
+      Size (Pixels): 2
+      Style: Points
+      Topic: /cloud_registered
+    - Class: rviz/PointCloud2
+      Color: 255; 180; 0
+      Color Transformer: FlatColor
+      Decay Time: 0.2
+      Enabled: true
+      Name: FAST-LIVO2 Input LiDAR
+      Queue Size: 10
+      Size (Pixels): 2
+      Style: Points
+      Topic: /livox/lidar
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/right/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Right Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+  Enabled: true
+  Global Options:
+    Background Color: 28; 28; 30
+    Fixed Frame: camera_init
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 100
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Pitch: 0.9
+      Target Frame: camera_init
+      Yaw: 0.8
+Window Geometry:
+  Height: 900
+  Width: 1400

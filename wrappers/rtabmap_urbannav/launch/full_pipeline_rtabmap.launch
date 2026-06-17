@@ -8,7 +8,7 @@
   <arg name="icp_odom_topic" default="/rtabmap/icp_odom"/>
   <arg name="input_rgb_topic" default="/camera/right/image_raw"/>
   <arg name="input_camera_info_topic" default="/camera/right/camera_info"/>
-  <arg name="subscribe_rgb" default="false"/>
+  <arg name="subscribe_rgb" default="true"/>
   <arg name="map_frame_id" default="map"/>
   <arg name="odom_frame_id" default="camera_init"/>
   <arg name="base_frame_id" default="body"/>

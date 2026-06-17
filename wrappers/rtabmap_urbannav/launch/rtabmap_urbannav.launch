@@ -8,7 +8,7 @@
   <arg name="icp_odom_topic" default="/rtabmap/icp_odom"/>
   <arg name="input_rgb_topic" default="/camera/right/image_raw"/>
   <arg name="input_camera_info_topic" default="/camera/right/camera_info"/>
-  <arg name="subscribe_rgb" default="false"/>
+  <arg name="subscribe_rgb" default="true"/>
   <arg name="benchmark_odom_topic" default="/rtabmap/odometry/mapping"/>
   <arg name="path_topic" default="/rtabmap/mapping/path"/>
   <arg name="map_frame_id" default="map"/>
@@ -62,9 +62,10 @@
     <remap from="odom" to="$(arg icp_odom_topic)"/>
   </node>
 
-  <!-- RTAB-Map graph/map backend. It now consumes odometry from
-       rtabmap_icp_odometry, not FAST-LIO2. RGB is disabled by default so the
-       configured algorithm is a standalone LiDAR ICP RTAB-Map pipeline. -->
+  <!-- RTAB-Map graph/map backend. It consumes odometry from
+       rtabmap_icp_odometry, the LiDAR scan cloud, and the right camera image.
+       Reg/Strategy=2 lets RTAB-Map use visual features together with ICP
+       instead of running as a LiDAR-only graph. -->
   <node name="rtabmap"
         pkg="rtabmap_slam"
         type="rtabmap"
@@ -85,11 +86,14 @@
     <param name="approx_sync" type="bool" value="true"/>
     <param name="wait_for_transform_duration" type="double" value="0.5"/>
     <param name="sync_queue_size" type="int" value="50"/>
-    <param name="queue_size" type="int" value="50"/>
+    <param name="topic_queue_size" type="int" value="100"/>
+    <param name="queue_size" type="int" value="100"/>
+    <param name="approx_sync_max_interval" type="double" value="0.25"/>
 
-    <!-- ICP-only registration. Reg/Strategy=1 prevents RTAB-Map from silently
-         relying on visual odometry/features for the main localization path. -->
-    <param name="Reg/Strategy" value="1"/>
+    <param name="Reg/Strategy" value="2"/>
+    <param name="Vis/FeatureType" value="6"/>
+    <param name="Kp/MaxFeatures" value="1000"/>
+    <param name="Kp/DetectorStrategy" value="6"/>
     <param name="RGBD/NeighborLinkRefining" value="true"/>
     <param name="RGBD/ProximityBySpace" value="true"/>
     <param name="RGBD/ProximityMaxGraphDepth" value="50"/>
@@ -121,6 +125,7 @@
         type="rtabmap_output_adapter_node.py"
         output="screen">
     <param name="input_path_topic" value="/rtabmap/mapPath"/>
+    <param name="fallback_odom_topic" value="$(arg icp_odom_topic)"/>
     <param name="output_odom_topic" value="$(arg benchmark_odom_topic)"/>
     <param name="output_path_topic" value="$(arg path_topic)"/>
     <param name="child_frame_id" value="$(arg base_frame_id)"/>
