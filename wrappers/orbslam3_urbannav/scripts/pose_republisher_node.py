@@ -23,6 +23,7 @@ TF:
 """
 
 import math
+import os
 import threading
 
 import geometry_msgs.msg as gm
@@ -44,6 +45,17 @@ RIGHT_CAMERA_T_IMU = np.array([
     [9.9872871452749812e-01, 1.5287637777597791e-03, 5.0384696680271013e-02, 7.5332297629590136e-02],
     [-5.0367177375936031e-02, -9.8967686259809895e-03, 9.9868173179143760e-01, 6.8331281093016005e-01],
     [2.0253941424080261e-03, -9.9994985716888607e-01, -9.8071874914416046e-03, -3.0079627649520204e+00],
+    [0.0, 0.0, 0.0, 1.0],
+], dtype=float)
+
+# E2O ORB-SLAM3 runs in monocular mode on /camera/color/image_raw. ORB's native
+# pose is in optical camera axes (x right, y down, z forward), while the benchmark
+# body frame expects x forward, y left, z up. This basis change prevents forward
+# motion from appearing as RViz Z motion.
+E2O_OPTICAL_CAMERA_T_BODY = np.array([
+    [0.0, 0.0, 1.0, 0.0],
+    [-1.0, 0.0, 0.0, 0.0],
+    [0.0, -1.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 1.0],
 ], dtype=float)
 
@@ -97,6 +109,8 @@ class PoseRepublisher:
         self.max_interframe_translation = float(rospy.get_param("~max_interframe_translation", 5.0))
         self.max_speed_mps = float(rospy.get_param("~max_speed_mps", 45.0))
         self.use_camera_to_body_extrinsic = rospy.get_param("~use_camera_to_body_extrinsic", True)
+        self.dataset_id = str(rospy.get_param("~dataset_id", os.environ.get("DATASET_ID", "urbannav"))).lower()
+        self.camera_to_body_extrinsic = E2O_OPTICAL_CAMERA_T_BODY if self.dataset_id == "e2o" else RIGHT_CAMERA_T_IMU
 
         self._pub_odom = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=50)
         self._pub_path = rospy.Publisher(self.output_path_topic, Path, queue_size=10)
@@ -122,12 +136,13 @@ class PoseRepublisher:
         self._watchdog = rospy.Timer(rospy.Duration(1.0), self._watchdog_cb)
 
         rospy.loginfo(
-            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s body_extrinsic=%s normalize=%s jump_guard=%.1fm/%.1fmps",
+            "[ORB-SLAM3 PoseRepublisher] input=%s odom=%s path=%s frame=%s child=%s dataset=%s body_extrinsic=%s normalize=%s jump_guard=%.1fm/%.1fmps",
             self.input_topic,
             self.output_odom_topic,
             self.output_path_topic,
             self.world_frame_id,
             self.child_frame_id,
+            self.dataset_id,
             self.use_camera_to_body_extrinsic,
             self.normalize_to_start,
             self.max_interframe_translation,
@@ -137,7 +152,7 @@ class PoseRepublisher:
     def _convert_camera_pose_to_body(self, msg: PoseStamped) -> np.ndarray:
         T_world_camera = pose_to_mat(msg.pose)
         if self.use_camera_to_body_extrinsic:
-            T_world_body = T_world_camera @ invert_rigid(RIGHT_CAMERA_T_IMU)
+            T_world_body = T_world_camera @ invert_rigid(self.camera_to_body_extrinsic)
         else:
             T_world_body = T_world_camera
 
