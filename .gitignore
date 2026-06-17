@@ -22,28 +22,28 @@ __pycache__/
 .coverage
 htmlcov/
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 
 # =========================
 # ROS / Catkin
 # =========================
-devel/
-devel_isolated/
-build/
-build_isolated/
-install/
-install_isolated/
-log/
-logs/
-.catkin_tools/
-catkin_generated/
-.cmake_tools/
+/devel/
+/devel_isolated/
+/build/
+/build_isolated/
+/install/
+/install_isolated/
+/log/
+/logs/
+/.catkin_tools/
+/catkin_generated/
+/.cmake_tools/
 *.bag.active
 
-# Keep source CMakeLists/package files
-!src/**/CMakeLists.txt
-!src/**/package.xml
+# Keep ROS/source manifests visible even inside vendored trees.
+!**/CMakeLists.txt
+!**/package.xml
 
 # =========================
 # ROS Runtime / RViz
@@ -73,7 +73,6 @@ docker/**/tmp/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
 compile_commands.json
 *.o
 *.a
@@ -91,10 +90,9 @@ KeyFrameTrajectory*.txt
 CameraTrajectory*.txt
 kf_*.txt
 trajectory*.txt
-*.db
-*.bin
 *.osa
 *.voc.tmp
+rtabmap.db
 
 # Keep ORB vocabulary if intentionally tracked
 # Uncomment if vocabulary is too large and should not be committed:
@@ -106,11 +104,22 @@ trajectory*.txt
 # =========================
 *.bag
 *.mcap
-results/
-outputs/
-benchmark_results/
-golden/
-reports/generated/
+/data/results/
+/results/
+/outputs/
+/benchmark_results/
+/golden/
+/reports/generated/
+
+# Allow small dataset metadata/config files to be committed if added later.
+!/data/
+!/data/**/
+!/data/**/*.md
+!/data/**/*.txt
+!/data/**/*.yaml
+!/data/**/*.yml
+!/data/**/*.json
+!/data/**/.gitkeep
 
 # =========================
 # Logs
@@ -122,9 +131,9 @@ reports/generated/
 # =========================
 # Temporary Files
 # =========================
-tmp/
-temp/
-.cache/
+/tmp/
+/temp/
+/.cache/
 .cache-*/
 *.tmp
 *.bak
@@ -151,3 +160,25 @@ secrets/
 credentials/
 *.key
 *.pem
+
+# =========================
+# Project Source Safety Net
+# =========================
+# These are intentionally allowed because this repository keeps important
+# launch/config/wrapper code across several directories.
+!**/*.py
+!**/*.sh
+!**/*.launch
+!**/*.yaml
+!**/*.yml
+!**/*.rviz
+!**/*.md
+!**/*.xml
+!**/*.msg
+!**/Dockerfile
+
+# Generated data/results must remain ignored even though CSV/JSON/TXT files are
+# otherwise valid project assets in this repository.
+/data/results/**
+/data/**/*.bag
+/data/**/*.mcap
