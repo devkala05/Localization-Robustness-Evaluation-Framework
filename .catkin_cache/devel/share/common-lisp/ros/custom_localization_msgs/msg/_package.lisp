@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/share/common-lisp/ros/custom_localization_msgs/msg/_package.lisp

@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/share/roseus/ros/custom_localization_msgs/manifest.l

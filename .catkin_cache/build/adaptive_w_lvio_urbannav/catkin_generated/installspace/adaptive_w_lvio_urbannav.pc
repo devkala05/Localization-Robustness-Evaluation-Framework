@@ -1,0 +1,8 @@
+prefix=/root/catkin_ws/install
+
+Name: adaptive_w_lvio_urbannav
+Description: Description of adaptive_w_lvio_urbannav
+Version: 0.1.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -161,7 +161,7 @@ algorithms:
     point_time_scale: 1.0
     rviz_config: /root/catkin_ws/src/adaptive_w_lvio_urbannav/config/adaptive_w_lvio.rviz
     enabled: true
-    notes: 'Native lvio_fusion integration from jypjypjypjyp/lvio_fusion. The wrapper launches the upstream lvio_fusion_node on the perturbed UrbanNav stereo camera, LiDAR, and IMU topics, then republished the native path to benchmark odometry/path topics. FAST-LIO2 is not launched or subscribed.'
+    notes: 'Adaptive-W LVIO wrapper. Stereo datasets launch upstream lvio_fusion_node on perturbed LiDAR, IMU, and stereo camera topics, then republish the native path to benchmark odometry/path topics. Mono-camera E2O defaults to the independent adaptive_w_lvio_node fallback; set ADAPTIVE_LVIO_MONO_DEPTH=true to try patched native lvio_fusion with /camera/depth/image_rect_raw. FAST-LIO2 is not launched or subscribed.'
     standard_topic_ns: adaptive_w_lvio
     local_odom_topic: /adaptive_w_lvio/odometry/local
     local_path_topic: /adaptive_w_lvio/path/local

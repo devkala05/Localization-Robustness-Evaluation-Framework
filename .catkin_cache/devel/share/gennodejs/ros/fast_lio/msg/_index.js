@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/fast_lio/share/gennodejs/ros/fast_lio/msg/_index.js

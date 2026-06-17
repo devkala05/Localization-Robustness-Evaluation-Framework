@@ -90,6 +90,7 @@ def main():
     shell_var("DATASET_SOURCE_IMU_TOPIC", source.get("imu", ""))
     shell_var("DATASET_SOURCE_CAMERA_TOPIC", source.get("camera_right", ""))
     shell_var("DATASET_SOURCE_LEFT_CAMERA_TOPIC", source.get("camera_left", ""))
+    shell_var("DATASET_SOURCE_DEPTH_TOPIC", source.get("depth", ""))
     shell_var("DATASET_SOURCE_GPS_TOPIC", source.get("gps", ""))
     shell_var("DATASET_BAG_TOPICS", selected_bag_topics)
     shell_var("DATASET_PERTURBATIONS_DIR", paths.get("perturbations_dir", "/root/catkin_ws/src/localization_benchmark/config/perturbations"))

@@ -158,6 +158,13 @@ if [ "${DATASET_ID}" = "e2o" ]; then
         r3live)
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml"
             ;;
+        adaptive_w_lvio)
+            if [ "${ADAPTIVE_LVIO_MONO_DEPTH:-false}" = "true" ]; then
+                ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} use_native_lvio_fusion:=true config_file:=/root/catkin_ws/src/adaptive_w_lvio_urbannav/config/lvio_fusion_e2o_mono_depth.yaml"
+            else
+                ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} use_native_lvio_fusion:=false"
+            fi
+            ;;
         orbslam3)
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-1.0} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-0.0} align_to_gt:=true"
             ;;

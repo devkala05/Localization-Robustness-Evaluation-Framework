@@ -1,0 +1,1 @@
+/root/catkin_ws/devel/.private/custom_localization_msgs/lib/pkgconfig/custom_localization_msgs.pc

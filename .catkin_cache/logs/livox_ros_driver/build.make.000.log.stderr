@@ -1,0 +1,19 @@
+In file included from /usr/include/string.h:495,
+                 from /usr/include/c++/9/cstring:42,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/common/rapidjson/rapidjson.h:45,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/common/rapidjson/stream.h:19,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/common/rapidjson/memorystream.h:22,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/common/rapidjson/encodedstream.h:22,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/common/rapidjson/document.h:26,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/livox_ros_driver/lds_lidar.h:36,
+                 from /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/livox_ros_driver/lds_lidar.cpp:25:
+In function ‘char* strncpy(char*, const char*, size_t)’,
+    inlined from ‘int livox_ros::LdsLidar::ParseTimesyncConfig(rapidjson::Document&)’ at /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/livox_ros_driver/lds_lidar.cpp:605:17:
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:106:34: warning: ‘char* __builtin_strncpy(char*, const char*, long unsigned int)’ specified bound 256 equals destination size [-Wstringop-truncation]
+  106 |   return __builtin___strncpy_chk (__dest, __src, __len, __bos (__dest));
+      |          ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In function ‘char* strncpy(char*, const char*, size_t)’,
+    inlined from ‘int livox_ros::LdsLidar::ParseConfigFile(const char*)’ at /root/catkin_ws/src/livox_ros_driver/livox_ros_driver/livox_ros_driver/lds_lidar.cpp:668:25:
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:106:34: warning: ‘char* __builtin_strncpy(char*, const char*, long unsigned int)’ specified bound 16 equals destination size [-Wstringop-truncation]
+  106 |   return __builtin___strncpy_chk (__dest, __src, __len, __bos (__dest));
+      |          ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

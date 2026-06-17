@@ -32,10 +32,12 @@ source_topics:
   imu: /mavros/imu/data
   camera_right: /camera/color/image_raw
   camera_left: ""
+  depth: /camera/depth/image_rect_raw
   gps: /mavros/global_position/global
 
 bag_topics:
   default: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw
+  adaptive_w_lvio: /lidar103/velodyne_points /mavros/imu/data /camera/color/image_raw /camera/depth/image_rect_raw
   orbslam3: /camera/color/image_raw /mavros/imu/data
   rtabmap: /lidar103/velodyne_points
 
