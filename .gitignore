@@ -177,7 +177,6 @@ credentials/
 
 # Generated data/results must remain ignored even though CSV/JSON/TXT files are
 # otherwise valid project assets in this repository.
-/data/results/**
 /data/**/*.bag
 /data/**/*.mcap
 !/data/results/**/.gitkeep

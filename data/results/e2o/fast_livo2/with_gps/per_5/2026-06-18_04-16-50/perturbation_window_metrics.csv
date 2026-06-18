@@ -1,0 +1,3 @@
+key,label,type,sensor,perturbation_type,start,end,samples,relative_position_rmse_m,relative_position_max_m,relative_x_rmse_m,relative_y_rmse_m,relative_z_rmse_m,relative_yaw_rmse_deg,dominant_components,absolute_position_rmse_m,absolute_x_rmse_m,absolute_y_rmse_m,absolute_z_rmse_m,absolute_yaw_rmse_deg
+01_motion_blur,01 motion_blur,unknown,,,1621218792.0,1621218800.0,0,,,,,,,,,,,,
+02_camera_frame_dropout,02 camera_frame_dropout,unknown,,,1621218810.0,1621218815.0,0,,,,,,,,,,,,

@@ -1,0 +1,1 @@
+key,label,type,sensor,perturbation_type,start,end,samples,relative_position_rmse_m,relative_position_max_m,relative_x_rmse_m,relative_y_rmse_m,relative_z_rmse_m,relative_yaw_rmse_deg,dominant_components,absolute_position_rmse_m,absolute_x_rmse_m,absolute_y_rmse_m,absolute_z_rmse_m,absolute_yaw_rmse_deg

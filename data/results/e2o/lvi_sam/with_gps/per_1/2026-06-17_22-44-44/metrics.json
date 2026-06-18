@@ -1,0 +1,912 @@
+{
+  "out_dir": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44",
+  "algorithm_note": "Visual subsystem enabled using UrbanNav ZED2 right-camera intrinsics/extrinsics, but final mapping stays LiDAR-IMU dominant only when VINS is unhealthy. VINS graph constraints are enabled so the final graph uses camera-derived relative pose factors.",
+  "gps_mode": "on",
+  "gps_source": "topic",
+  "rtk_mode": "auto",
+  "overall": {
+    "samples": 1529,
+    "x_rmse_m": 19.463494308945926,
+    "y_rmse_m": 21.8614476057113,
+    "z_rmse_m": 1.393055658266963,
+    "yaw_rmse_rad": 0.812028716304381,
+    "yaw_rmse_deg": 46.5258182876671,
+    "position_rmse_m": 29.303431645434646,
+    "position_max_m": 58.606389774348926,
+    "x_mae_m": 12.774085775503266,
+    "y_mae_m": 12.614878022762303,
+    "z_mae_m": 1.0525790984007244,
+    "yaw_mae_deg": 27.941148776012966,
+    "x_max_abs_m": 49.554345422943115,
+    "y_max_abs_m": 56.924672657958986,
+    "z_max_abs_m": 3.2630553781890868,
+    "yaw_max_abs_deg": 154.1492565257229,
+    "dominant_components": [
+      "yaw"
+    ],
+    "worst_component": "yaw"
+  },
+  "segments_yaml": "/root/catkin_ws/src/localization_benchmark/config/segments/e2o_segments.yaml",
+  "perturbations_yaml": "/root/catkin_ws/src/localization_benchmark/config/perturbations/per_1.yaml",
+  "segments": {
+    "01_straight_road": {
+      "name": "straight_road",
+      "label": "01 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528213.157124,
+      "end": 1723528321.185588,
+      "absolute_metrics": {
+        "samples": 536,
+        "x_rmse_m": 0.2774387023810447,
+        "y_rmse_m": 0.16339639565553168,
+        "z_rmse_m": 1.0126893343165106,
+        "yaw_rmse_rad": 0.013034625392187528,
+        "yaw_rmse_deg": 0.7468290225064004,
+        "position_rmse_m": 1.062643074381288,
+        "position_max_m": 2.5568723570312732,
+        "x_mae_m": 0.2007733418718161,
+        "y_mae_m": 0.1357023560487702,
+        "z_mae_m": 0.7513276809623579,
+        "yaw_mae_deg": 0.38407824573775196,
+        "x_max_abs_m": 1.0179321749267576,
+        "y_max_abs_m": 0.48444526855468695,
+        "z_max_abs_m": 2.5436470680541996,
+        "yaw_max_abs_deg": 4.555200534263289,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 536,
+        "x_rmse_m": 0.2774387023810447,
+        "y_rmse_m": 0.16339639565553168,
+        "z_rmse_m": 1.0126893343165106,
+        "yaw_rmse_rad": 0.013034625392187528,
+        "yaw_rmse_deg": 0.7468290225064004,
+        "position_rmse_m": 1.062643074381288,
+        "position_max_m": 2.5568723570312732,
+        "x_mae_m": 0.2007733418718161,
+        "y_mae_m": 0.1357023560487702,
+        "z_mae_m": 0.7513276809623579,
+        "yaw_mae_deg": 0.38407824573775196,
+        "x_max_abs_m": 1.0179321749267576,
+        "y_max_abs_m": 0.48444526855468695,
+        "z_max_abs_m": 2.5436470680541996,
+        "yaw_max_abs_deg": 4.555200534263289,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      }
+    },
+    "02_left_turn": {
+      "name": "left_turn",
+      "label": "02 left_turn",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528321.185588,
+      "end": 1723528237.046052,
+      "absolute_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      },
+      "relative_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      }
+    },
+    "03_straight_road": {
+      "name": "straight_road",
+      "label": "03 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528237.046052,
+      "end": 1723528244.525495,
+      "absolute_metrics": {
+        "samples": 37,
+        "x_rmse_m": 0.2518879510185514,
+        "y_rmse_m": 0.19893904327673725,
+        "z_rmse_m": 0.6985894468159897,
+        "yaw_rmse_rad": 0.007239558425369229,
+        "yaw_rmse_deg": 0.41479614331203274,
+        "position_rmse_m": 0.76879873699874,
+        "position_max_m": 1.028250748425316,
+        "x_mae_m": 0.2511105515004758,
+        "y_mae_m": 0.19014011742256798,
+        "z_mae_m": 0.6898801400591876,
+        "yaw_mae_deg": 0.2359728516020983,
+        "x_max_abs_m": 0.3268194528808621,
+        "y_max_abs_m": 0.45622737011718684,
+        "z_max_abs_m": 0.8658901676940918,
+        "yaw_max_abs_deg": 1.7684783708943579,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 37,
+        "x_rmse_m": 0.019825464371674022,
+        "y_rmse_m": 0.06688825296551798,
+        "z_rmse_m": 0.21990337686347994,
+        "yaw_rmse_rad": 0.008397403749419895,
+        "yaw_rmse_deg": 0.48113579370909315,
+        "position_rmse_m": 0.23070453523564147,
+        "position_max_m": 0.47677879042203,
+        "x_mae_m": 0.012920565449482313,
+        "y_mae_m": 0.03375595067946998,
+        "z_mae_m": 0.1904334203898455,
+        "yaw_mae_deg": 0.4000116691594412,
+        "x_max_abs_m": 0.07428825219727031,
+        "y_max_abs_m": 0.29849959136962845,
+        "z_max_abs_m": 0.3664434480247497,
+        "yaw_max_abs_deg": 1.4009425433947003,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "04_left_turn": {
+      "name": "left_turn",
+      "label": "04 left_turn",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528244.525495,
+      "end": 1723528250.465728,
+      "absolute_metrics": {
+        "samples": 29,
+        "x_rmse_m": 0.1244503743502356,
+        "y_rmse_m": 0.31286192427347226,
+        "z_rmse_m": 0.9463724547311829,
+        "yaw_rmse_rad": 0.04783631076482658,
+        "yaw_rmse_deg": 2.74081871430079,
+        "position_rmse_m": 1.0044855909419201,
+        "position_max_m": 1.0766307492739138,
+        "x_mae_m": 0.08905915347605803,
+        "y_mae_m": 0.25777307823444123,
+        "z_mae_m": 0.946188451426276,
+        "yaw_mae_deg": 2.3905832640022293,
+        "x_max_abs_m": 0.30379269042968815,
+        "y_max_abs_m": 0.48444526855468695,
+        "z_max_abs_m": 0.9688352592926025,
+        "yaw_max_abs_deg": 4.555200534263289,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 29,
+        "x_rmse_m": 0.2453518905496713,
+        "y_rmse_m": 0.27150655341832974,
+        "z_rmse_m": 0.056864912119439386,
+        "yaw_rmse_rad": 0.024068053800338385,
+        "yaw_rmse_deg": 1.378997903853191,
+        "position_rmse_m": 0.37033360227739237,
+        "position_max_m": 0.5213345757056934,
+        "x_mae_m": 0.22504089609290706,
+        "y_mae_m": 0.208718657327586,
+        "z_mae_m": 0.0537157404201113,
+        "yaw_mae_deg": 1.2573961531312579,
+        "x_max_abs_m": 0.35699878686523334,
+        "y_max_abs_m": 0.43611816003418014,
+        "z_max_abs_m": 0.07636254828643796,
+        "yaw_max_abs_deg": 2.4877833828063176,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "05_straight_road": {
+      "name": "straight_road",
+      "label": "05 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528250.465728,
+      "end": 1723528263.265728,
+      "absolute_metrics": {
+        "samples": 64,
+        "x_rmse_m": 0.6293005870897955,
+        "y_rmse_m": 0.14530152083732154,
+        "z_rmse_m": 0.8273152296576057,
+        "yaw_rmse_rad": 0.005414368687291923,
+        "yaw_rmse_deg": 0.310220474509615,
+        "position_rmse_m": 1.0495628852491958,
+        "position_max_m": 1.3044042062326935,
+        "x_mae_m": 0.5337345818924464,
+        "y_mae_m": 0.13552638024711522,
+        "z_mae_m": 0.820867709505379,
+        "yaw_mae_deg": 0.25724594328364375,
+        "x_max_abs_m": 1.0179321749267576,
+        "y_max_abs_m": 0.232001416259763,
+        "z_max_abs_m": 0.9702554780120849,
+        "yaw_max_abs_deg": 0.6309018260650475,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 64,
+        "x_rmse_m": 0.6325542683953973,
+        "y_rmse_m": 0.10886209571117371,
+        "z_rmse_m": 0.17385347088083597,
+        "yaw_rmse_rad": 0.007610323093547906,
+        "yaw_rmse_deg": 0.43603939399123937,
+        "position_rmse_m": 0.6649818701928488,
+        "position_max_m": 1.0562793378261996,
+        "x_mae_m": 0.5372864890770475,
+        "y_mae_m": 0.09705885119056584,
+        "z_mae_m": 0.14049878436058763,
+        "yaw_mae_deg": 0.3295625935639966,
+        "x_max_abs_m": 1.0217670505371093,
+        "y_max_abs_m": 0.19189947558593445,
+        "z_max_abs_m": 0.3533603028144836,
+        "yaw_max_abs_deg": 0.914891500502258,
+        "dominant_components": [
+          "x"
+        ],
+        "worst_component": "x"
+      }
+    },
+    "06_trees_occlusion": {
+      "name": "trees_occlusion",
+      "label": "06 trees_occlusion",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528263.265728,
+      "end": 1723528273.585834,
+      "absolute_metrics": {
+        "samples": 54,
+        "x_rmse_m": 0.10332850347158025,
+        "y_rmse_m": 0.17889807073950753,
+        "z_rmse_m": 0.4560155655449823,
+        "yaw_rmse_rad": 0.006892293294419197,
+        "yaw_rmse_deg": 0.39489931693653807,
+        "position_rmse_m": 0.50063109707978,
+        "position_max_m": 0.6334937547938772,
+        "x_mae_m": 0.10133009154719759,
+        "y_mae_m": 0.17409555720293673,
+        "z_mae_m": 0.4356758518385004,
+        "yaw_mae_deg": 0.379991978591013,
+        "x_max_abs_m": 0.14705858935547056,
+        "y_max_abs_m": 0.25869818750000206,
+        "z_max_abs_m": 0.6098597737808228,
+        "yaw_max_abs_deg": 0.5411064406976197,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 54,
+        "x_rmse_m": 0.03073714556835554,
+        "y_rmse_m": 0.06969754839706721,
+        "z_rmse_m": 0.22886455790172558,
+        "yaw_rmse_rad": 0.002628959696449719,
+        "yaw_rmse_deg": 0.15062829511656287,
+        "position_rmse_m": 0.2412084290272711,
+        "position_max_m": 0.6329566272770009,
+        "x_mae_m": 0.026498204098057362,
+        "y_mae_m": 0.0562360344978618,
+        "z_mae_m": 0.1773831812015817,
+        "yaw_mae_deg": 0.12920682835262806,
+        "x_max_abs_m": 0.07132012608337113,
+        "y_max_abs_m": 0.14083866479492713,
+        "z_max_abs_m": 0.6314547737808228,
+        "yaw_max_abs_deg": 0.277603356998557,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      }
+    },
+    "07_straight_road": {
+      "name": "straight_road",
+      "label": "07 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528273.585834,
+      "end": 1723528280.882174,
+      "absolute_metrics": {
+        "samples": 33,
+        "x_rmse_m": 0.24693385835221304,
+        "y_rmse_m": 0.22211567676938512,
+        "z_rmse_m": 0.23428452428066104,
+        "yaw_rmse_rad": 0.0036716008378230988,
+        "yaw_rmse_deg": 0.2103672320639606,
+        "position_rmse_m": 0.40644918819558296,
+        "position_max_m": 0.4849472543396452,
+        "x_mae_m": 0.2203134406960212,
+        "y_mae_m": 0.22026918108575938,
+        "z_mae_m": 0.22343766122000147,
+        "yaw_mae_deg": 0.16556521123373494,
+        "x_max_abs_m": 0.41722381127929253,
+        "y_max_abs_m": 0.24999289965820282,
+        "z_max_abs_m": 0.3305400086669922,
+        "yaw_max_abs_deg": 0.45123982224321585,
+        "dominant_components": [
+          "x",
+          "z"
+        ],
+        "worst_component": "x"
+      },
+      "relative_metrics": {
+        "samples": 33,
+        "x_rmse_m": 0.1379173356154777,
+        "y_rmse_m": 0.038733219736430936,
+        "z_rmse_m": 0.11914582143779467,
+        "yaw_rmse_rad": 0.003097151862703117,
+        "yaw_rmse_deg": 0.17745373024397,
+        "position_rmse_m": 0.186325469382234,
+        "position_max_m": 0.35909067212417095,
+        "x_mae_m": 0.08152636676580081,
+        "y_mae_m": 0.026490594149502323,
+        "z_mae_m": 0.0969572930579619,
+        "yaw_mae_deg": 0.1483085870829674,
+        "x_max_abs_m": 0.2780452780761671,
+        "y_max_abs_m": 0.10122788427734264,
+        "z_max_abs_m": 0.23261137501335144,
+        "yaw_max_abs_deg": 0.35542947448539636,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "08_left_turn": {
+      "name": "left_turn",
+      "label": "08 left_turn",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528280.882174,
+      "end": 1723528285.674305,
+      "absolute_metrics": {
+        "samples": 24,
+        "x_rmse_m": 0.28919978411691694,
+        "y_rmse_m": 0.13552274791974875,
+        "z_rmse_m": 0.10676525272573158,
+        "yaw_rmse_rad": 0.015620975058586686,
+        "yaw_rmse_deg": 0.895015942736141,
+        "position_rmse_m": 0.3367517624698948,
+        "position_max_m": 0.42077023349624176,
+        "x_mae_m": 0.25479631978352685,
+        "y_mae_m": 0.1292178489990222,
+        "z_mae_m": 0.0872860569790788,
+        "yaw_mae_deg": 0.800916136902337,
+        "x_max_abs_m": 0.39054642578124543,
+        "y_max_abs_m": 0.18977527343749756,
+        "z_max_abs_m": 0.20815566063213348,
+        "yaw_max_abs_deg": 1.5297793822389831,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 24,
+        "x_rmse_m": 0.18496837506560193,
+        "y_rmse_m": 0.043169167110638895,
+        "z_rmse_m": 0.15478462086337913,
+        "yaw_rmse_rad": 0.008520170029875207,
+        "yaw_rmse_deg": 0.48816978344570183,
+        "position_rmse_m": 0.2450207248770101,
+        "position_max_m": 0.40941657933219794,
+        "x_mae_m": 0.12609750815836573,
+        "y_mae_m": 0.032362137451171336,
+        "z_mae_m": 0.12699659599786872,
+        "yaw_mae_deg": 0.35919474818386155,
+        "x_max_abs_m": 0.3148929543457015,
+        "y_max_abs_m": 0.10190602734374465,
+        "z_max_abs_m": 0.27585818453502653,
+        "yaw_max_abs_deg": 1.0094391852675737,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "09_straight_road": {
+      "name": "straight_road",
+      "label": "09 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528285.674305,
+      "end": 1723528306.69381,
+      "absolute_metrics": {
+        "samples": 104,
+        "x_rmse_m": 0.10671114585776466,
+        "y_rmse_m": 0.14440933985030358,
+        "z_rmse_m": 1.0450257010943227,
+        "yaw_rmse_rad": 0.004301217874689836,
+        "yaw_rmse_deg": 0.2464416309859574,
+        "position_rmse_m": 1.0603395880725939,
+        "position_max_m": 1.7411801410080958,
+        "x_mae_m": 0.10040153532996328,
+        "y_mae_m": 0.14107076474494185,
+        "z_mae_m": 0.9495498319169926,
+        "yaw_mae_deg": 0.21259634959201582,
+        "x_max_abs_m": 0.22641540429687268,
+        "y_max_abs_m": 0.23664100732422,
+        "z_max_abs_m": 1.7262298181304931,
+        "yaw_max_abs_deg": 0.48623954567273797,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 104,
+        "x_rmse_m": 0.0526798658172314,
+        "y_rmse_m": 0.06600826665805506,
+        "z_rmse_m": 0.8407198809571129,
+        "yaw_rmse_rad": 0.006837211293069651,
+        "yaw_rmse_deg": 0.39174335073207517,
+        "position_rmse_m": 0.844950991339891,
+        "position_max_m": 1.4979398712156762,
+        "x_mae_m": 0.039160835702750627,
+        "y_mae_m": 0.03798986768462205,
+        "z_mae_m": 0.718593129373257,
+        "yaw_mae_deg": 0.36232456139264824,
+        "x_max_abs_m": 0.1643331579589855,
+        "y_max_abs_m": 0.30065275261306923,
+        "z_max_abs_m": 1.4952731155867576,
+        "yaw_max_abs_deg": 0.668002062309455,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      }
+    },
+    "10_trees_building_occlusion": {
+      "name": "trees+building_occlusion",
+      "label": "10 trees+building_occlusion",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528306.69381,
+      "end": 1723528317.083501,
+      "absolute_metrics": {
+        "samples": 51,
+        "x_rmse_m": 0.19274724369820778,
+        "y_rmse_m": 0.1425770354662426,
+        "z_rmse_m": 2.0099934565712383,
+        "yaw_rmse_rad": 0.002440610875096536,
+        "yaw_rmse_deg": 0.13983670257676203,
+        "position_rmse_m": 2.0242414397632493,
+        "position_max_m": 2.3569430261724285,
+        "x_mae_m": 0.19201943667729418,
+        "y_mae_m": 0.14123899666539275,
+        "z_mae_m": 1.9829800173082532,
+        "yaw_mae_deg": 0.11412382484291934,
+        "x_max_abs_m": 0.22272267578124172,
+        "y_max_abs_m": 0.1852776251220689,
+        "z_max_abs_m": 2.347224180496216,
+        "yaw_max_abs_deg": 0.2947124683197951,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      },
+      "relative_metrics": {
+        "samples": 51,
+        "x_rmse_m": 0.030836140327821043,
+        "y_rmse_m": 0.11665972597761118,
+        "z_rmse_m": 0.7331277287476949,
+        "yaw_rmse_rad": 0.0022580912743250443,
+        "yaw_rmse_deg": 0.1293790997741428,
+        "position_rmse_m": 0.7429916728162184,
+        "position_max_m": 2.6135900208179423,
+        "x_mae_m": 0.026506445542955417,
+        "y_mae_m": 0.06359141402857887,
+        "z_mae_m": 0.4717641420416739,
+        "yaw_mae_deg": 0.10713927462330895,
+        "x_max_abs_m": 0.056603657226560244,
+        "y_max_abs_m": 0.28888114343261506,
+        "z_max_abs_m": 2.597513325302124,
+        "yaw_max_abs_deg": 0.254087877614906,
+        "dominant_components": [
+          "z"
+        ],
+        "worst_component": "z"
+      }
+    },
+    "11_u-turn": {
+      "name": "u-turn",
+      "label": "11 u-turn",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528317.083501,
+      "end": 1723528334.696008,
+      "absolute_metrics": {
+        "samples": 88,
+        "x_rmse_m": 0.5937697997862567,
+        "y_rmse_m": 0.6139378290035378,
+        "z_rmse_m": 2.4654118142466497,
+        "yaw_rmse_rad": 0.08072487864635916,
+        "yaw_rmse_deg": 4.625194848142121,
+        "position_rmse_m": 2.6091641663273593,
+        "position_max_m": 2.969232461226514,
+        "x_mae_m": 0.3962428189475313,
+        "y_mae_m": 0.4510187801541408,
+        "z_mae_m": 2.4638962030261653,
+        "yaw_mae_deg": 2.832394782820558,
+        "x_max_abs_m": 1.490832353271486,
+        "y_max_abs_m": 1.4600013198242152,
+        "z_max_abs_m": 2.5903331470184328,
+        "yaw_max_abs_deg": 10.75622072767536,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 88,
+        "x_rmse_m": 0.6937696995843744,
+        "y_rmse_m": 0.5642171477172877,
+        "z_rmse_m": 0.15055533334943694,
+        "yaw_rmse_rad": 0.08221944394609908,
+        "yaw_rmse_deg": 4.7108271320239234,
+        "position_rmse_m": 0.9068209824654393,
+        "position_max_m": 1.8715490905136067,
+        "x_mae_m": 0.4435862238214654,
+        "y_mae_m": 0.39983540643587917,
+        "z_mae_m": 0.13037140575651707,
+        "yaw_mae_deg": 2.9485281712779026,
+        "x_max_abs_m": 1.6740959074707007,
+        "y_max_abs_m": 1.3618407795410121,
+        "z_max_abs_m": 0.24970897593689,
+        "yaw_max_abs_deg": 10.89537843264073,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "12_speed_breaker": {
+      "name": "speed_breaker",
+      "label": "12 speed_breaker",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528334.696008,
+      "end": 1723528336.569798,
+      "absolute_metrics": {
+        "samples": 9,
+        "x_rmse_m": 0.4825287601569229,
+        "y_rmse_m": 1.4778162584854637,
+        "z_rmse_m": 2.274301013683443,
+        "yaw_rmse_rad": 0.1608305806616288,
+        "yaw_rmse_deg": 9.214913488549685,
+        "position_rmse_m": 2.754853897952501,
+        "position_max_m": 2.8530482775185018,
+        "x_mae_m": 0.4716515016276056,
+        "y_mae_m": 1.4768603988172737,
+        "z_mae_m": 2.274106764146593,
+        "yaw_mae_deg": 9.195465466911475,
+        "x_max_abs_m": 0.6840472526855521,
+        "y_max_abs_m": 1.5590899645996075,
+        "z_max_abs_m": 2.315211703125,
+        "yaw_max_abs_deg": 10.337149045462363,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 9,
+        "x_rmse_m": 0.23556489649026902,
+        "y_rmse_m": 0.07410179941592854,
+        "z_rmse_m": 0.04652755332613324,
+        "yaw_rmse_rad": 0.02249706280310098,
+        "yaw_rmse_deg": 1.2889867500584393,
+        "position_rmse_m": 0.2512900920324274,
+        "position_max_m": 0.3328967007564512,
+        "x_mae_m": 0.2123957510579465,
+        "y_mae_m": 0.06130849446614661,
+        "z_mae_m": 0.03697504173109283,
+        "yaw_mae_deg": 1.141683578550888,
+        "x_max_abs_m": 0.2958922849121137,
+        "y_max_abs_m": 0.13956317529297024,
+        "z_max_abs_m": 0.08380000846862812,
+        "yaw_max_abs_deg": 1.794260279967788,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "13_straight_road": {
+      "name": "straight_road",
+      "label": "13 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528336.569798,
+      "end": 1723528356.963645,
+      "absolute_metrics": {
+        "samples": 101,
+        "x_rmse_m": 1.9616821047127049,
+        "y_rmse_m": 5.366565161709479,
+        "z_rmse_m": 1.7259686793832143,
+        "yaw_rmse_rad": 0.06800350303893593,
+        "yaw_rmse_deg": 3.8963137162360972,
+        "position_rmse_m": 5.968851329781618,
+        "position_max_m": 9.369210411125865,
+        "x_mae_m": 1.6081192101761856,
+        "y_mae_m": 5.075372032499092,
+        "z_mae_m": 1.6768075138813436,
+        "yaw_mae_deg": 3.248712819908849,
+        "x_max_abs_m": 4.231083885253909,
+        "y_max_abs_m": 8.319016584533692,
+        "z_max_abs_m": 2.322599012069702,
+        "yaw_max_abs_deg": 8.09435672200131,
+        "dominant_components": [
+          "y"
+        ],
+        "worst_component": "y"
+      },
+      "relative_metrics": {
+        "samples": 101,
+        "x_rmse_m": 1.6942563220412252,
+        "y_rmse_m": 3.9961465028333065,
+        "z_rmse_m": 0.9030064219087238,
+        "yaw_rmse_rad": 0.17185178919700728,
+        "yaw_rmse_deg": 9.846382222760433,
+        "position_rmse_m": 4.433408615827322,
+        "position_max_m": 7.938750376949842,
+        "x_mae_m": 1.2953959191025433,
+        "y_mae_m": 3.5965645421897823,
+        "z_mae_m": 0.695539537792319,
+        "yaw_mae_deg": 9.135917124921574,
+        "x_max_abs_m": 3.891174121093748,
+        "y_max_abs_m": 6.839276138488771,
+        "z_max_abs_m": 2.950668012069702,
+        "yaw_max_abs_deg": 14.824344946464484,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "14_right_turn": {
+      "name": "right_turn",
+      "label": "14 right_turn",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528356.963645,
+      "end": 1723528362.235453,
+      "absolute_metrics": {
+        "samples": 26,
+        "x_rmse_m": 6.72163611249747,
+        "y_rmse_m": 7.790749234949878,
+        "z_rmse_m": 0.90098094924962,
+        "yaw_rmse_rad": 0.48539704889113866,
+        "yaw_rmse_deg": 27.811202289567518,
+        "position_rmse_m": 10.328985058640223,
+        "position_max_m": 11.137513632145362,
+        "x_mae_m": 6.549343645935061,
+        "y_mae_m": 7.761069819684541,
+        "z_mae_m": 0.8985446878245427,
+        "yaw_mae_deg": 26.07655498596726,
+        "x_max_abs_m": 9.195301103393554,
+        "y_max_abs_m": 8.486693815063475,
+        "z_max_abs_m": 1.0325282775268554,
+        "yaw_max_abs_deg": 37.13665348021761,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 26,
+        "x_rmse_m": 2.7137920327819676,
+        "y_rmse_m": 0.8226054825783653,
+        "z_rmse_m": 0.1494513874226631,
+        "yaw_rmse_rad": 0.35477048709698156,
+        "yaw_rmse_deg": 20.32685160645747,
+        "position_rmse_m": 2.8396624261276955,
+        "position_max_m": 5.294587574943434,
+        "x_mae_m": 2.2534811649780266,
+        "y_mae_m": 0.550340729561438,
+        "z_mae_m": 0.13398358970231267,
+        "yaw_mae_deg": 17.880286445576612,
+        "x_max_abs_m": 4.89943862243652,
+        "y_max_abs_m": 1.9991838007202123,
+        "z_max_abs_m": 0.2166527937088012,
+        "yaw_max_abs_deg": 28.940384939826966,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    },
+    "15_straight_road": {
+      "name": "straight_road",
+      "label": "15 straight_road",
+      "type": "temporal_phase",
+      "description": "",
+      "start": 1723528362.235453,
+      "end": 1723528378.383415,
+      "absolute_metrics": {
+        "samples": 80,
+        "x_rmse_m": 16.1512832348011,
+        "y_rmse_m": 3.4715905507816505,
+        "z_rmse_m": 0.39767640207825333,
+        "yaw_rmse_rad": 0.28269053342454914,
+        "yaw_rmse_deg": 16.196974473528595,
+        "position_rmse_m": 16.5249519697884,
+        "position_max_m": 18.966371086972217,
+        "x_mae_m": 15.896547634117763,
+        "y_mae_m": 3.0954513184469223,
+        "z_mae_m": 0.31732999849604643,
+        "yaw_mae_deg": 13.950253708659364,
+        "x_max_abs_m": 18.932537608581544,
+        "y_max_abs_m": 6.160586251281739,
+        "z_max_abs_m": 0.8400988536682129,
+        "yaw_max_abs_deg": 37.02139021433433,
+        "dominant_components": [
+          "yaw",
+          "x"
+        ],
+        "worst_component": "yaw"
+      },
+      "relative_metrics": {
+        "samples": 80,
+        "x_rmse_m": 7.022892671062394,
+        "y_rmse_m": 3.4448379698311866,
+        "z_rmse_m": 0.7787718928242637,
+        "yaw_rmse_rad": 0.4275200811981551,
+        "yaw_rmse_deg": 24.49509630974454,
+        "position_rmse_m": 7.860942422426564,
+        "position_max_m": 11.072658073024988,
+        "x_mae_m": 6.415395390953708,
+        "y_mae_m": 3.0652756982128144,
+        "z_mae_m": 0.686886560538998,
+        "yaw_mae_deg": 23.07113650567498,
+        "x_max_abs_m": 9.451385365417483,
+        "y_max_abs_m": 6.1662168664016725,
+        "z_max_abs_m": 1.098612342570305,
+        "yaw_max_abs_deg": 32.23629037064156,
+        "dominant_components": [
+          "yaw"
+        ],
+        "worst_component": "yaw"
+      }
+    }
+  },
+  "perturbation_windows": {
+    "01_lidar_point_dropout_turn": {
+      "name": "lidar_point_dropout_turn",
+      "label": "01 lidar_point_dropout_turn",
+      "sensor": "lidar",
+      "perturbation_type": "point_dropout",
+      "start": 1621218790.0,
+      "end": 1621218795.0,
+      "absolute_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      },
+      "relative_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      }
+    },
+    "02_lidar_rain_noise": {
+      "name": "lidar_rain_noise",
+      "label": "02 lidar_rain_noise",
+      "sensor": "lidar",
+      "perturbation_type": "rain",
+      "start": 1621218805.0,
+      "end": 1621218810.0,
+      "absolute_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      },
+      "relative_metrics": {
+        "samples": 0,
+        "x_rmse_m": null,
+        "y_rmse_m": null,
+        "z_rmse_m": null,
+        "yaw_rmse_rad": null,
+        "yaw_rmse_deg": null,
+        "position_rmse_m": null,
+        "position_max_m": null,
+        "dominant_components": [],
+        "worst_component": null
+      }
+    }
+  },
+  "run_time_range": {
+    "start": 1723528213.217105,
+    "end": 1723528521.4439123
+  },
+  "ground_truth_time_range": {
+    "start": 1723528213.8162684,
+    "end": 1723528521.641233
+  },
+  "robustness_score_lower_is_better": 37.423718808478455,
+  "generated_files": [
+    {
+      "label": "trajectory CSV",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/trajectory.csv"
+    },
+    {
+      "label": "error over time CSV",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/error_timeseries.csv"
+    },
+    {
+      "label": "segment metrics CSV",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/segment_metrics.csv"
+    },
+    {
+      "label": "perturbation window metrics CSV",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/perturbation_window_metrics.csv"
+    },
+    {
+      "label": "segment per-window error CSV directory",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/segment_error_timeseries"
+    },
+    {
+      "label": "trajectory XY plot",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/trajectory_xy.png"
+    },
+    {
+      "label": "error over time plot",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/error_over_time.png"
+    },
+    {
+      "label": "yaw error over time plot",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/yaw_error_over_time.png"
+    },
+    {
+      "label": "segment position RMSE bar graph",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/segment_position_rmse_bar.png"
+    },
+    {
+      "label": "segment component RMSE bar graph",
+      "path": "/data/results/e2o/lvi_sam/with_gps/per_1/2026-06-17_22-44-44/segment_component_rmse_bar.png"
+    }
+  ]
+}
