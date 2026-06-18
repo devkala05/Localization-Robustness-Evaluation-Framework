@@ -227,10 +227,12 @@ algorithms:
       native_camera_info_topic:=/camera/right/camera_info native_left_camera_info_topic:=/camera/left/camera_info
       native_mono_camera_topic:=/camera/image_raw
     launch_args: mode:=${ORB_MODE:-stereo_inertial}
-    notes: ORB-SLAM3 default is Stereo-Inertial using the upstream ORB_SLAM3 Stereo_Inertial
-      ROS executable, vocabulary, UrbanNav stereo calibration, and /imu. Set ORB_MODE=stereo
-      or mono only for visual-only ablations. --gps on uses conservative external
-      fusion on the corrected body odometry output. For E2O mono, online GT alignment is disabled by default; set ORB_ALIGN_TO_GT=true only for visualization/diagnostic scale alignment, not for benchmark claims.
+    notes: ORB-SLAM3 default is Stereo-Inertial on UrbanNav and Mono-Inertial on E2O.
+      Both modes use the upstream ORB_SLAM3 inertial executable and produce metric
+      scale from IMU initialization. E2O plain mono is available only as a visual-only
+      ablation because its map/trajectory have arbitrary scale. No online GT scaling
+      or GT alignment is used in normal benchmark runs. --gps on uses conservative
+      external fusion on corrected body odometry output.
   r3live:
     display_name: R3LIVE
     result_id: r3live

@@ -1,0 +1,69 @@
+<!-- topic_bridge.launch
+     Launches:
+       1. Static TF broadcaster  – sensor calibration transforms
+       2. Topic bridge node      – UrbanNav rosbag → FAST-LIVO2 topics
+
+     Both nodes are marked required=true so roslaunch exits cleanly
+     if either crashes, preventing silent pipeline failures.
+-->
+<launch>
+  <!-- ══════════════════════════════════════════════════════════════════
+       Simulated time: must be set before any node starts.
+       rosbag play with clock publishing provides /clock; nodes use it via use_sim_time.
+       ══════════════════════════════════════════════════════════════════ -->
+  <param name="use_sim_time" value="true"/>
+
+  <!-- ── Input topics (UrbanNav rosbag) ────────────────────────────── -->
+  <arg name="lidar_topic_in"  default="/velodyne_points"/>
+  <arg name="imu_topic_in"    default="/imu/data"/>
+  <arg name="cam_topic_in"    default="/zed2/camera/right/image_raw"/>
+
+  <!-- ── Output topics (FAST-LIVO2 expected topics) ────────────────── -->
+  <arg name="lidar_topic_out" default="/livox/lidar"/>
+  <arg name="imu_topic_out"   default="/livox/imu"/>
+  <arg name="cam_topic_out"   default="/camera/right/image_raw"/>
+
+  <!-- ── Frame IDs (must match fast_livo2_urbannav.yaml + TF tree) ── -->
+  <arg name="lidar_frame_id"  default="velodyne"/>
+  <arg name="imu_frame_id"    default="body"/>
+  <arg name="cam_frame_id"    default="camera_right"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1. Static TF broadcaster
+          Publishes: body→velodyne, body→camera_left/right,
+                     velodyne→velodyne_left/right, map→odom
+          Source:    UrbanNav extrinsic.yaml calibration
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="tf_broadcaster_node"
+        pkg="fast_livo2_wrapper"
+        type="tf_broadcaster_node.py"
+        output="screen"
+        required="true"/>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       2. Topic bridge node
+          /velodyne_points       → /livox/lidar        (frame: velodyne)
+          /imu/data              → /livox/imu          (frame: body)
+          /zed2/.../image_raw    → /camera/.../image_raw (frame: camera_right)
+          Timestamps preserved exactly. No data modification.
+       ══════════════════════════════════════════════════════════════════ -->
+  <node name="topic_bridge_node"
+        pkg="fast_livo2_wrapper"
+        type="topic_bridge_node.py"
+        output="screen"
+        required="true">
+
+    <param name="lidar_topic_in"  value="$(arg lidar_topic_in)"/>
+    <param name="imu_topic_in"    value="$(arg imu_topic_in)"/>
+    <param name="cam_topic_in"    value="$(arg cam_topic_in)"/>
+
+    <param name="lidar_topic_out" value="$(arg lidar_topic_out)"/>
+    <param name="imu_topic_out"   value="$(arg imu_topic_out)"/>
+    <param name="cam_topic_out"   value="$(arg cam_topic_out)"/>
+
+    <param name="lidar_frame_id"  value="$(arg lidar_frame_id)"/>
+    <param name="imu_frame_id"    value="$(arg imu_frame_id)"/>
+    <param name="cam_frame_id"    value="$(arg cam_frame_id)"/>
+  </node>
+
+</launch>

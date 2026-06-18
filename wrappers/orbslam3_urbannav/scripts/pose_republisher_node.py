@@ -48,16 +48,21 @@ RIGHT_CAMERA_T_IMU = np.array([
     [0.0, 0.0, 0.0, 1.0],
 ], dtype=float)
 
-# E2O ORB-SLAM3 runs in monocular mode on /camera/color/image_raw. ORB's native
-# pose is in optical camera axes (x right, y down, z forward), while the benchmark
-# body frame expects x forward, y left, z up. This basis change prevents forward
-# motion from appearing as RViz Z motion.
-E2O_OPTICAL_CAMERA_T_BODY = np.array([
-    [0.0, 0.0, 1.0, 0.0],
-    [-1.0, 0.0, 0.0, 0.0],
-    [0.0, -1.0, 0.0, 0.0],
-    [0.0, 0.0, 0.0, 1.0],
+# E2O supplied front-camera calibration:
+#   p_camera = T_camera_body * p_body
+# where body is provisionally lidar103/IMU. The native ORB pose is the pose of
+# that optical camera. For benchmark body odometry we need T_body_camera, then
+# compose T_world_body = T_world_camera * inverse(T_body_camera).
+#
+# Do not replace this with an axes-only optical basis change: that loses the
+# measured camera lever arm and uses inconsistent coordinate frames.
+E2O_CAMERA_T_BODY = np.array([
+    [-0.18256836, -0.98306216, -0.01604916,  0.07383026],
+    [ 0.11110754, -0.00440978, -0.99379861, -0.53581120],
+    [ 0.97689503, -0.18321936,  0.11003070, -0.31010858],
+    [ 0.0,         0.0,         0.0,         1.0       ],
 ], dtype=float)
+E2O_BODY_T_CAMERA = invert_rigid(E2O_CAMERA_T_BODY)
 
 
 def invert_rigid(T: np.ndarray) -> np.ndarray:
@@ -130,7 +135,9 @@ class PoseRepublisher:
         self.max_speed_mps = float(rospy.get_param("~max_speed_mps", 45.0))
         self.use_camera_to_body_extrinsic = rospy.get_param("~use_camera_to_body_extrinsic", True)
         self.dataset_id = str(rospy.get_param("~dataset_id", os.environ.get("DATASET_ID", "urbannav"))).lower()
-        self.camera_to_body_extrinsic = E2O_OPTICAL_CAMERA_T_BODY if self.dataset_id == "e2o" else RIGHT_CAMERA_T_IMU
+        # Stored as T_body_camera. _convert_camera_pose_to_body() uses its inverse
+        # to obtain T_camera_body before composing the native camera pose.
+        self.body_T_camera = E2O_BODY_T_CAMERA if self.dataset_id == "e2o" else RIGHT_CAMERA_T_IMU
         self.pose_scale = float(rospy.get_param("~pose_scale", 1.0))
         self.yaw_offset_rad = math.radians(float(rospy.get_param("~yaw_offset_deg", 0.0)))
         self.yaw_offset_T = yaw_rotation(self.yaw_offset_rad)
@@ -229,7 +236,7 @@ class PoseRepublisher:
     def _convert_camera_pose_to_body(self, msg: PoseStamped) -> np.ndarray:
         T_world_camera = pose_to_mat(msg.pose)
         if self.use_camera_to_body_extrinsic:
-            T_world_body = T_world_camera @ invert_rigid(self.camera_to_body_extrinsic)
+            T_world_body = T_world_camera @ invert_rigid(self.body_T_camera)
         else:
             T_world_body = T_world_camera
 

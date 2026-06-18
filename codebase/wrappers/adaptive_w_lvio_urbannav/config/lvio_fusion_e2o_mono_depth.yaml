@@ -1,0 +1,108 @@
+%YAML:1.0
+
+# Native lvio_fusion E2O mono-depth experiment.
+# E2O provides one RGB camera plus /camera/depth/image_rect_raw, so the Docker
+# patch enables use_mono_depth to initialize visual landmarks from metric depth
+# instead of waiting for a stereo image pair.
+
+use_imu: 1
+use_lidar: 1
+use_navsat: 0
+use_loop: 0
+use_eskf: 0
+use_adapt: 0
+use_mono_depth: 1
+
+imu_topic: '/livox/imu'
+lidar_topic: '/cloud_registered_raw'
+navsat_topic: '/gps/fix'
+image0_topic: '/camera/right/image_raw'
+image1_topic: '/camera/right/image_raw'
+depth_topic: '/camera/depth/image_rect_raw'
+depth_scale: 0.001
+color_topic: '/camera/right/image_raw'
+result_path: '/data/output/adaptive_w_lvio/lvio_fusion_e2o_mono_depth_result.csv'
+ground_truth_path: '/workspace/e20_GT_scripts/gt_one_full_loop_fastlivo2_lidar103.csv'
+
+undistort: 0
+
+camera0.fx: 668.02585977
+camera0.fy: 658.80930843
+camera0.cx: 657.26752359
+camera0.cy: 363.16409155
+camera0.k1: -0.05078581
+camera0.k2: 0.08456123
+camera0.p1: -0.00046157
+camera0.p2: 0.00656211
+
+# camera1 is intentionally identical in mono-depth mode. Native lvio_fusion's
+# landmark bookkeeping expects a first "right" observation, but the patched
+# depth branch uses it as a depth-backed first observation from the same camera.
+camera1.fx: 668.02585977
+camera1.fy: 658.80930843
+camera1.cx: 657.26752359
+camera1.cy: 363.16409155
+camera1.k1: -0.05078581
+camera1.k2: 0.08456123
+camera1.p1: -0.00046157
+camera1.p2: 0.00656211
+
+num_scans: 16
+horizon_scan: 1800
+ang_res_y: 2.0
+ang_bottom: 15.0
+ground_rows: 8
+cycle_time: 0.1
+min_range: 1.0
+max_range: 100.0
+deskew: 1
+spacing: 0
+resolution: 0.2
+
+acc_n: 0.01119741
+gyr_n: 0.01027090
+acc_w: 1.175177e-04
+gyr_w: 9.135538e-05
+g_norm: 9.80511
+
+# p_body = T_body_cam * p_cam, using the E2O static transform in
+# localization_benchmark/config/datasets/e2o/static_transforms.yaml.
+body_to_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [-0.18256836,  0.11110754,  0.97689503,  0.37595526,
+          -0.98306216, -0.00440978, -0.18321936,  0.01339903,
+          -0.01604916, -0.99379861,  0.11003070, -0.49718205,
+           0.0,         0.0,         0.0,         1.0]
+
+body_to_cam1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [-0.18256836,  0.11110754,  0.97689503,  0.37595526,
+          -0.98306216, -0.00440978, -0.18321936,  0.01339903,
+          -0.01604916, -0.99379861,  0.11003070, -0.49718205,
+           0.0,         0.0,         0.0,         1.0]
+
+body_to_lidar: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [1.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          0.0, 0.0, 0.0, 1.0]
+
+num_features: 500
+num_features_init: 50
+num_features_tracking_bad: 20
+num_features_needed_for_keyframe: 120
+remove_moving_points: 0
+
+windows_size: 3
+
+navsat_v: 0
+navsat_accuracy: 5
+relocator_mode: 0
+threshold: 20

@@ -1,6 +1,6 @@
 # ORB-SLAM3
 
-ORB-SLAM3 is integrated through the upstream `UZ-SLAMLab/ORB_SLAM3` ROS examples. The default benchmark mode is now `stereo_inertial`, not visual-only stereo.
+ORB-SLAM3 is integrated through the upstream `UZ-SLAMLab/ORB_SLAM3` ROS examples. UrbanNav defaults to `stereo_inertial`; E2O defaults to `mono_inertial`. Both are metric-scale visual-inertial modes.
 
 ## Build And Run
 
@@ -21,7 +21,9 @@ The first build is heavy because Pangolin and ORB-SLAM3 are compiled.
 ./run --algo orbslam3 --per 0 --orb-mode mono --eval
 ```
 
-`stereo_inertial` is the recommended benchmark mode. `stereo` and `mono` are kept for visual-only ablations.
+`stereo_inertial` is the recommended UrbanNav benchmark mode. `mono_inertial` is the required E2O benchmark mode because E2O provides one camera plus IMU. Plain `mono` has arbitrary similarity scale, so it is only a visual-only ablation and must not be compared metrically with LiDAR trajectories or GT.
+
+For E2O, the runner uses the supplied front-camera↔lidar103/body calibration as `IMU.T_b_c1`; it does not apply online ground-truth scale fitting. The E2O IMU-to-lidar103 co-location assumption remains provisional until a measured IMU extrinsic is available.
 
 ## Inputs
 

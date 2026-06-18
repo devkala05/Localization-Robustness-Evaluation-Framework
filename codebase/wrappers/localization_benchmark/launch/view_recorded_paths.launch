@@ -1,0 +1,37 @@
+<launch>
+  <param name="use_sim_time" value="false"/>
+
+  <arg name="algorithm" default="fast_lio2"/>
+  <arg name="run_id" default="1"/>
+  <arg name="baseline_csv" default="/data/results/urbannav/$(arg algorithm)/without_gps/per_0/manual/trajectory.csv"/>
+  <arg name="run_csv" default="/data/results/urbannav/$(arg algorithm)/without_gps/per_$(arg run_id)/manual/trajectory.csv"/>
+  <arg name="ground_truth_path" default="/data/UrbanNav_TST_GT_raw.txt"/>
+  <arg name="rviz_config" default="$(find localization_benchmark)/config/benchmark_paths.rviz"/>
+
+  <node name="ground_truth_path_node"
+        pkg="fast_lio_urbannav"
+        type="ground_truth_path_node.py"
+        output="screen">
+    <param name="ground_truth_path" value="$(arg ground_truth_path)"/>
+    <param name="topic" value="/ground_truth_path"/>
+    <param name="frame_id" value="camera_init"/>
+  </node>
+
+  <node name="baseline_path_from_csv"
+        pkg="localization_benchmark"
+        type="path_from_csv.py"
+        output="screen">
+    <param name="csv_path" value="$(arg baseline_csv)"/>
+    <param name="topic" value="/benchmark/baseline_path"/>
+  </node>
+
+  <node name="selected_run_path_from_csv"
+        pkg="localization_benchmark"
+        type="path_from_csv.py"
+        output="screen">
+    <param name="csv_path" value="$(arg run_csv)"/>
+    <param name="topic" value="/benchmark/selected_run_path"/>
+  </node>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_config)" output="screen"/>
+</launch>

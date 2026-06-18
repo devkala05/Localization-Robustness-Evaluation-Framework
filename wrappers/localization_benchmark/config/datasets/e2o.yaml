@@ -9,7 +9,8 @@ dataset:
   use_clock_stamp: true
   gps_source: topic
   gps_topic: /mavros/global_position/global
-  default_orb_mode: mono
+  # Monocular ORB-SLAM3 has arbitrary scale. Use Mono-Inertial for metric output.
+  default_orb_mode: mono_inertial
   orb_mono_scale: 1.0
   orb_yaw_offset_deg: 0.0
   stereo_swap: false
@@ -40,7 +41,7 @@ bag_topics:
   rtabmap: /lidar103/velodyne_points /camera/color/image_raw
 
 paths:
-  perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations
+  perturbations_dir: /root/catkin_ws/src/localization_benchmark/config/perturbations/e2o
   segments_yaml: /root/catkin_ws/src/localization_benchmark/config/segments/e2o_segments.yaml
 
 calibration:

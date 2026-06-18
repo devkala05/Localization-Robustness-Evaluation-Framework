@@ -1,0 +1,21 @@
+name: camera_low_light_and_rain
+description: Camera visibility stress. FAST-LIO2 itself is LiDAR-IMU, but this is kept for visual checks and future visual algorithms.
+perturbations:
+  - name: low_light_section
+    sensor: camera_right
+    type: low_light
+    start: 1621218780.0
+    end: 1621218788.0
+    alpha: 0.35
+    noise_stddev: 8.0
+    seed: 401
+  - name: rain_streaks_section
+    sensor: camera_right
+    type: rain
+    start: 1621218800.0
+    end: 1621218808.0
+    streaks: 160
+    length: 22
+    brightness: 210
+    alpha: 0.40
+    seed: 402

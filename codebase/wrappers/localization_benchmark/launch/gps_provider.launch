@@ -1,0 +1,35 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="gps_enable" default="false"/>
+  <arg name="gps_source" default="auto"/>
+  <arg name="gps_file" default=""/>
+  <arg name="gps_topic" default="/gps/fix_raw"/>
+  <arg name="gps_required" default="false"/>
+  <arg name="max_cov_xy" default="100.0"/>
+  <arg name="max_cov_z" default="400.0"/>
+  <arg name="frame_id" default="gnss_antenna"/>
+  <arg name="time_offset_sec" default="0.0"/>
+
+  <group if="$(arg gps_enable)">
+    <!-- CSV/file mode. For UrbanNav-HK_TST this is the expected path. -->
+    <group unless="$(eval gps_source == 'topic')">
+      <node name="gnss_solution_replayer" pkg="localization_benchmark" type="gnss_solution_replayer.py" output="screen">
+        <param name="csv_path" value="$(arg gps_file)"/>
+        <param name="output_topic" value="/gps/fix_raw"/>
+        <param name="frame_id" value="$(arg frame_id)"/>
+        <param name="required" value="$(arg gps_required)"/>
+        <param name="time_offset_sec" value="$(arg time_offset_sec)"/>
+      </node>
+    </group>
+
+    <!-- Topic mode or the CSV replayer output both pass through the quality gate. -->
+    <node name="gps_quality_gate" pkg="localization_benchmark" type="gps_quality_gate.py" output="screen">
+      <param name="input_topic" value="$(eval gps_topic if gps_source == 'topic' else '/gps/fix_raw')"/>
+      <param name="output_topic" value="/gps/fix"/>
+      <param name="status_topic" value="/gps/status"/>
+      <param name="max_cov_xy" value="$(arg max_cov_xy)"/>
+      <param name="max_cov_z" value="$(arg max_cov_z)"/>
+      <param name="output_frame_id" value="$(arg frame_id)"/>
+    </node>
+  </group>
+</launch>

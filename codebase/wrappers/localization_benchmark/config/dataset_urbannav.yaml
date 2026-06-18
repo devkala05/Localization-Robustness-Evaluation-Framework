@@ -1,0 +1,24 @@
+dataset:
+  name: urbannav_hk_tst_20210517
+  bag_path: /data/UrbanNav-HK_TST-20210517_sensors.bag
+  ground_truth_path: /data/UrbanNav_TST_GT_raw.txt
+  frame_id: camera_init
+
+source_topics:
+  lidar: /velodyne_points
+  imu: /imu/data
+  camera_right: /zed2/camera/right/image_raw
+  camera_left: /zed2/camera/left/image_raw
+
+custom_topics:
+  lidar: /mycar/lidar/custom_points
+  imu: /mycar/imu/custom_imu
+  camera_right: /mycar/camera/right/custom_image
+  camera_left: /mycar/camera/left/custom_image
+  localization_output: /mycar/localization/output
+
+native_topics:
+  fastlio_lidar: /cloud_registered_raw
+  fastlio_imu: /livox/imu
+  camera_right: /camera/right/image_raw
+  camera_left: /camera/left/image_raw

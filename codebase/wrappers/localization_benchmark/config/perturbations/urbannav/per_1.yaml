@@ -1,0 +1,18 @@
+name: lidar_dropout_and_rain
+description: LiDAR stress windows. Edit timestamps after inspecting RViz time.
+perturbations:
+  - name: lidar_point_dropout_turn
+    sensor: lidar
+    type: point_dropout
+    start: 1621218790.0
+    end: 1621218795.0
+    drop_rate: 0.30
+    seed: 101
+  - name: lidar_rain_noise
+    sensor: lidar
+    type: rain
+    start: 1621218805.0
+    end: 1621218810.0
+    xyz_stddev: 0.05
+    drop_rate: 0.10
+    seed: 102

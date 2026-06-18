@@ -21,8 +21,10 @@ SETUP="source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.b
 ROS_ENV="export ROS_MASTER_URI=${ROS_MASTER_URI_VALUE} && export ROS_HOSTNAME=localhost"
 BAG_PATH="/data/UrbanNav-HK_TST-20210517_sensors.bag"
 GT_PATH="/data/UrbanNav_TST_GT_raw.txt"
-CONFIG_PATH="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations}/per_${PER}.yaml"
-SEGMENTS_PATH="${DATASET_SEGMENTS_YAML:-/root/catkin_ws/src/localization_benchmark/config/road_segments.yaml}"
+DATASET_PERTURBATIONS_DIR="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations/urbannav}"
+DATASET_SEGMENTS_YAML="${DATASET_SEGMENTS_YAML:-/root/catkin_ws/src/localization_benchmark/config/road_segments.yaml}"
+CONFIG_PATH="${DATASET_PERTURBATIONS_DIR}/per_${PER}.yaml"
+SEGMENTS_PATH="${DATASET_SEGMENTS_YAML}"
 ALGO_CONFIG="/root/catkin_ws/src/localization_benchmark/config/algorithms.yaml"
 eval "$(python3 /workspace/scripts/algorithm_config.py --config "${ALGO_CONFIG}" --algo "${ALGO}")"
 
@@ -39,8 +41,6 @@ DATASET_LIDAR_MODEL="${DATASET_LIDAR_MODEL:-velodyne_32}"
 DATASET_SCAN_LINE="${DATASET_SCAN_LINE:-32}"
 DATASET_USE_CLOCK_STAMP="${DATASET_USE_CLOCK_STAMP:-false}"
 DATASET_CAMERA_FRAME="${DATASET_CAMERA_FRAME:-camera_right_optical}"
-DATASET_PERTURBATIONS_DIR="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations}"
-DATASET_SEGMENTS_YAML="${DATASET_SEGMENTS_YAML:-/root/catkin_ws/src/localization_benchmark/config/road_segments.yaml}"
 GPS_ENABLE="${GPS_ENABLE:-off}"
 case "${GPS_ENABLE}" in
     on|true|1|yes) GPS_BOOL="true"; GPS_FOLDER="with_gps" ;;
@@ -204,7 +204,10 @@ if [ "${DATASET_ID}" = "e2o" ]; then
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml"
             ;;
         orbslam3)
-            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-1.0}} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-0.0}} align_to_gt:=${ORB_ALIGN_TO_GT:-false} dataset_id:=${DATASET_ID}"
+            # E2O has one camera plus IMU. Use Mono_Inertial by default because
+            # plain Mono has arbitrary scale and creates a miniature/giant map in RViz.
+            # --orb-mode mono remains available only as a non-metric visual ablation.
+            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=${ORB_MODE:-mono_inertial} mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml mono_inertial_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_inertial_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-1.0}} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-0.0}} align_to_gt:=false dataset_id:=${DATASET_ID}"
             ;;
     esac
 fi

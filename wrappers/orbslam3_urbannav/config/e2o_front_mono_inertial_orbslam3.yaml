@@ -1,0 +1,66 @@
+%YAML:1.0
+
+# ORB-SLAM3 Mono-Inertial configuration for E2O one_full_loop front camera.
+#
+# Why this is the default E2O configuration:
+#   Plain monocular SLAM has an arbitrary similarity scale, so its trajectory and
+#   sparse map cannot be compared in metres against LiDAR algorithms or GT.
+#   Mono_Inertial estimates metric scale from the IMU during initialization.
+#
+# Assumptions retained from the dataset calibration manifest:
+#   body/IMU origin == lidar103 (provisional; no independent IMU-to-lidar103
+#   transform was supplied), zero camera/IMU time offset.
+
+Camera.type: "PinHole"
+Camera.fx: 668.02585977
+Camera.fy: 658.80930843
+Camera.cx: 657.26752359
+Camera.cy: 363.16409155
+Camera.k1: -0.05078581
+Camera.k2: 0.08456123
+Camera.p1: -0.00046157
+Camera.p2: 0.00656211
+Camera.width: 1280
+Camera.height: 720
+Camera.fps: 20.0
+Camera.RGB: 0
+Camera.bf: 0.0
+ThDepth: 40.0
+
+# The input is the E2O front camera. The supplied calibration is
+# p_camera = T_camera_body * p_body. ORB-SLAM3 expects T_body_camera.
+# This is inverse(T_camera_body), with body provisionally aligned to lidar103.
+IMU.T_b_c1: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ -0.18256836,  0.11110754,  0.97689503,  0.37595526,
+          -0.98306216, -0.00440978, -0.18321936,  0.01339903,
+          -0.01604916, -0.99379861,  0.11003070, -0.49718205,
+           0.0,         0.0,         0.0,         1.0 ]
+
+# Reuse the calibrated/tuned noise values used by the E2O FAST-LIVO2 and
+# LVI-SAM wrappers. IMU frequency is 100 Hz as observed in this rosbag.
+IMU.NoiseGyro: 0.01027090
+IMU.NoiseAcc: 0.01119741
+IMU.GyroWalk: 9.135538e-05
+IMU.AccWalk: 1.175177e-04
+IMU.Frequency: 100.0
+
+ORBextractor.nFeatures: 2200
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 12
+ORBextractor.minThFAST: 5
+
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
+Viewer.imageViewScale: 1.0

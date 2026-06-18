@@ -3,7 +3,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALGO=""; PER=""; MODE=""; EVAL="false"; DURATION="0"; DATASET="${DATASET:-urbannav}"
 GPS="off"; GPS_SOURCE="auto"; GPS_FILE=""; GPS_TOPIC="/gps/fix_raw"; GPS_REQUIRED="false"; GPS_USE_Z="off"; GPS_ALPHA="0.08"; GPS_MAX_COV_XY="100.0"; GPS_MAX_COV_Z="400.0"; GPS_TIME_OFFSET_SEC="0.0"; RTK_MODE="auto"
-ORB_MODE="${ORB_MODE:-stereo_inertial}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
+# Empty means use the selected dataset default after dataset_config.py runs.
+# This matters for E2O: it must use mono_inertial for metric scale.
+ORB_MODE="${ORB_MODE:-}"; STEREO_SWAP="true"; R3LIVE_VIO="on"; BAG=""; GT=""; SKIP_BUILD="--skip-build"
 usage(){ cat <<'EOF'
 UrbanNav Localization Benchmark
 
@@ -65,7 +67,7 @@ if [ "${GPS_TOPIC}" = "/gps/fix_raw" ] && [ -n "${DATASET_GPS_TOPIC}" ]; then GP
 [[ "${GPS_FILE}" == data/* ]] && GPS_FILE="/data/${GPS_FILE#data/}"
 [[ "${BAG}" == data/* ]] && BAG="/data/${BAG#data/}"
 [[ "${GT}" == data/* ]] && GT="/data/${GT#data/}"
-if [ "${ORB_MODE}" = "stereo" ] && [ -n "${DATASET_ORB_MODE}" ]; then ORB_MODE="${DATASET_ORB_MODE}"; fi
+if [ -z "${ORB_MODE}" ]; then ORB_MODE="${DATASET_ORB_MODE:-stereo_inertial}"; fi
 if [ "${STEREO_SWAP}" = "true" ] && [ -n "${DATASET_STEREO_SWAP}" ]; then STEREO_SWAP="${DATASET_STEREO_SWAP}"; fi
 case "${STEREO_SWAP}" in on|true|1|yes) STEREO_SWAP_BOOL="true";; *) STEREO_SWAP_BOOL="false";; esac
 case "${R3LIVE_VIO}" in on|true|1|yes) R3LIVE_RUN_VISUAL="true";; *) R3LIVE_RUN_VISUAL="false";; esac

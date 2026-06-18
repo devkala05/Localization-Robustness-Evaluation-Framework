@@ -28,7 +28,7 @@ DATASET_LIDAR_MODEL="${DATASET_LIDAR_MODEL:-velodyne_32}"
 DATASET_SCAN_LINE="${DATASET_SCAN_LINE:-32}"
 DATASET_USE_CLOCK_STAMP="${DATASET_USE_CLOCK_STAMP:-false}"
 DATASET_CAMERA_FRAME="${DATASET_CAMERA_FRAME:-camera_right_optical}"
-DATASET_PERTURBATIONS_DIR="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations}"
+DATASET_PERTURBATIONS_DIR="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations/urbannav}"
 DATASET_SEGMENTS_YAML="${DATASET_SEGMENTS_YAML:-/root/catkin_ws/src/localization_benchmark/config/road_segments.yaml}"
 ALGO_BAG_TOPICS="${DATASET_BAG_TOPICS:-${ALGO_BAG_TOPICS}}"
 if [ -z "${ALGO_BAG_TOPICS}" ]; then
@@ -49,7 +49,7 @@ BAG_PATH="${BAG_PATH_OVERRIDE:-/data/UrbanNav-HK_TST-20210517_sensors.bag}"
 BAG_RATE="${BAG_RATE:-0.5}"
 GT_YAW_OFFSET_DEG="${GT_YAW_OFFSET_DEG:-0.0}"
 GT_PATH="${GT_PATH_OVERRIDE:-/data/UrbanNav_TST_GT_raw.txt}"
-CONFIG_PATH="${DATASET_PERTURBATIONS_DIR:-/root/catkin_ws/src/localization_benchmark/config/perturbations}/per_${PER}.yaml"
+CONFIG_PATH="${DATASET_PERTURBATIONS_DIR}/per_${PER}.yaml"
 RESULT_GROUP_DIR="${DATASET_RESULTS_ROOT}/${ALGO_RESULT_ID}/${GPS_FOLDER}"
 PERTURBATION_RESULT_DIR="${RESULT_GROUP_DIR}/per_${PER}"
 RESULT_DIR="${PERTURBATION_RESULT_DIR}/${STAMP}"
@@ -186,7 +186,10 @@ if [ "${DATASET_ID}" = "e2o" ]; then
             ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} config_path:=/root/catkin_ws/src/r3live_urbannav/config/r3live_e2o.yaml"
             ;;
         orbslam3)
-            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=mono mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-1.0}} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-0.0}} align_to_gt:=${ORB_ALIGN_TO_GT:-false} dataset_id:=${DATASET_ID}"
+            # E2O has one camera plus IMU. Use Mono_Inertial by default because
+            # plain Mono has arbitrary scale and creates a miniature/giant map in RViz.
+            # --orb-mode mono remains available only as a non-metric visual ablation.
+            ALGO_LAUNCH_ARGS="${ALGO_LAUNCH_ARGS} mode:=${ORB_MODE:-mono_inertial} mono_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_orbslam3.yaml mono_inertial_camera_config:=/root/catkin_ws/src/orbslam3_urbannav/config/e2o_front_mono_inertial_orbslam3.yaml use_camera_to_body_extrinsic:=true pose_scale:=${ORB_MONO_SCALE:-${DATASET_ORB_MONO_SCALE:-1.0}} yaw_offset_deg:=${ORB_YAW_OFFSET_DEG:-${DATASET_ORB_YAW_OFFSET_DEG:-0.0}} align_to_gt:=false dataset_id:=${DATASET_ID}"
             ;;
     esac
 fi

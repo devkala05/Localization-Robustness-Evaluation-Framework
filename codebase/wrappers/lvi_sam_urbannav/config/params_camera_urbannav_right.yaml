@@ -1,0 +1,114 @@
+%YAML:1.0
+
+# UrbanNav HK-TST / ZED2 RIGHT camera calibration for LVI-SAM visual front-end.
+# Sources:
+#   UrbanNavDataset/UrbanNav-HK-Medium-Urban-1/zed2_intrinsics.yaml
+#   UrbanNavDataset/UrbanNav-HK-Medium-Urban-1/extrinsic.yaml
+# Dataset topics:
+#   /zed2/camera/right/image_raw -> benchmark adapter -> /camera/right/image_raw
+
+# Project
+project_name: "lvi_sam"
+
+# common parameters
+imu_topic: "/livox/imu"
+image_topic: "/camera/right/image_raw"
+point_cloud_topic: "lvi_sam/lidar/deskew/cloud_deskewed"
+
+# Lidar depth aid for VINS feature tracking
+use_lidar: 1
+lidar_skip: 3
+align_camera_lidar_estimation: 1
+# Keep camera/VINS alive for feature/depth diagnostics, but do not let VINS
+# self-reset spam or unstable visual estimates disturb the lidar-dominant mapper.
+soft_failure_mode: 1
+
+# Lidar-to-camera transform used only by LVI-SAM visual feature depth registration.
+# UrbanNav official calibration names are literal sensor->IMU/body transforms:
+#   RIGHT_CAMERA_T_IMU : p_imu = T_imu_cam * p_cam
+#   CENTER_LiDAR_T_IMU : p_imu = T_imu_lidar * p_lidar
+# Therefore the projection transform required here is:
+#   p_cam = inv(RIGHT_CAMERA_T_IMU) * CENTER_LiDAR_T_IMU * p_lidar
+# PCL getTransformation uses R = Rz(yaw) * Ry(pitch) * Rx(roll).
+lidar_to_cam_tx: -0.034160570698
+lidar_to_cam_ty: -3.28115047369
+lidar_to_cam_tz: -0.718453283642
+lidar_to_cam_rx: 1.58061614421
+lidar_to_cam_ry: -0.0504060389837
+lidar_to_cam_rz: 0.0015307085513
+
+# camera model — ZED2 right camera, PINHOLE, 672x376
+model_type: PINHOLE
+camera_name: camera
+image_width: 672
+image_height: 376
+
+# ZED2 right camera intrinsics from zed2_intrinsics.yaml
+projection_parameters:
+   fx: 264.2125
+   fy: 264.155
+   cx: 341.635
+   cy: 183.993
+
+# ZED2 right camera distortion from zed2_intrinsics.yaml
+distortion_parameters:
+   k1: -0.0423469
+   k2: 0.0115525
+   p1: 0.0
+   p2: 0.0
+
+# IMU noise — UrbanNav HK-TST calibrated values, kept aligned with lvisam_urbannav.yaml
+acc_n: 0.01119741
+gyr_n: 0.01027090
+acc_w: 1.175177e-04
+gyr_w: 9.135538e-05
+g_norm: 9.80511
+
+# Extrinsic parameter between IMU/body and camera for VINS/LVI-SAM.
+# VINS uses RIC/TIC as T_imu_cam, i.e. p_imu = RIC * p_cam + TIC.
+# UrbanNav RIGHT_CAMERA_T_IMU is already camera->IMU/body, so use it raw.
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 9.9872871452749812e-01, 1.5287637777597791e-03, 5.0384696680271013e-02,
+           -5.0367177375936031e-02, -9.8967686259809895e-03, 9.9868173179143760e-01,
+           2.0253941424080261e-03, -9.9994985716888607e-01, -9.8071874914416046e-03]
+
+extrinsicTranslation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [7.5332297629590136e-02, 6.8331281093016005e-01, -3.0079627649520204e+00]
+
+# feature tracker parameters
+max_cnt: 150
+min_dist: 20
+freq: 15
+F_threshold: 1.0
+show_track: 1
+equalize: 1
+fisheye: 0
+
+# optimization parameters
+max_solver_time: 0.05
+max_num_iterations: 10
+keyframe_parallax: 10.0
+
+# unsynchronization parameters — UrbanNav bag streams are on ROS/GPS time; do not fake delay.
+estimate_td: 0
+td: 0.0
+
+# rolling shutter parameters
+rolling_shutter: 0
+rolling_shutter_tr: 0.0
+
+# loop closure parameters. Keep loop closure disabled because the binary vocabulary is not shipped.
+loop_closure: 0
+skip_time: 0.0
+skip_dist: 0.0
+debug_image: 0
+match_image_scale: 0.5
+vocabulary_file: "/config/brief_k10L6.bin"
+brief_pattern_file: "/config/brief_pattern.yml"

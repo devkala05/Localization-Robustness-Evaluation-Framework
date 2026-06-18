@@ -1,0 +1,31 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="dataset" default="urbannav_hk_tst_20210517"/>
+  <arg name="source_lidar_topic" default="/velodyne_points"/>
+  <arg name="source_imu_topic" default="/imu/data"/>
+  <arg name="source_camera_topic" default="/zed2/camera/right/image_raw"/>
+  <arg name="source_left_camera_topic" default="/zed2/camera/left/image_raw"/>
+  <arg name="lidar_sensor_name" default="lidar"/>
+  <arg name="imu_sensor_name" default="imu"/>
+  <arg name="camera_sensor_name" default="camera_right"/>
+  <arg name="left_camera_sensor_name" default="camera_left"/>
+  <arg name="use_clock_stamp" default="false"/>
+  <arg name="monotonic_clock_stamp" default="true"/>
+  <arg name="min_stamp_step_sec" default="0.000001"/>
+
+  <node name="dataset_custom_bridge" pkg="localization_benchmark"
+        type="urbannav_custom_bridge.py" output="screen">
+    <param name="dataset" value="$(arg dataset)"/>
+    <param name="source_lidar_topic" value="$(arg source_lidar_topic)"/>
+    <param name="source_imu_topic" value="$(arg source_imu_topic)"/>
+    <param name="source_camera_topic" value="$(arg source_camera_topic)"/>
+    <param name="source_left_camera_topic" value="$(arg source_left_camera_topic)"/>
+    <param name="lidar_sensor_name" value="$(arg lidar_sensor_name)"/>
+    <param name="imu_sensor_name" value="$(arg imu_sensor_name)"/>
+    <param name="camera_sensor_name" value="$(arg camera_sensor_name)"/>
+    <param name="left_camera_sensor_name" value="$(arg left_camera_sensor_name)"/>
+    <param name="use_clock_stamp" value="$(arg use_clock_stamp)"/>
+    <param name="monotonic_clock_stamp" value="$(arg monotonic_clock_stamp)"/>
+    <param name="min_stamp_step_sec" value="$(arg min_stamp_step_sec)"/>
+  </node>
+</launch>

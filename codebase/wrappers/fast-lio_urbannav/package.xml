@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fast_lio_urbannav</name>
+  <version>1.0.0</version>
+  <description>
+    Black-box wrapper that converts UrbanNav-HK rosbag topics into the
+    exact format expected by Fast-LIO2 (FAST_LIO). Handles topic renaming,
+    frame-ID patching, timestamp preservation, and TF broadcasting.
+    Only LiDAR, IMU, and right-camera streams are forwarded; no GPS,
+    odometry, or ground-truth is injected into Fast-LIO2.
+  </description>
+
+  <maintainer email="user@example.com">UrbanNav FastLIO2 Pipeline</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>message_filters</build_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <export>
+  </export>
+</package>

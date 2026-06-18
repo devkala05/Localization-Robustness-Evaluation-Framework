@@ -1,0 +1,186 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+.catkin_cache/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+/dist/
+/build/
+
+# =========================
+# ROS / Catkin
+# =========================
+/devel/
+/devel_isolated/
+/build/
+/build_isolated/
+/install/
+/install_isolated/
+/log/
+/logs/
+/.catkin_tools/
+/catkin_generated/
+/.cmake_tools/
+*.bag.active
+
+# Keep ROS/source manifests visible even inside vendored trees.
+!**/CMakeLists.txt
+!**/package.xml
+
+# =========================
+# ROS Runtime / RViz
+# =========================
+.ros/
+*.rviz~
+*.urdf~
+*.launch~
+*.yaml~
+
+# =========================
+# Docker / Build Artifacts
+# =========================
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+docker/**/build/
+docker/**/.cache/
+docker/**/tmp/
+
+# =========================
+# CMake / C++ Build
+# =========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# =========================
+# ORB-SLAM3 / SLAM Generated
+# =========================
+KeyFrameTrajectory*.txt
+CameraTrajectory*.txt
+kf_*.txt
+trajectory*.txt
+*.osa
+*.voc.tmp
+rtabmap.db
+
+# Keep ORB vocabulary if intentionally tracked
+# Uncomment if vocabulary is too large and should not be committed:
+# ORBvoc.txt
+# ORBvoc.txt.tar.gz
+
+# =========================
+# Dataset / Bags / Outputs
+# =========================
+*.bag
+*.mcap
+/data/results/
+/results/
+/outputs/
+/benchmark_results/
+/golden/
+/reports/generated/
+
+# Allow small dataset metadata/config files to be committed if added later.
+!/data/
+!/data/**/
+!/data/**/*.md
+!/data/**/*.txt
+!/data/**/*.yaml
+!/data/**/*.yml
+!/data/**/*.json
+!/data/**/.gitkeep
+
+# =========================
+# Logs
+# =========================
+*.log
+*.err
+*.out
+
+# =========================
+# Temporary Files
+# =========================
+/tmp/
+/temp/
+/.cache/
+.cache-*/
+*.tmp
+*.bak
+
+# =========================
+# Large ML / Model Files
+# =========================
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.weights
+*.engine
+
+# =========================
+# Secrets / Local Config
+# =========================
+.env
+.env.*
+!.env.example
+config/local.yaml
+config/private.yaml
+secrets/
+credentials/
+*.key
+*.pem
+
+# =========================
+# Project Source Safety Net
+# =========================
+# These are intentionally allowed because this repository keeps important
+# launch/config/wrapper code across several directories.
+!**/*.py
+!**/*.sh
+!**/*.launch
+!**/*.yaml
+!**/*.yml
+!**/*.rviz
+!**/*.md
+!**/*.xml
+!**/*.msg
+!**/Dockerfile
+
+# Generated data/results must remain ignored even though CSV/JSON/TXT files are
+# otherwise valid project assets in this repository.
+/data/results/**
+/data/**/*.bag
+/data/**/*.mcap
+!/data/results/**/.gitkeep

@@ -1,0 +1,57 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="config_file" default="$(find adaptive_w_lvio_urbannav)/config/lvio_fusion_urbannav.yaml"/>
+  <arg name="native_path_topic" default="/lvio_fusion_node/path"/>
+  <arg name="native_world_frame" default="world"/>
+  <arg name="frame_id" default="camera_init"/>
+  <arg name="child_frame_id" default="body"/>
+  <arg name="output_odom_topic" default="/adaptive_w_lvio/odometry/mapping"/>
+  <arg name="path_topic" default="/adaptive_w_lvio/mapping/path"/>
+  <arg name="publish_tf" default="false"/>
+  <arg name="use_native_lvio_fusion" default="true"/>
+
+  <group if="$(arg use_native_lvio_fusion)">
+    <!-- Native upstream estimator from https://github.com/jypjypjypjyp/lvio_fusion.
+         It subscribes to the topics in config_file:
+           /cloud_registered_raw, /livox/imu, /camera/left/image_raw, /camera/right/image_raw.
+         FAST-LIO2 is not launched and /Odometry is not subscribed. -->
+    <node name="lvio_fusion_node"
+          pkg="lvio_fusion_node"
+          type="lvio_fusion_node"
+          output="screen"
+          required="false">
+      <param name="config_file" value="$(arg config_file)"/>
+    </node>
+
+    <!-- Convert native /lvio_fusion_node/path in frame 'world' to benchmark odom/path. -->
+    <node name="lvio_fusion_output_republisher"
+          pkg="adaptive_w_lvio_urbannav"
+          type="lvio_fusion_output_republisher.py"
+          output="screen">
+      <param name="input_path_topic" value="$(arg native_path_topic)"/>
+      <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+      <param name="output_path_topic" value="$(arg path_topic)"/>
+      <param name="world_frame_id" value="$(arg frame_id)"/>
+      <param name="child_frame_id" value="$(arg child_frame_id)"/>
+      <param name="normalize_to_start" value="true"/>
+      <param name="publish_tf" value="$(arg publish_tf)"/>
+    </node>
+  </group>
+
+  <group unless="$(arg use_native_lvio_fusion)">
+    <node name="adaptive_w_lvio_node"
+          pkg="adaptive_w_lvio_urbannav"
+          type="adaptive_w_lvio_node.py"
+          output="screen">
+      <param name="input_cloud_topic" value="/cloud_registered_raw"/>
+      <param name="input_imu_topic" value="/livox/imu"/>
+      <param name="input_camera_topic" value="/camera/right/image_raw"/>
+      <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+      <param name="path_topic" value="$(arg path_topic)"/>
+      <param name="frame_id" value="$(arg frame_id)"/>
+      <param name="child_frame_id" value="$(arg child_frame_id)"/>
+      <param name="publish_tf" value="$(arg publish_tf)"/>
+    </node>
+  </group>
+</launch>

@@ -1,0 +1,22 @@
+name: camera_low_light_and_rain
+description: Camera visibility stress. FAST-LIO2 itself is LiDAR-IMU, but this is kept for visual checks and future visual
+  algorithms. Timestamps adapted to E2O GT start; verify against the actual bag clock.
+perturbations:
+- name: low_light_section
+  sensor: camera_right
+  type: low_light
+  start: 1723528218.157124
+  end: 1723528226.157124
+  alpha: 0.35
+  noise_stddev: 8.0
+  seed: 401
+- name: rain_streaks_section
+  sensor: camera_right
+  type: rain
+  start: 1723528238.157124
+  end: 1723528246.157124
+  streaks: 160
+  length: 22
+  brightness: 210
+  alpha: 0.4
+  seed: 402

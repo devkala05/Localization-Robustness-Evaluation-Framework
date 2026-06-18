@@ -1,0 +1,8 @@
+name: sensor_blackout_windows
+description: Turn selected sensors fully off for manual UrbanNav timestamp windows.
+perturbations:
+  - name: lidar_off_window
+    sensor: lidar
+    type: sensor_off
+    start: 1621218790.0
+    end: 1621218895.0

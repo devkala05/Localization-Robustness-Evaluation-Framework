@@ -1,0 +1,76 @@
+<!-- r3live_urbannav.launch
+     Native UrbanNav R3LIVE wrapper.
+
+     FAST-LIO2 fallback is disabled by default. The output mux records only
+     native R3LIVE odometry/TF candidates. Use ./run with algo r3live, per N, and r3live-vio true to request the full visual mapping executable role.
+-->
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="config_path" default="$(find r3live_urbannav)/config/r3live_urbannav.yaml"/>
+  <arg name="run_visual" default="false"/>
+  <arg name="native_role" default="stable"/>
+  <arg name="enable_fastlio_fallback" default="false"/>
+  <arg name="pcd_save_en" default="false"/>
+  <arg name="pcd_path" default="/data/output/r3live_map.pcd"/>
+  <arg name="scan_line" default="32"/>
+  <arg name="lidar_type" default="2"/>
+  <arg name="dataset_id" default="urbannav"/>
+
+  <rosparam command="load" file="$(arg config_path)"/>
+
+  <!-- Upstream r3live_mapping reads these exact root parameter names.
+       Keep them explicit so stale/default params do not point to
+       /laser_cloud_flat or /camera/image_color. -->
+  <param name="LiDAR_pointcloud_topic" value="/livox/lidar"/>
+  <param name="IMU_topic" value="/livox/imu"/>
+  <param name="Image_topic" value="/camera/image_raw"/>
+  <param name="Image_compressed_topic" value="/camera/image_raw/compressed"/>
+  <param name="r3live_common/pcd_save_en" value="$(arg pcd_save_en)"/>
+  <param name="r3live_common/pcd_path" value="$(arg pcd_path)"/>
+  <param name="r3live_common/run_visual" value="$(arg run_visual)"/>
+  <param name="r3live_common/scan_line" value="$(arg scan_line)"/>
+  <param name="r3live_common/lidar_type" value="$(arg lidar_type)"/>
+  <param name="Lidar_front_end/lidar_type" value="$(arg lidar_type)"/>
+  <param name="Lidar_front_end/N_SCANS" value="$(arg scan_line)"/>
+
+  <!-- Optional debug fallback only. Default false so r3live results are not FAST-LIO2. -->
+  <group if="$(arg enable_fastlio_fallback)">
+    <include file="$(find fast_lio_urbannav)/launch/fast_lio2_urbannav.launch"/>
+  </group>
+
+  <!-- Native upstream R3LIVE process. native_role=stable tries native LiDAR/R3LIVE
+       binaries. native_role=mapping forces the full R3LIVE mapping/VIO executable. -->
+  <node name="r3live_native" pkg="r3live_urbannav" type="run_r3live_native.py" output="screen" required="true">
+    <param name="role" value="$(arg native_role)"/>
+    <param name="config_path" value="$(arg config_path)"/>
+    <param name="run_visual" value="$(arg run_visual)"/>
+  </node>
+
+  <node name="r3live_trajectory_mux" pkg="r3live_urbannav" type="trajectory_mux_node.py" output="screen">
+    <param name="odom_topics" value="/r3live/odometry,/aft_mapped_to_init,/aft_mapped_to_init_odom,/aft_mapped_to_init_high_frec,/laser_mapping/odometry,/r3live/aft_mapped_to_init,/Odometry"/>
+    <param name="output_odom_topic" value="/r3live/odometry/mapping"/>
+    <param name="output_path_topic" value="/r3live/mapping/path"/>
+    <param name="fixed_frame" value="camera_init"/>
+    <param name="child_frame" value="body"/>
+    <param name="tf_pairs" value="camera_init:body,map:body,world:body,camera_init:camera_odom_frame,map:camera_odom_frame,world:camera_odom_frame"/>
+    <param name="use_tf_fallback" value="true"/>
+    <param name="odom_stale_sec" value="0.75"/>
+  </node>
+
+  <node name="r3live_tf_broadcaster" pkg="r3live_urbannav" type="tf_broadcaster_node.py" output="screen">
+    <param name="dataset_id" value="$(arg dataset_id)"/>
+  </node>
+
+
+  <node name="r3live_cloud_fixed_frame" pkg="r3live_urbannav" type="cloud_fixed_frame_node.py" output="screen">
+    <param name="fixed_frame" value="camera_init"/>
+    <param name="cloud_topics" value="/cloud_registered:/r3live/cloud_registered_fixed"/>
+  </node>
+
+  <node name="r3live_watchdog" pkg="r3live_urbannav" type="watchdog_node.py" output="screen">
+    <param name="period" value="3.0"/>
+    <param name="odom_topic" value="/r3live/odometry/mapping"/>
+    <param name="lidar_topic" value="/livox/lidar"/>
+    <param name="camera_topic" value="/camera/image_raw"/>
+  </node>
+</launch>
