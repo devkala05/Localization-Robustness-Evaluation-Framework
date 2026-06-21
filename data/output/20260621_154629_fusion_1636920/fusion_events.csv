@@ -1,0 +1,17 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1782036993.8231723,startup,none,none,fusion_node_started,0.0,0.0
+1723528217.1734388,1782037011.710387,switch,none,fast_livo2,initial_healthy_source,0.0,0.0
+1723528273.7350705,1782037068.2725244,switch,fast_livo2,orbslam3,active_unhealthy:duplicate_timestamp,2.7755575615628914e-17,0.0
+1723528273.7350705,1782037068.2752666,switch_applied,fast_livo2,orbslam3,active_unhealthy:duplicate_timestamp,0.0,1.2074182697257333e-06
+1723528333.7414196,1782037128.2784967,failure,orbslam3,none,both_estimators_unhealthy,0.0,0.0
+1723528344.8030562,1782037139.3401546,switch,none,orbslam3,initial_healthy_source,2.0116800053149086e-14,0.0
+1723528344.8030562,1782037139.3426971,output_gap,orbslam3,orbslam3,gap_sec=12.264,0.0,0.0
+1723528344.8030562,1782037139.3442059,switch_applied,none,orbslam3,initial_healthy_source,0.0,0.0
+1723528366.135276,1782037160.6723037,failure,orbslam3,none,both_estimators_unhealthy,0.0,0.0
+1723528412.2040377,1782037206.7410872,switch,none,orbslam3,initial_healthy_source,1.5943977756741603e-14,0.0
+1723528412.2040377,1782037206.745488,output_gap,orbslam3,orbslam3,gap_sec=46.286,0.0,0.0
+1723528412.2040377,1782037206.7498076,switch_applied,none,orbslam3,initial_healthy_source,0.0,0.0
+1723528453.5704272,1782037248.1076255,failure,orbslam3,none,both_estimators_unhealthy,0.0,0.0
+1723528461.8087215,1782037256.3457515,switch,none,orbslam3,initial_healthy_source,1.5987211554602254e-14,0.0
+1723528461.8087215,1782037256.3487253,output_gap,orbslam3,orbslam3,gap_sec=10.386,0.0,0.0
+1723528461.8087215,1782037256.3513138,switch_applied,none,orbslam3,initial_healthy_source,0.0,0.0

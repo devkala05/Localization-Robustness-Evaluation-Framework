@@ -23,15 +23,7 @@ case "${MODE}" in fast_livo2|orbslam3|fusion|fusion_navigation) ;; *) echo "Unkn
 BAG="$(realpath "${BAG_ARG}")"
 [[ -f "${BAG}" ]] || { echo "Bag not found: ${BAG}" >&2; exit 2; }
 
-if [[ -n "${BAG_RATE:-}" ]]; then
-  BAG_RATE="${BAG_RATE}"
-elif [[ "${MODE}" == "fast_livo2" ]]; then
-  # The pinned CPU implementation processes this LIVO dataset below real time.
-  # Slow offline playback prevents its large native subscriber queues building lag.
-  BAG_RATE="0.5"
-else
-  BAG_RATE="1.0"
-fi
+BAG_RATE="${BAG_RATE:-1.0}"
 RVIZ="${RVIZ:-false}"
 RVIZ_CONFIG="${RVIZ_CONFIG:-}"
 TF_MODE="${TF_MODE:-direct}"
