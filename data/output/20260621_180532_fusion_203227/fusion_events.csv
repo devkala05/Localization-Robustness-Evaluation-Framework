@@ -1,8 +1,0 @@
-ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
-0.0,1782045336.5163307,startup,none,none,fusion_node_started,0.0,0.0
-1723528217.0154586,1782045353.7157657,switch,none,fast_livo2,initial_healthy_source,0.0,0.0
-1723528360.751541,1782045497.4520383,failure,fast_livo2,none,both_estimators_unhealthy,0.0,0.0
-1723528361.3877432,1782045498.090078,switch,none,orbslam3,initial_healthy_source,3.552713678800501e-15,0.0
-1723528361.3877432,1782045498.0968068,output_gap,orbslam3,orbslam3,gap_sec=1.267,0.0,0.0
-1723528361.3877432,1782045498.1000712,switch_applied,none,orbslam3,initial_healthy_source,0.0,0.0
-1723528362.5525026,1782045499.2560725,failure,orbslam3,none,both_estimators_unhealthy,0.0,0.0

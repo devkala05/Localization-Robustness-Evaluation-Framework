@@ -1,0 +1,6 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1782062076.6813731,startup,none,none,fusion_node_started,0.0,0.0
+1723528215.7068996,1782062094.4390886,switch,none,lvisam,initial_healthy_source,0.0,0.0
+1723528239.972661,1782062142.9725487,switch,lvisam,orbslam3,"active_unhealthy:lidar_unavailable,stale_pose",7.161583958246238e-15,0.0
+1723528239.972661,1782062142.9764326,output_gap,orbslam3,orbslam3,gap_sec=1.110,0.0,0.0
+1723528239.972661,1782062142.9786916,switch_applied,lvisam,orbslam3,"active_unhealthy:lidar_unavailable,stale_pose",0.0,0.0
