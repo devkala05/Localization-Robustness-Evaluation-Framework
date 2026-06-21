@@ -1,0 +1,11 @@
+scenario,expected_active_source,expected_status,expected_tf,expected_navigation,recovery_condition
+camera_unavailable,none,FAILED_BOTH_UNHEALTHY,no new authoritative pose,stopped,camera healthy plus estimator stabilization and valid ORB scale
+lidar_unavailable,orbslam3,BACKUP_ORB_SLAM3,continuous fused chain,allowed if ORB healthy,LiDAR and FAST healthy for primary_recovery_sec and consistent
+imu_unavailable,orbslam3,BACKUP_ORB_SLAM3,continuous fused chain,allowed if ORB healthy,IMU and FAST healthy for primary_recovery_sec and consistent
+orb_tracking_lost,fast_livo2,PRIMARY_FAST_LIVO2,unchanged,allowed,ORB tracking healthy for recovery_stabilization_sec
+fast_output_frozen,orbslam3,BACKUP_ORB_SLAM3,continuous fused chain,allowed if scale ready,FAST fresh and consistent for primary_recovery_sec
+fast_process_stopped,orbslam3,BACKUP_ORB_SLAM3,continuous fused chain,allowed if scale ready,restart FAST externally then stabilization/consistency
+orb_process_stopped,fast_livo2,PRIMARY_FAST_LIVO2,unchanged,allowed,restart ORB externally then stabilization
+invalid_pose_from_one,other healthy source,degraded then switch,no jump,allowed if backup healthy,finite valid samples plus stabilization
+large_disagreement,configured active source,*_DEGRADED_DISAGREEMENT,unchanged,allowed while active source healthy,agreement below recovery thresholds
+both_estimators_failed,none,FAILED_BOTH_UNHEALTHY,no updates,zero cmd_vel,one estimator healthy and usable after stabilization

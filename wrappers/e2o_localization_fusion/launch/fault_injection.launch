@@ -1,0 +1,15 @@
+<launch>
+  <!-- Disabled unless run.sh is started with FAULT_INJECTION=true. -->
+  <node pkg="e2o_localization_fusion" type="pose_fault_injector.py"
+        name="fast_livo2_pose_fault" output="screen" required="true">
+    <param name="input_topic" value="/fault/raw/fast_livo2"/>
+    <param name="output_topic" value="/fast_livo2/odometry"/>
+    <param name="mode" value="pass"/>
+  </node>
+  <node pkg="e2o_localization_fusion" type="pose_fault_injector.py"
+        name="orbslam3_pose_fault" output="screen" required="true">
+    <param name="input_topic" value="/fault/raw/orbslam3"/>
+    <param name="output_topic" value="/orbslam3/camera_odometry"/>
+    <param name="mode" value="pass"/>
+  </node>
+</launch>
