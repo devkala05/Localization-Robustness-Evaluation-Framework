@@ -8,10 +8,15 @@ from pathlib import Path
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("algorithm", choices=("fast_livo2", "orbslam3"))
+    parser.add_argument("algorithm", choices=("fast_livo2", "orbslam3", "lvisam"))
     parser.add_argument("run_dir", type=Path)
     args = parser.parse_args()
-    filename = "fast_livo2_trajectory.csv" if args.algorithm == "fast_livo2" else "orbslam3_trajectory.csv"
+    filenames = {
+        "fast_livo2": "fast_livo2_trajectory.csv",
+        "orbslam3": "orbslam3_trajectory.csv",
+        "lvisam": "lvisam_trajectory.csv",
+    }
+    filename = filenames[args.algorithm]
     path = args.run_dir / filename
     if not path.is_file():
         raise SystemExit(f"FAIL: missing {path}")

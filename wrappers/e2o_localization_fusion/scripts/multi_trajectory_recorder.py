@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record independent FAST-LIVO2, ORB-SLAM3, fused, and health timelines."""
+"""Record independent estimator, fused, and health timelines."""
 import csv
 import json
 import os
@@ -19,6 +19,7 @@ class MultiTrajectoryRecorder:
             "fast_livo2": "/fast_livo2/odometry",
             "orbslam3": "/orbslam3/camera_odometry",
             "orbslam3_raw": "/orbslam3/raw_camera_odometry",
+            "lvisam": "/lvisam/odometry",
             "fused": "/fused_localization/odometry",
         })
         self.files = {}

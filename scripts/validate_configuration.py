@@ -12,11 +12,19 @@ central = yaml.safe_load((ROOT / "wrappers/localization_benchmark/config/e2o.yam
 fast = yaml.safe_load((ROOT / "wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml").read_text())
 orb_text = (ROOT / "wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml").read_text()
 fusion = yaml.safe_load((ROOT / "wrappers/e2o_localization_fusion/config/fusion.yaml").read_text())
+lvisam_lidar = yaml.safe_load((ROOT / "wrappers/lvisam_e2o/config/params_lidar_e2o.yaml").read_text())
+lvisam_camera_text = (ROOT / "wrappers/lvisam_e2o/config/params_camera_e2o.yaml").read_text()
 
 def orb_value(key):
     match = re.search(rf"^{re.escape(key)}:\s*([^#\n]+)", orb_text, flags=re.MULTILINE)
     if not match:
         raise AssertionError(f"missing ORB key {key}")
+    return float(match.group(1).strip().strip('"'))
+
+def opencv_value(text, key):
+    match = re.search(rf"^\s*{re.escape(key)}:\s*([^#\n]+)", text, flags=re.MULTILINE)
+    if not match:
+        raise AssertionError(f"missing OpenCV YAML key {key}")
     return float(match.group(1).strip().strip('"'))
 
 def qmat(q):
@@ -49,6 +57,20 @@ for index,key in enumerate(("Camera.k1","Camera.k2","Camera.p1","Camera.p2")):
     values=(camera['D'][index], fast['camera']['distortion_coeffs'][index], orb_value(key))
     if max(values)-min(values)>1e-8:
         raise AssertionError(f"camera distortion mismatch {key}: {values}")
+for name, key in {
+    "fx": "fx",
+    "fy": "fy",
+    "cx": "cx",
+    "cy": "cy",
+}.items():
+    values = (camera["K"][{"fx": 0, "fy": 4, "cx": 2, "cy": 5}[name]],
+              opencv_value(lvisam_camera_text, key))
+    if max(values)-min(values)>1e-8:
+        raise AssertionError(f"LVI-SAM camera {name} mismatch: {values}")
+for index,key in enumerate(("k1","k2","p1","p2")):
+    values=(camera['D'][index], opencv_value(lvisam_camera_text, key))
+    if max(values)-min(values)>1e-8:
+        raise AssertionError(f"LVI-SAM camera distortion mismatch {key}: {values}")
 
 items={item['child']:item for item in central['static_transforms']}
 T_base_camera=transform(items['camera_right']) @ transform(items['camera_color_optical_frame'])
@@ -61,6 +83,23 @@ T_fast[:3,:3]=np.asarray(fast['extrin_calib']['Rcl'],float).reshape(3,3)
 T_fast[:3,3]=fast['extrin_calib']['Pcl']
 if not np.allclose(T_fast,T_camera_base,atol=1e-7):
     raise AssertionError("FAST-LIVO2 camera-to-base calibration disagrees with static TF")
+lvi = lvisam_lidar["lvi_sam"]
+if lvi["pointCloudTopic"] != "/lvisam/points_raw" or lvi["imuTopic"] != "/lvisam/imu_raw":
+    raise AssertionError("LVI-SAM must use dedicated E2O input topics")
+if lvi["N_SCAN"] != 16 or lvi["timeField"] != "time":
+    raise AssertionError("LVI-SAM must preserve E2O VLP-16 ring/time layout")
+if lvi.get("gpsTopic", None) != "":
+    raise AssertionError("LVI-SAM GPS subscription must remain disabled for E2O")
+if not np.allclose(np.asarray(lvi["extrinsicTrans"], float), [0.0, 0.0, 0.0], atol=1e-12):
+    raise AssertionError("LVI-SAM IMU/LiDAR assumption unexpectedly changed")
+for key, expected in {
+    "lidar_to_cam_tx": T_camera_base[0, 3],
+    "lidar_to_cam_ty": T_camera_base[1, 3],
+    "lidar_to_cam_tz": T_camera_base[2, 3],
+}.items():
+    actual = opencv_value(lvisam_camera_text, key)
+    if abs(actual - expected) > 1e-7:
+        raise AssertionError(f"LVI-SAM {key} disagrees with static TF: {actual} vs {expected}")
 # The ORB E2O wrapper ports v1's optical-camera/body basis conversion before
 # publishing odometry. Fusion must therefore receive an identity transform.
 if not np.allclose(T_fusion,np.eye(4),atol=1e-7):

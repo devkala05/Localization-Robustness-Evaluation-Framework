@@ -1,0 +1,31 @@
+<launch>
+  <arg name="config" default="$(find e2o_localization_fusion)/config/fusion.yaml"/>
+  <arg name="output_dir" default="/data/output/current_run"/>
+  <arg name="tf_mode" default="direct"/>
+  <arg name="primary_source" default="fast_livo2"/>
+  <arg name="navigation_launch_file" default=""/>
+  <arg name="start_navigation" default="false"/>
+  <arg name="cmd_vel_input" default="/cmd_vel_unfiltered"/>
+  <arg name="cmd_vel_output" default="/cmd_vel"/>
+  <arg name="enable_fault_injection" default="false"/>
+
+  <include file="$(find e2o_localization_fusion)/launch/fusion.launch">
+    <arg name="config" value="$(arg config)"/>
+    <arg name="output_dir" value="$(arg output_dir)"/>
+    <arg name="tf_mode" value="$(arg tf_mode)"/>
+    <arg name="primary_source" value="$(arg primary_source)"/>
+    <arg name="enable_fault_injection" value="$(arg enable_fault_injection)"/>
+  </include>
+
+  <node pkg="e2o_localization_fusion" type="cmd_vel_safety_gate.py"
+        name="localization_cmd_vel_safety_gate" output="screen" required="true">
+    <param name="input_topic" value="$(arg cmd_vel_input)"/>
+    <param name="output_topic" value="$(arg cmd_vel_output)"/>
+  </node>
+
+  <group if="$(arg start_navigation)">
+    <!-- Force the navigation controller through the localization safety gate. -->
+    <remap from="/cmd_vel" to="$(arg cmd_vel_input)"/>
+    <include file="$(arg navigation_launch_file)"/>
+  </group>
+</launch>

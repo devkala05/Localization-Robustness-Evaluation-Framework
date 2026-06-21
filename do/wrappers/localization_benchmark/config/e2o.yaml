@@ -1,0 +1,88 @@
+# E2O-only sensor configuration. Camera calibration frame is already optical.
+# World/localization transforms are owned only by the fusion node.
+adapter:
+  topics:
+    lidar: /lidar103/velodyne_points
+    imu: /mavros/imu/data
+    camera: /camera/color/image_raw
+  outputs:
+    lidar: /livox/lidar
+    imu: /livox/imu
+    camera: /camera/right/image_raw
+    orb_camera: /camera/image_raw
+    camera_info: /camera/right/camera_info
+  frames:
+    lidar: velodyne103
+    imu: base_link
+    camera_optical: camera_color_optical_frame
+  lidar:
+    point_time_field: time
+    point_time_input_unit: seconds
+    point_time_scale: 1000000.0
+    auto_detect_time_units: true
+    require_ring: true
+  camera:
+    # Preserve camera inter-frame timing while shifting its archived clock epoch
+    # onto bag time. Callback-time restamping introduces synchronization jitter.
+    timestamp_mode: rebase
+    fast_max_rate_hz: 10.0
+    width: 1280
+    height: 720
+    distortion_model: plumb_bob
+    K:
+    - 668.02585977
+    - 0.0
+    - 657.26752359
+    - 0.0
+    - 658.80930843
+    - 363.16409155
+    - 0.0
+    - 0.0
+    - 1.0
+    D:
+    - -0.05078581
+    - 0.08456123
+    - -0.00046157
+    - 0.00656211
+    - -0.03406049
+static_transforms:
+- parent: base_link
+  child: velodyne103
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  assumption: IMU/body and lidar103 are co-located and aligned until measured
+- parent: base_link
+  child: camera_right
+  translation:
+  - 0.37595526
+  - 0.01339903
+  - -0.49718205
+  rotation:
+  - -0.18256836
+  - 0.11110754
+  - 0.97689503
+  - -0.98306216
+  - -0.00440978
+  - -0.18321936
+  - -0.01604916
+  - -0.99379861
+  - 0.1100307
+  source: inverse(lidar103_to_front_camera)
+- parent: camera_right
+  child: camera_color_optical_frame
+  translation:
+  - 0.0
+  - 0.0
+  - 0.0
+  quaternion:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0

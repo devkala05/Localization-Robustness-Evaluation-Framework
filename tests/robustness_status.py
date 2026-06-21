@@ -46,7 +46,7 @@ def main() -> int:
     print(f"navigation-ready scale: {data.get('orb_metric_scale_ready')} ({data.get('orb_metric_scale')})")
     print("alignment: position_rmse={position_rmse_m}m orientation_rmse={orientation_rmse_deg}deg".format(**alignment))
     print("disagreement: position={position_m}m orientation={orientation_deg}deg consistent={consistent}".format(**disagreement))
-    for source in ("fast_livo2", "orbslam3"):
+    for source in ("fast_livo2", "orbslam3", "lvisam"):
         source_health = health.get(source, {})
         reasons = ",".join(source_health.get("reasons", [])) or "none"
         print(f"{source}: healthy={source_health.get('healthy')} rate={source_health.get('pose_rate_hz')}Hz reasons={reasons}")

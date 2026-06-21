@@ -17,9 +17,11 @@ case "${TARGET}" in
     build_image fusion docker/fusion/Dockerfile e2o-localization-fusion:latest
     build_image fast_livo2 docker/fastlivo2/Dockerfile fastlivo2-e2o:latest
     build_image orbslam3 docker/orbslam3/Dockerfile orbslam3-e2o:latest
+    build_image lvisam docker/lvisam/Dockerfile lvisam-e2o:latest
     ;;
   fusion) build_image fusion docker/fusion/Dockerfile e2o-localization-fusion:latest ;;
   fast_livo2) build_image fast_livo2 docker/fastlivo2/Dockerfile fastlivo2-e2o:latest ;;
   orbslam3) build_image orbslam3 docker/orbslam3/Dockerfile orbslam3-e2o:latest ;;
-  *) echo "Usage: ./build.sh [all|fusion|fast_livo2|orbslam3] [--no-cache]" >&2; exit 2 ;;
+  lvisam) build_image lvisam docker/lvisam/Dockerfile lvisam-e2o:latest ;;
+  *) echo "Usage: ./build.sh [all|fusion|fast_livo2|orbslam3|lvisam] [--no-cache]" >&2; exit 2 ;;
 esac

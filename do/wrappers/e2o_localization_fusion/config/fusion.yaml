@@ -1,0 +1,116 @@
+# External supervisory loose coupling; native estimator internals remain untouched.
+# orb_camera_to_base is the supplied p_camera = R * p_lidar103/base + t transform.
+health:
+  startup_grace_sec: 12.0
+  publish_rate_hz: 5.0
+  node_check_period_sec: 1.0
+  tracking_status_timeout_sec: 2.5
+  max_duplicate_stamps: 3
+  max_sensor_duplicate_stamps: 3
+  sensor_timestamp_lag_sec: 1.0
+  process_check_enabled: true
+  sensors:
+    lidar:
+      topic: /livox/lidar
+      timeout_sec: 1.0
+    imu:
+      topic: /livox/imu
+      timeout_sec: 0.5
+    camera:
+      topic: /camera/right/image_raw
+      timeout_sec: 1.0
+  fast_livo2:
+    odom_topic: /fast_livo2/odometry
+    pose_timeout_sec: 1.0
+    min_pose_rate_hz: 2.0
+    rate_window_sec: 3.0
+    max_position_jump_m: 3.0
+    max_orientation_jump_deg: 50.0
+    max_velocity_mps: 35.0
+    max_angular_velocity_deg_s: 300.0
+    max_acceleration_mps2: 20.0
+    max_timestamp_lag_sec: 2.0
+    process_patterns:
+    - laserMapping
+    - fastlivo_mapping
+    required_sensors:
+    - lidar
+    - imu
+    - camera
+    tracking_required: false
+  orbslam3:
+    odom_topic: /orbslam3/camera_odometry
+    tracking_topic: /orbslam3/tracking_status
+    pose_timeout_sec: 1.5
+    min_pose_rate_hz: 2.0
+    rate_window_sec: 3.0
+    max_position_jump_m: 3.0
+    max_orientation_jump_deg: 55.0
+    max_velocity_mps: 35.0
+    max_angular_velocity_deg_s: 300.0
+    max_acceleration_mps2: 20.0
+    max_timestamp_lag_sec: 2.0
+    process_patterns:
+    - orbslam3_mono
+    - Mono
+    required_sensors:
+    - camera
+    tracking_required: true
+fusion:
+  primary_source: fast_livo2
+  map_frame: map
+  odom_frame: odom
+  base_frame: base_link
+  tf_mode: direct
+  publish_tf: true
+  publish_rate_hz: 30.0
+  sync_slop_sec: 0.05
+  alignment_window: 40
+  min_alignment_pairs: 8
+  failure_hold_sec: 0.35
+  recovery_stabilization_sec: 3.0
+  primary_recovery_sec: 5.0
+  minimum_source_dwell_sec: 3.0
+  blend_duration_sec: 1.0
+  max_disagreement_m: 4.0
+  max_disagreement_deg: 35.0
+  recovery_disagreement_m: 2.0
+  recovery_disagreement_deg: 20.0
+  orb_scale_ratio_min: 0.5
+  # E2O monocular ORB scale converges near 10-13 against FAST-LIVO2.
+  orb_scale_ratio_max: 20.0
+  max_alignment_rmse_m: 1.5
+  max_alignment_orientation_rmse_deg: 20.0
+  # ORB's E2O wrapper already publishes body-axis poses using the v1 optical
+  # basis conversion. Keep this identity to avoid applying it twice.
+  orb_camera_to_base:
+    rotation:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    translation:
+    - 0.0
+    - 0.0
+    - 0.0
+  orb_fixed_scale: 0.0
+  allow_orb_without_validated_scale: false
+  max_output_gap_sec: 1.0
+  max_path_poses: 100000
+  event_log_path: /data/output/fusion_events.csv
+  stop_navigation_on_failure: true
+  topics:
+    fast_livo2_odom: /fast_livo2/odometry
+    orbslam3_odom: /orbslam3/camera_odometry
+    output_odom: /fused_localization/odometry
+    output_pose: /fused_localization/pose
+    output_path: /fused_localization/path
+    status: /fused_localization/status
+    active_source: /fused_localization/active_source
+    events: /fused_localization/events
+    navigation_ok: /fused_localization/navigation_ok

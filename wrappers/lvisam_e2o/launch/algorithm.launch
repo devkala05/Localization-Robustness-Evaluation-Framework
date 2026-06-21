@@ -1,0 +1,52 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="lidar_config" default="$(find lvisam_e2o)/config/params_lidar_e2o.yaml"/>
+  <arg name="camera_config" default="$(find lvisam_e2o)/config/params_camera_e2o.yaml"/>
+  <arg name="output_topic" default="/lvisam/odometry"/>
+
+  <rosparam command="load" file="$(arg lidar_config)"/>
+  <param name="vins_config_file" type="string" value="$(arg camera_config)"/>
+
+  <node pkg="lvi_sam" type="lvi_sam_imuPreintegration"
+        name="lvi_sam_imuPreintegration" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+  <node pkg="lvi_sam" type="lvi_sam_imageProjection"
+        name="lvi_sam_imageProjection" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+  <node pkg="lvi_sam" type="lvi_sam_featureExtraction"
+        name="lvi_sam_featureExtraction" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+  <node pkg="lvi_sam" type="lvi_sam_mapOptmization"
+        name="lvi_sam_mapOptmization" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+
+  <node pkg="lvi_sam" type="lvi_sam_visual_feature"
+        name="lvi_sam_visual_feature" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+  <node pkg="lvi_sam" type="lvi_sam_visual_odometry"
+        name="lvi_sam_visual_odometry" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+  <node pkg="lvi_sam" type="lvi_sam_visual_loop"
+        name="lvi_sam_visual_loop" output="screen" required="true">
+    <remap from="/tf" to="/native/lvisam/tf"/>
+    <remap from="/tf_static" to="/native/lvisam/tf_static"/>
+  </node>
+
+  <node name="lvisam_odometry_alias" pkg="lvisam_e2o"
+        type="odometry_alias_node.py" output="screen" required="true">
+    <param name="input_topic" value="/lvi_sam/lidar/mapping/odometry"/>
+    <param name="output_topic" value="$(arg output_topic)"/>
+  </node>
+</launch>
