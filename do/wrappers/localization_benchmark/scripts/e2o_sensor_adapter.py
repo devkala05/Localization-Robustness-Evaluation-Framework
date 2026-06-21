@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""E2O-only sensor adapter for FAST-LIVO2 and ORB-SLAM3.
+"""E2O-only sensor adapter for FAST-LIVO2, ORB-SLAM3, and LVI-SAM.
 
 It republishes the original bag streams to the native topics expected by the
 estimators, converts the Velodyne per-point ``time`` field from seconds to
-microseconds when configured, publishes CameraInfo, and exposes deterministic
-fault modes through ``/e2o_faults/<sensor>/*`` ROS parameters.
+microseconds for FAST-LIVO2 when configured, preserves LVI-SAM point timing in
+seconds, publishes CameraInfo, and exposes deterministic fault modes through
+``/e2o_faults/<sensor>/*`` ROS parameters.
 
 No estimator implementation is changed by this node.
 """
@@ -102,6 +103,10 @@ class E2OSensorAdapter:
         self.camera_pub = rospy.Publisher(str(outputs.get("camera", "/camera/right/image_raw")), Image, queue_size=20)
         self.orb_camera_pub = rospy.Publisher(str(outputs.get("orb_camera", "/camera/image_raw")), Image, queue_size=20)
         self.camera_info_pub = rospy.Publisher(str(outputs.get("camera_info", "/camera/right/camera_info")), CameraInfo, queue_size=20)
+        self.lvisam_lidar_pub = rospy.Publisher(str(outputs.get("lvisam_lidar", "/lvisam/points_raw")), PointCloud2, queue_size=20)
+        self.lvisam_imu_pub = rospy.Publisher(str(outputs.get("lvisam_imu", "/lvisam/imu_raw")), Imu, queue_size=200)
+        self.lvisam_camera_pub = rospy.Publisher(str(outputs.get("lvisam_camera", "/lvisam/camera/image_raw")), Image, queue_size=20)
+        self.lvisam_camera_info_pub = rospy.Publisher(str(outputs.get("lvisam_camera_info", "/lvisam/camera/camera_info")), CameraInfo, queue_size=20)
 
         self.lock = threading.RLock()
         self.gates: Dict[str, StreamFaultGate] = {
@@ -185,16 +190,27 @@ class E2OSensorAdapter:
         return out
 
     def publish_lidar(self, msg: PointCloud2) -> None:
+        self.publish_lvisam_lidar(msg)
         out = self._scale_point_time(msg)
         out.header.frame_id = self.lidar_frame
         if self.require_ring and self._field(out, "ring") is None:
             rospy.logerr_throttle(5.0, "[E2OAdapter] lidar ring field missing; FAST-LIVO2 scan-line processing may be invalid")
         self.lidar_pub.publish(out)
 
+    def publish_lvisam_lidar(self, msg: PointCloud2) -> None:
+        out = copy.deepcopy(msg)
+        out.header.frame_id = self.lidar_frame
+        if self.require_ring and self._field(out, "ring") is None:
+            rospy.logerr_throttle(5.0, "[E2OAdapter] lidar ring field missing; LVI-SAM N_SCAN projection may be invalid")
+        if self._field(out, "time") is None:
+            rospy.logwarn_throttle(5.0, "[E2OAdapter] lidar has no per-point 'time' field for LVI-SAM")
+        self.lvisam_lidar_pub.publish(out)
+
     def publish_imu(self, msg: Imu) -> None:
         out = copy.deepcopy(msg)
         out.header.frame_id = self.imu_frame
         self.imu_pub.publish(out)
+        self.lvisam_imu_pub.publish(out)
 
     def publish_camera(self, msg: Image) -> None:
         out = copy.deepcopy(msg)
@@ -208,6 +224,9 @@ class E2OSensorAdapter:
             out.header.stamp = out.header.stamp + self.camera_time_offset
         out.header.frame_id = self.camera_frame
         self.orb_camera_pub.publish(out)
+        self.lvisam_camera_pub.publish(out)
+        lvisam_info = self.make_camera_info(out)
+        self.lvisam_camera_info_pub.publish(lvisam_info)
         stamp = out.header.stamp.to_sec()
         if self.fast_camera_max_rate <= 0.0:
             publish_fast = True
@@ -223,10 +242,13 @@ class E2OSensorAdapter:
             return
         self.last_fast_camera_stamp = stamp
         self.camera_pub.publish(out)
+        self.camera_info_pub.publish(self.make_camera_info(out))
+
+    def make_camera_info(self, image: Image) -> CameraInfo:
         info = CameraInfo()
-        info.header = out.header
-        info.width = out.width or self.camera_width
-        info.height = out.height or self.camera_height
+        info.header = image.header
+        info.width = image.width or self.camera_width
+        info.height = image.height or self.camera_height
         info.distortion_model = self.camera_model
         info.D = self.camera_d
         info.K = self.camera_k
@@ -234,7 +256,7 @@ class E2OSensorAdapter:
         info.P = [self.camera_k[0], 0.0, self.camera_k[2], 0.0,
                   0.0, self.camera_k[4], self.camera_k[5], 0.0,
                   0.0, 0.0, 1.0, 0.0]
-        self.camera_info_pub.publish(info)
+        return info
 
 
 def main() -> None:

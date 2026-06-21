@@ -229,6 +229,12 @@ class HealthMonitor:
                 "tracking_required": True,
                 "tracking_topic": "/orbslam3/tracking_status",
             },
+            "lvisam": {
+                "odom_topic": "/lvisam/odometry",
+                "process_patterns": ["lvi_sam_mapOptmization"],
+                "required_sensors": ["lidar", "imu", "camera"],
+                "tracking_required": False,
+            },
         }
         for name, base in defaults.items():
             item = dict(base)
@@ -261,7 +267,7 @@ class HealthMonitor:
         self.summary_pub = rospy.Publisher("/localization_health/summary", String, queue_size=10, latch=True)
         self.diag_pub = rospy.Publisher("/localization_health/diagnostics", DiagnosticArray, queue_size=10)
         rospy.Timer(rospy.Duration(1.0 / max(self.publish_rate, 0.2)), self.timer_cb)
-        rospy.loginfo("[HealthMonitor] monitoring FAST-LIVO2, ORB-SLAM3, lidar, IMU, and camera")
+        rospy.loginfo("[HealthMonitor] monitoring configured estimators, lidar, IMU, and camera")
 
     def sensor_cb(self, name: str, msg) -> None:
         with self.lock:

@@ -31,6 +31,7 @@ The Docker context excludes output/build artifacts through `.dockerignore`. Unch
 ```bash
 ./run.sh fast_livo2 e2o /path/to/one_loop.bag
 ./run.sh orbslam3 e2o /path/to/one_loop.bag
+./run.sh lvisam e2o /path/to/one_loop.bag
 ./run.sh fusion e2o /path/to/one_loop.bag
 ./run.sh fusion_navigation e2o /path/to/one_loop.bag
 ```
@@ -75,6 +76,9 @@ rostopic hz /livox/imu
 rostopic hz /camera/right/image_raw
 rostopic hz /fast_livo2/odometry
 rostopic hz /orbslam3/camera_odometry
+rostopic hz /lvisam/odometry
+rostopic hz /lvisam/points_raw
+rostopic hz /lvi_sam/lidar/mapping/cloud_registered
 rostopic hz /fused_localization/odometry
 rostopic echo -n 1 /fused_localization/status
 rostopic echo -n 1 /localization_health/summary
@@ -111,6 +115,7 @@ Generated files include:
 
 - **No FAST-LIVO2 output:** inspect `time` and `ring` PointCloud2 fields, LiDAR scan-line assumption, IMU rate, camera encoding, and FAST container logs.
 - **No ORB tracking:** verify image encoding/resolution/intrinsics, camera rate, exposure/motion blur, and vocabulary/config paths.
+- **No LVI-SAM output in RViz:** use `rviz/e2o_lvisam.rviz`; its fixed frame must be `odom` because native LVI-SAM publishes `/lvisam/odometry`, `/lvi_sam/lidar/mapping/path`, and registered clouds in the `odom` frame.
 - **ORB cannot become fallback:** metric alignment is not ready. Check healthy overlap, adequate translational motion, scale bounds, and alignment RMSE in fused status.
 - **Repeated failover:** increase stabilization/dwell thresholds only after diagnosing input timestamps and health reasons.
 - **TF loop:** use `view_frames.py`; make sure only the selected TF mode owns each authoritative edge.

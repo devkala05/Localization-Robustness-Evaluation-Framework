@@ -76,6 +76,7 @@ health:
     tracking_required: false
 fusion:
   primary_source: fast_livo2
+  metric_source: fast_livo2
   map_frame: map
   odom_frame: odom
   base_frame: base_link
@@ -124,6 +125,7 @@ fusion:
   stop_navigation_on_failure: true
   topics:
     fast_livo2_odom: /fast_livo2/odometry
+    lvisam_odom: /lvisam/odometry
     orbslam3_odom: /orbslam3/camera_odometry
     output_odom: /fused_localization/odometry
     output_pose: /fused_localization/pose

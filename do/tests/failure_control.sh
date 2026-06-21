@@ -34,7 +34,9 @@ rosparam_set() {
 sensor() {
   local name="$1" mode="$2" delay="${3:-1.0}"
   rosparam_set "/e2o_faults/${name}/mode" "$mode"
-  [[ "$mode" == delay ]] && rosparam_set "/e2o_faults/${name}/delay_sec" "$delay"
+  if [[ "$mode" == delay ]]; then
+    rosparam_set "/e2o_faults/${name}/delay_sec" "$delay"
+  fi
 }
 pose() {
   local name="$1" mode="$2" amount="${3:-}"

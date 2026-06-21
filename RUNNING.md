@@ -21,6 +21,7 @@ rosbag check /path/to/one_loop.bag
 ./build.sh fusion
 ./build.sh fast_livo2
 ./build.sh orbslam3
+./build.sh lvisam
 ./build.sh all --no-cache       # only for deliberate clean rebuilds
 ```
 
@@ -33,18 +34,20 @@ The Docker context excludes output/build artifacts through `.dockerignore`. Unch
 ./run.sh orbslam3 e2o /path/to/one_loop.bag
 ./run.sh lvisam e2o /path/to/one_loop.bag
 ./run.sh fusion e2o /path/to/one_loop.bag
+./run.sh fusion_2 e2o /path/to/one_loop.bag
 ./run.sh fusion_navigation e2o /path/to/one_loop.bag
 ```
 
 Standalone ORB defaults to its native scale (`ORB_STANDALONE_SCALE=1.0`). A
 reference scale may be supplied explicitly, but monocular initialization scale
-changes between runs and can drift. Fusion always receives native monocular
-scale and estimates Sim(3) from FAST-LIVO2 overlap.
+changes between runs and can drift. `fusion` estimates ORB Sim(3) scale from
+FAST-LIVO2 overlap; `fusion_2` estimates ORB Sim(3) scale from LVI-SAM overlap.
 
 Run with visualization:
 
 ```bash
 RVIZ=true ./run.sh fusion e2o /path/to/one_loop.bag
+RVIZ=true ./run.sh fusion_2 e2o /path/to/one_loop.bag
 ```
 
 Run an existing navigation launch file through the safety gate:

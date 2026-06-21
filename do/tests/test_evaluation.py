@@ -24,11 +24,12 @@ def main():
             for row in rows: row.update(source_method='synthetic_test',notes='unit_test'); w.writerow(row)
         write(run/'fast_livo2_trajectory.csv')
         write(run/'fused_trajectory.csv')
+        write(run/'lvisam_trajectory.csv')
         write(run/'orbslam3_trajectory.csv', scale=0.5)
         (run/'localization_timeline.jsonl').write_text('')
         subprocess.run(['python3',str(ROOT/'evaluation/evaluate_e2o.py'),'--run-dir',str(run),'--gt',str(gt)],check=True)
         report=json.loads((run/'evaluation/metrics.json').read_text())
-        for name in ('fast_livo2','orbslam3','fused'):
+        for name in ('fast_livo2','orbslam3','lvisam','fused'):
             assert report['metrics'][name]['valid']
             assert report['metrics'][name]['ate_m']['rmse'] < 1e-8
         assert (run/'evaluation/trajectory_xy.png').is_file()

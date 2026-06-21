@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>lvisam_e2o</name>
+  <version>1.0.0</version>
+  <description>E2O-only launch, calibration, and output alias for native LVI-SAM.</description>
+  <maintainer email="kitnawatayush@gmail.com">Ayush Kitnawat</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>nav_msgs</depend>
+  <depend>rospy</depend>
+</package>

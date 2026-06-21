@@ -1,98 +1,259 @@
-# E2O FAST-LIVO2 + ORB-SLAM3 Localization Framework
+# E2O Localization Robustness Evaluation Framework
 
-This repository is an E2O-only cleanup of the supplied localization framework. It contains two native estimators—FAST-LIVO2 and monocular ORB-SLAM3—and an external ROS1 supervisory fusion/fallback layer. Native optimization, tracking, mapping, loop closure, feature extraction, and sensor processing remain in their upstream projects.
+ROS Noetic/Docker framework for running E2O localization estimators and external fusion/fallback.
 
-## What remains
+Native estimator code is kept inside Docker images. This repository owns the E2O wrappers, sensor adapter, health checks, fusion supervisor, run scripts, RViz profiles, and evaluation tools.
 
-- `wrappers/fast_livo2_e2o`: E2O configuration and output normalization around native FAST-LIVO2.
-- `wrappers/orbslam3_e2o`: E2O monocular configuration and camera-pose normalization around native ORB-SLAM3.
-- `wrappers/localization_benchmark`: E2O sensor adapter, camera info, static sensor TF, and controllable sensor faults.
-- `wrappers/e2o_localization_fusion`: health monitor, metric alignment, continuity-preserving failover, TF ownership, recording, and navigation velocity gate.
-- `evaluation`: ATE/RPE, trajectory plots, switching metrics, and health/sensor timelines.
+## Algorithms
 
-All other algorithms and non-E2O dataset integrations were removed. See `CHANGES.md` for the complete path-by-path inventory.
+| Mode | Runs | Main output |
+| --- | --- | --- |
+| `fast_livo2` | FAST-LIVO2 only | `/fast_livo2/odometry` |
+| `orbslam3` | ORB-SLAM3 only | `/orbslam3/camera_odometry` |
+| `lvisam` | LVI-SAM only | `/lvisam/odometry` |
+| `fusion` | FAST-LIVO2 + ORB-SLAM3 | `/fused_localization/odometry` |
+| `fusion_2` | LVI-SAM + ORB-SLAM3 | `/fused_localization/odometry` |
+| `fusion_navigation` | FAST-LIVO2 + ORB-SLAM3 + navigation safety gate | `/fused_localization/navigation_ok` |
+
+## Input Bag
+
+All run modes currently support only the E2O dataset:
+
+```bash
+data/e2o/one_full_loop.bag
+```
+
+The bag must provide:
+
+```text
+/lidar103/velodyne_points
+/mavros/imu/data
+/camera/color/image_raw
+```
+
+Check a bag before running:
+
+```bash
+rosbag info data/e2o/one_full_loop.bag
+rosbag check data/e2o/one_full_loop.bag
+```
 
 ## Build
 
+Build everything:
+
 ```bash
 ./build.sh all
-# or independently
+```
+
+Build one image:
+
+```bash
 ./build.sh fusion
 ./build.sh fast_livo2
 ./build.sh orbslam3
+./build.sh lvisam
 ```
 
-Docker sources are pinned in `UPSTREAM_LOCK.md`. No native source tree is stored in this repository; the Docker builds clone exact refs.
+Force a clean rebuild only when needed:
+
+```bash
+./build.sh all --no-cache
+./build.sh lvisam --no-cache
+```
+
+Legacy shortcuts still work:
+
+```bash
+./build_fastlivo2.sh
+./build_orbslam3.sh
+```
 
 ## Run
 
-```bash
-./run.sh fast_livo2 e2o /path/to/one_loop.bag
-./run.sh orbslam3 e2o /path/to/one_loop.bag
-./run.sh fusion e2o /path/to/one_loop.bag
-./run.sh fusion_navigation e2o /path/to/one_loop.bag
-```
-
-Test each native estimator independently with its own RViz view:
+Use the explicit mode form:
 
 ```bash
-./test_estimators.sh run fast
-./test_estimators.sh run orb
-
-# After each run, use the output path printed by run.sh:
-./test_estimators.sh verify fast data/output/<fast_run_id>
-./test_estimators.sh verify orb data/output/<orb_run_id>
+./run.sh <mode> e2o <bag>
 ```
 
-Useful overrides:
+Examples:
 
 ```bash
-RVIZ=true BAG_RATE=0.5 ./run.sh fusion e2o /path/to/one_loop.bag
-PRIMARY_SOURCE=orbslam3 ./run.sh fusion e2o /path/to/one_loop.bag
-TF_MODE=map_to_odom NAVIGATION_LAUNCH_FILE=/workspace/path/to/nav.launch \
-  ./run.sh fusion_navigation e2o /path/to/one_loop.bag
+./run.sh fast_livo2 e2o data/e2o/one_full_loop.bag
+./run.sh orbslam3 e2o data/e2o/one_full_loop.bag
+./run.sh lvisam e2o data/e2o/one_full_loop.bag
+./run.sh fusion e2o data/e2o/one_full_loop.bag
+./run.sh fusion_2 e2o data/e2o/one_full_loop.bag
 ```
 
-`TF_MODE=direct` is the default and is appropriate when no independent wheel-odometry TF exists. `TF_MODE=map_to_odom` requires another component to own `odom -> base_link`.
+With RViz:
 
-## Outputs
+```bash
+RVIZ=true ./run.sh fast_livo2 e2o data/e2o/one_full_loop.bag
+RVIZ=true ./run.sh orbslam3 e2o data/e2o/one_full_loop.bag
+RVIZ=true ./run.sh lvisam e2o data/e2o/one_full_loop.bag
+RVIZ=true ./run.sh fusion e2o data/e2o/one_full_loop.bag
+RVIZ=true ./run.sh fusion_2 e2o data/e2o/one_full_loop.bag
+```
 
-- `/fused_localization/odometry`
-- `/fused_localization/pose`
-- `/fused_localization/path`
-- `/fused_localization/status`
-- `/fused_localization/active_source`
-- `/fused_localization/events`
-- `/fused_localization/navigation_ok`
-- `/localization_health/{fast_livo2,orbslam3,summary,diagnostics}`
+Navigation safety gate:
 
-Each run creates `data/output/<run_id>/` containing independent trajectories, event logs, the combined timeline, metadata, and optional map output.
+```bash
+TF_MODE=direct \
+NAVIGATION_LAUNCH_FILE=/workspace/navigation/my_navigation.launch \
+./run.sh fusion_navigation e2o data/e2o/one_full_loop.bag
+```
+
+Every run writes:
+
+```text
+data/output/<run_id>/
+```
+
+The directory contains `run_metadata.env`, trajectory CSVs, status timelines, fusion events, and evaluation outputs when generated.
+
+## Common Overrides
+
+| Variable | Purpose |
+| --- | --- |
+| `BAG_RATE=0.5` | Change playback rate. `fast_livo2`, `lvisam`, and `fusion_2` default to `0.5`; others default to `1.0`. |
+| `RVIZ=true` | Start RViz with the mode-specific config. |
+| `RVIZ_CONFIG=/workspace/rviz/file.rviz` | Override the RViz config. |
+| `PRIMARY_SOURCE=orbslam3` | Start fusion with ORB as active source when scale is valid. |
+| `TF_MODE=direct` | Publish `odom -> base_link` directly. This is the default. |
+| `TF_MODE=map_to_odom` | Publish `map -> odom`; requires another owner for `odom -> base_link`. |
+| `FAULT_INJECTION=true` | Enable fault injection nodes for robustness tests. |
+| `LIDAR_TOPIC=...` | Override source LiDAR topic. |
+| `IMU_TOPIC=...` | Override source IMU topic. |
+| `CAMERA_TOPIC=...` | Override source camera topic. |
+| `FUSION_CONFIG=...` | Override fusion config. |
+
+Mode-specific config overrides:
+
+```bash
+FAST_CONFIG=/workspace/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml
+ORB_CONFIG=/workspace/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml
+LVISAM_LIDAR_CONFIG=/workspace/wrappers/lvisam_e2o/config/params_lidar_e2o.yaml
+LVISAM_CAMERA_CONFIG=/workspace/wrappers/lvisam_e2o/config/params_camera_e2o.yaml
+```
+
+## Runtime Checks
+
+Run these inside a ROS-configured shell while a run is active:
+
+```bash
+rostopic list
+rostopic hz /livox/lidar
+rostopic hz /livox/imu
+rostopic hz /camera/right/image_raw
+rostopic hz /fast_livo2/odometry
+rostopic hz /orbslam3/camera_odometry
+rostopic hz /lvisam/odometry
+rostopic hz /fused_localization/odometry
+rostopic echo -n 1 /localization_health/summary
+rostopic echo -n 1 /fused_localization/status
+```
+
+Collect diagnostics:
+
+```bash
+./scripts/diagnose_runtime.sh
+```
+
+Validate one recorded standalone estimator run:
+
+```bash
+python3 tests/verify_estimator_run.py fast_livo2 data/output/<run_id>
+python3 tests/verify_estimator_run.py orbslam3 data/output/<run_id>
+python3 tests/verify_estimator_run.py lvisam data/output/<run_id>
+```
 
 ## Evaluation
 
+Evaluate a run:
+
 ```bash
 ./evaluation/evaluate.sh data/output/<run_id>
-# Explicit reference selection:
-./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/one_loop_gps_enu.csv
-./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/one_loop_fastlivo2_reference.csv
 ```
 
-The included GPS reference has meter-level uncertainty and untrusted yaw. The FAST-LIVO2-derived reference is not independent and cannot support a claim that FAST-LIVO2 is accurate. Reports state these limitations explicitly.
+Use an explicit reference:
 
-## Validation and failure testing
+```bash
+./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/one_loop_gps_enu.csv
+./evaluation/evaluate.sh data/output/<run_id> data/e2o/gt_one_full_loop_fastlivo2_lidar103.csv
+```
+
+Generated files are under:
+
+```text
+data/output/<run_id>/evaluation/
+```
+
+## Validation
+
+Run static checks:
 
 ```bash
 ./tests/static_validation.sh
-FAULT_INJECTION=true ./run.sh fusion e2o /path/to/one_loop.bag
-# From another ROS-configured shell:
+```
+
+This checks Python syntax, XML/YAML parsing, calibration consistency, launch assumptions, and synthetic fusion/evaluation tests.
+
+## Robustness Testing
+
+Start fault-enabled fusion:
+
+```bash
+FAULT_INJECTION=true RVIZ=true ./run.sh fusion e2o data/e2o/one_full_loop.bag
+```
+
+Apply faults from another shell:
+
+```bash
 ./tests/failure_control.sh fast_freeze
 ./tests/failure_control.sh fast_recover
+./tests/failure_control.sh orb_freeze
+./tests/failure_control.sh orb_recover
 ./tests/failure_control.sh camera_drop
 ./tests/failure_control.sh camera_recover
 ```
 
-Read `RUNNING.md`, `FUSION_AND_FALLBACK.md`, `TF_TREE.md`, and `FAILURE_TESTING.md` before using the output for navigation.
+Convenience wrapper:
 
-## Calibration warning
+```bash
+./robustness.sh run data/e2o/one_full_loop.bag
+./robustness.sh status data/output/<run_id>
+./robustness.sh watch data/output/<run_id>
+./robustness.sh recover-all
+./robustness.sh matrix
+```
 
-The supplied camera intrinsics and LiDAR-to-camera calibration are retained. IMU-to-LiDAR extrinsics and sensor time offsets were not independently measured in the archive and are currently explicit identity/zero assumptions. Replace them before treating results as final. See `configs/e2o/assumptions.yaml`.
+## RViz Frames
+
+| Config | Fixed frame |
+| --- | --- |
+| `rviz/e2o_fast_livo2.rviz` | `camera_init` |
+| `rviz/e2o_orbslam3.rviz` | `orbslam3_grid` |
+| `rviz/e2o_lvisam.rviz` | `odom` |
+| `rviz/e2o_fusion.rviz` | `map` |
+
+LVI-SAM publishes its native path and registered clouds in `odom`, so the LVI-SAM RViz profile must use `odom`.
+
+## Important Notes
+
+- `fusion` fuses FAST-LIVO2 with ORB-SLAM3.
+- `fusion_2` fuses LVI-SAM with ORB-SLAM3.
+- ORB-SLAM3 is monocular; fusion estimates a Sim(3) scale from overlap with the metric source.
+- Native estimator TF is not used for navigation. See `TF_TREE.md`.
+- The supplied archive has LiDAR-to-camera calibration, but IMU-to-LiDAR remains an explicit identity assumption. Replace it before claiming final accuracy.
+
+More detail:
+
+```text
+RUNNING.md
+TF_TREE.md
+FUSION_AND_FALLBACK.md
+FAILURE_TESTING.md
+FINAL_REPORT.md
+```

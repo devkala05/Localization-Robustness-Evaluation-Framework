@@ -56,6 +56,24 @@ health:
     required_sensors:
     - camera
     tracking_required: true
+  lvisam:
+    odom_topic: /lvisam/odometry
+    pose_timeout_sec: 1.0
+    min_pose_rate_hz: 2.0
+    rate_window_sec: 3.0
+    max_position_jump_m: 3.0
+    max_orientation_jump_deg: 50.0
+    max_velocity_mps: 35.0
+    max_angular_velocity_deg_s: 300.0
+    max_acceleration_mps2: 20.0
+    max_timestamp_lag_sec: 2.0
+    process_patterns:
+    - lvi_sam_mapOptmization
+    required_sensors:
+    - lidar
+    - imu
+    - camera
+    tracking_required: false
 fusion:
   primary_source: fast_livo2
   map_frame: map

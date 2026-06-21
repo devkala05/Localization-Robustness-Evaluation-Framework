@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Continuity-preserving loose coupling for FAST-LIVO2 and ORB-SLAM3.
+"""Continuity-preserving loose coupling for a metric estimator and ORB-SLAM3.
 
 The node deliberately does not alter either estimator. It supervises their
 independent odometry streams, estimates the relative SE(3) transform from
@@ -38,6 +38,7 @@ from fusion_math import (
 )
 
 FAST = "fast_livo2"
+LVISAM = "lvisam"
 ORB = "orbslam3"
 FAILED = "none"
 
@@ -81,9 +82,15 @@ class LocalizationFusion:
         cfg = rospy.get_param("~fusion", {})
         self.lock = threading.RLock()
         self.primary = str(cfg.get("primary_source", FAST)).strip().lower()
-        if self.primary not in (FAST, ORB):
-            raise rospy.ROSInitException("primary_source must be fast_livo2 or orbslam3")
-        self.secondary = ORB if self.primary == FAST else FAST
+        if self.primary not in (FAST, LVISAM, ORB):
+            raise rospy.ROSInitException("primary_source must be fast_livo2, lvisam, or orbslam3")
+        default_metric = FAST if self.primary == ORB else self.primary
+        self.metric_source = str(cfg.get("metric_source", default_metric)).strip().lower()
+        if self.metric_source not in (FAST, LVISAM):
+            raise rospy.ROSInitException("metric_source must be fast_livo2 or lvisam")
+        if self.primary != ORB and self.primary != self.metric_source:
+            raise rospy.ROSInitException("non-ORB primary_source must match metric_source")
+        self.secondary = ORB if self.primary == self.metric_source else self.metric_source
         self.map_frame = str(cfg.get("map_frame", "map"))
         self.odom_frame = str(cfg.get("odom_frame", "odom"))
         self.base_frame = str(cfg.get("base_frame", "base_link"))
@@ -122,7 +129,8 @@ class LocalizationFusion:
             raise rospy.ROSInitException("orb_camera_to_base contains non-finite values")
 
         topics = cfg.get("topics", {})
-        self.fast_topic = str(topics.get("fast_livo2_odom", "/fast_livo2/odometry"))
+        default_metric_topic = "/fast_livo2/odometry" if self.metric_source == FAST else "/lvisam/odometry"
+        self.metric_topic = str(topics.get(f"{self.metric_source}_odom", default_metric_topic))
         self.orb_topic = str(topics.get("orbslam3_odom", "/orbslam3/camera_odometry"))
         self.output_odom_topic = str(topics.get("output_odom", "/fused_localization/odometry"))
         self.output_pose_topic = str(topics.get("output_pose", "/fused_localization/pose"))
@@ -132,10 +140,19 @@ class LocalizationFusion:
         self.event_topic = str(topics.get("events", "/fused_localization/events"))
         self.nav_ok_topic = str(topics.get("navigation_ok", "/fused_localization/navigation_ok"))
 
-        self.sources: Dict[str, SourceData] = {FAST: SourceData(FAST), ORB: SourceData(ORB)}
+        self.sources: Dict[str, SourceData] = {
+            self.metric_source: SourceData(self.metric_source),
+            ORB: SourceData(ORB),
+        }
         # source_to_output is a rigid transform applied after source-specific scale.
-        self.source_to_output: Dict[str, np.ndarray] = {FAST: np.eye(4), ORB: np.eye(4)}
-        self.source_scale: Dict[str, float] = {FAST: 1.0, ORB: self.orb_fixed_scale if self.orb_fixed_scale > 0.0 else 1.0}
+        self.source_to_output: Dict[str, np.ndarray] = {
+            self.metric_source: np.eye(4),
+            ORB: np.eye(4),
+        }
+        self.source_scale: Dict[str, float] = {
+            self.metric_source: 1.0,
+            ORB: self.orb_fixed_scale if self.orb_fixed_scale > 0.0 else 1.0,
+        }
         self.synchronized_pairs: Deque[Tuple[np.ndarray, np.ndarray]] = collections.deque(maxlen=self.alignment_window)
         self.cross_fast_from_orb: Optional[np.ndarray] = None
         self.orb_metric_scale: Optional[float] = self.orb_fixed_scale if self.orb_fixed_scale > 0.0 else None
@@ -153,7 +170,7 @@ class LocalizationFusion:
         self.last_output_T: Optional[np.ndarray] = None
         self.last_output_stamp: Optional[float] = None
         self.last_output_wall: Optional[float] = None
-        self.last_output_source_stamp: Dict[str, Optional[float]] = {FAST: None, ORB: None}
+        self.last_output_source_stamp: Dict[str, Optional[float]] = {self.metric_source: None, ORB: None}
         self.last_twist = Twist()
         self.path = Path()
         self.path.header.frame_id = self.map_frame
@@ -178,14 +195,16 @@ class LocalizationFusion:
             static.transform.rotation.w = 1.0
             self.static_broadcaster.sendTransform(static)
 
-        rospy.Subscriber(self.fast_topic, Odometry, lambda msg: self.odom_cb(FAST, msg), queue_size=200)
+        rospy.Subscriber(self.metric_topic, Odometry, lambda msg: self.odom_cb(self.metric_source, msg), queue_size=200)
         rospy.Subscriber(self.orb_topic, Odometry, lambda msg: self.odom_cb(ORB, msg), queue_size=200)
-        rospy.Subscriber("/localization_health/fast_livo2", String, lambda msg: self.health_cb(FAST, msg), queue_size=20)
+        rospy.Subscriber(f"/localization_health/{self.metric_source}", String,
+                         lambda msg: self.health_cb(self.metric_source, msg), queue_size=20)
         rospy.Subscriber("/localization_health/orbslam3", String, lambda msg: self.health_cb(ORB, msg), queue_size=20)
         rospy.Timer(rospy.Duration(1.0 / max(self.publish_rate_hz, 1.0)), self.timer_cb)
         self.prepare_event_log()
         self.publish_event("startup", FAILED, FAILED, "fusion_node_started", 0.0)
-        rospy.loginfo("[Fusion] primary=%s fast=%s orb=%s tf_mode=%s", self.primary, self.fast_topic, self.orb_topic, self.tf_mode)
+        rospy.loginfo("[Fusion] primary=%s metric=%s metric_topic=%s orb=%s tf_mode=%s",
+                      self.primary, self.metric_source, self.metric_topic, self.orb_topic, self.tf_mode)
 
     def prepare_event_log(self) -> None:
         if not self.event_log_path:
@@ -262,7 +281,7 @@ class LocalizationFusion:
         return candidate if abs(candidate[0] - stamp) <= self.sync_slop else None
 
     def metric_source_pose(self, source: str, source_T: np.ndarray) -> np.ndarray:
-        if source == FAST:
+        if source == self.metric_source:
             return source_T.copy()
         if self.cross_fast_from_orb is not None and self.orb_metric_scale is not None:
             return apply_camera_to_base_similarity(
@@ -278,34 +297,34 @@ class LocalizationFusion:
 
     def update_cross_alignment(self, source: str) -> None:
         current = self.sources[source]
-        other_name = ORB if source == FAST else FAST
+        other_name = ORB if source == self.metric_source else self.metric_source
         other = self.sources[other_name]
         if current.latest_stamp is None or current.latest_T is None:
             return
         match = self.nearest_sample(other, current.latest_stamp)
         if match is None:
             return
-        if source == FAST:
-            fast_stamp, orb_stamp = current.latest_stamp, match[0]
-            T_fast, T_orb = current.latest_T.copy(), match[1].copy()
+        if source == self.metric_source:
+            metric_stamp, orb_stamp = current.latest_stamp, match[0]
+            T_metric, T_orb = current.latest_T.copy(), match[1].copy()
         else:
-            fast_stamp, orb_stamp = match[0], current.latest_stamp
-            T_fast, T_orb = match[1].copy(), current.latest_T.copy()
-        pair_key = (fast_stamp, orb_stamp)
+            metric_stamp, orb_stamp = match[0], current.latest_stamp
+            T_metric, T_orb = match[1].copy(), current.latest_T.copy()
+        pair_key = (metric_stamp, orb_stamp)
         if self.last_pair_key == pair_key:
             return
         self.last_pair_key = pair_key
         # Never learn scale/alignment from an estimator already declared unhealthy.
-        if not all(bool(self.sources[name].health.get("healthy", False)) for name in (FAST, ORB)):
+        if not all(bool(self.sources[name].health.get("healthy", False)) for name in (self.metric_source, ORB)):
             return
         # Keep the accepted monocular similarity fixed while ORB is the active
         # fallback. Re-estimating scale under the active trajectory would move
         # the output even without a source switch. Existing alignment is still
         # used below for recovery consistency checks.
         if self.active_source == ORB:
-            self.update_disagreement(T_fast, T_orb)
+            self.update_disagreement(T_metric, T_orb)
             return
-        self.synchronized_pairs.append((T_fast, T_orb))
+        self.synchronized_pairs.append((T_metric, T_orb))
         minimum = 1 if self.orb_fixed_scale > 0.0 else self.min_alignment_pairs
         if len(self.synchronized_pairs) >= minimum:
             try:
@@ -329,14 +348,14 @@ class LocalizationFusion:
                         scale, position_rmse, math.degrees(orientation_rmse))
             except ValueError as exc:
                 rospy.logwarn_throttle(2.0, "[Fusion] camera/base alignment not ready: %s", exc)
-        self.update_disagreement(T_fast, T_orb)
+        self.update_disagreement(T_metric, T_orb)
 
-    def update_disagreement(self, T_fast: np.ndarray, T_orb: np.ndarray) -> None:
+    def update_disagreement(self, T_metric: np.ndarray, T_orb: np.ndarray) -> None:
         if self.cross_fast_from_orb is None or self.orb_metric_scale is None:
             self.disagreement = {"position_m": None, "orientation_rad": None, "scale_ratio": None, "valid": False}
             return
         aligned_orb = self.metric_source_pose(ORB, T_orb)
-        delta = invert_transform(T_fast) @ aligned_orb
+        delta = invert_transform(T_metric) @ aligned_orb
         self.disagreement = {
             "position_m": float(np.linalg.norm(delta[:3, 3])),
             "orientation_rad": rotation_angle(delta[:3, :3]),
@@ -414,7 +433,7 @@ class LocalizationFusion:
             return
 
         active = self.active_source
-        backup = ORB if active == FAST else FAST
+        backup = ORB if active == self.metric_source else self.metric_source
         if self.source_failure_persisted(active, now):
             if self.source_usable(backup, now, self.recovery_stabilization):
                 reasons = ",".join(self.sources[active].health.get("reasons", ["unhealthy"]))
@@ -434,11 +453,11 @@ class LocalizationFusion:
                 self.switch_to(self.primary, "primary_recovered_and_consistent")
                 return
 
-        if active == FAST:
-            self.state = "PRIMARY_FAST_LIVO2"
+        if active == self.metric_source:
+            self.state = f"PRIMARY_{self.metric_source.upper()}"
         else:
             self.state = "BACKUP_ORB_SLAM3"
-        if all(bool(self.sources[s].health.get("healthy", False)) for s in (FAST, ORB)) and not self.consistency_ok():
+        if all(bool(self.sources[s].health.get("healthy", False)) for s in (self.metric_source, ORB)) and not self.consistency_ok():
             self.state += "_DEGRADED_DISAGREEMENT"
 
     def switch_to(self, new_source: str, reason: str) -> None:
@@ -465,7 +484,7 @@ class LocalizationFusion:
         self.switch_anchor_T = before
         self.last_output_source_stamp[new_source] = None
         self.switch_count += 1
-        self.state = "PRIMARY_FAST_LIVO2" if new_source == FAST else "BACKUP_ORB_SLAM3"
+        self.state = f"PRIMARY_{self.metric_source.upper()}" if new_source == self.metric_source else "BACKUP_ORB_SLAM3"
         self.pending_switch_event = ({"old": old, "new": new_source, "reason": reason}
                                      if before is not None else None)
         self.publish_event("switch", old, new_source, reason, jump)
@@ -598,6 +617,7 @@ class LocalizationFusion:
             "valid": self.active_source != FAILED and bool(self.sources[self.active_source].health.get("healthy", False)),
             "active_source": self.active_source,
             "primary_source": self.primary,
+            "metric_source": self.metric_source,
             "switch_count": self.switch_count,
             "tf_mode": self.tf_mode,
             "frames": {"map": self.map_frame, "odom": self.odom_frame, "base": self.base_frame},
@@ -611,7 +631,7 @@ class LocalizationFusion:
             "disagreement": {
                 "position_m": self.disagreement.get("position_m"),
                 "orientation_deg": None if self.disagreement.get("orientation_rad") is None else math.degrees(self.disagreement["orientation_rad"]),
-                "scale_ratio_fast_over_orb": self.disagreement.get("scale_ratio"),
+                f"scale_ratio_{self.metric_source}_over_orb": self.disagreement.get("scale_ratio"),
                 "consistent": self.consistency_ok() if self.disagreement.get("valid") else False,
             },
         }

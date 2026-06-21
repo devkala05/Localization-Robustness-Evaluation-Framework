@@ -11,6 +11,10 @@ adapter:
     camera: /camera/right/image_raw
     orb_camera: /camera/image_raw
     camera_info: /camera/right/camera_info
+    lvisam_lidar: /lvisam/points_raw
+    lvisam_imu: /lvisam/imu_raw
+    lvisam_camera: /lvisam/camera/image_raw
+    lvisam_camera_info: /lvisam/camera/camera_info
   frames:
     lidar: velodyne103
     imu: base_link

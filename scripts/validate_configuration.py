@@ -12,6 +12,7 @@ central = yaml.safe_load((ROOT / "wrappers/localization_benchmark/config/e2o.yam
 fast = yaml.safe_load((ROOT / "wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml").read_text())
 orb_text = (ROOT / "wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml").read_text()
 fusion = yaml.safe_load((ROOT / "wrappers/e2o_localization_fusion/config/fusion.yaml").read_text())
+fusion_2 = yaml.safe_load((ROOT / "wrappers/e2o_localization_fusion/config/fusion_2.yaml").read_text())
 lvisam_lidar = yaml.safe_load((ROOT / "wrappers/lvisam_e2o/config/params_lidar_e2o.yaml").read_text())
 lvisam_camera_text = (ROOT / "wrappers/lvisam_e2o/config/params_camera_e2o.yaml").read_text()
 
@@ -78,6 +79,9 @@ T_camera_base=np.linalg.inv(T_base_camera)
 T_fusion=np.eye(4)
 T_fusion[:3,:3]=np.asarray(fusion['fusion']['orb_camera_to_base']['rotation'],float).reshape(3,3)
 T_fusion[:3,3]=fusion['fusion']['orb_camera_to_base']['translation']
+T_fusion_2=np.eye(4)
+T_fusion_2[:3,:3]=np.asarray(fusion_2['fusion']['orb_camera_to_base']['rotation'],float).reshape(3,3)
+T_fusion_2[:3,3]=fusion_2['fusion']['orb_camera_to_base']['translation']
 T_fast=np.eye(4)
 T_fast[:3,:3]=np.asarray(fast['extrin_calib']['Rcl'],float).reshape(3,3)
 T_fast[:3,3]=fast['extrin_calib']['Pcl']
@@ -104,8 +108,14 @@ for key, expected in {
 # publishing odometry. Fusion must therefore receive an identity transform.
 if not np.allclose(T_fusion,np.eye(4),atol=1e-7):
     raise AssertionError("fusion must not apply camera-to-base twice to ORB body poses")
+if not np.allclose(T_fusion_2,np.eye(4),atol=1e-7):
+    raise AssertionError("fusion_2 must not apply camera-to-base twice to ORB body poses")
 if not np.allclose(T_fusion[:3,:3].T@T_fusion[:3,:3],np.eye(3),atol=1e-5) or np.linalg.det(T_fusion[:3,:3])<0.999:
     raise AssertionError("camera-to-base rotation is not proper")
+if fusion_2["fusion"].get("primary_source") != "lvisam" or fusion_2["fusion"].get("metric_source") != "lvisam":
+    raise AssertionError("fusion_2 must use LVI-SAM as the metric primary source")
+if fusion_2["fusion"]["topics"].get("lvisam_odom") != "/lvisam/odometry":
+    raise AssertionError("fusion_2 must consume standardized LVI-SAM odometry")
 if fast["extrin_calib"]["extrinsic_T"] != [0.0, 0.0, 0.0]:
     raise AssertionError("IMU/LiDAR assumption unexpectedly changed")
 if "mapping" in fast:

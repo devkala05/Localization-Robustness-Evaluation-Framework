@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Evaluate E2O FAST-LIVO2, ORB-SLAM3 and fused trajectory recordings.
+"""Evaluate E2O estimator and fused trajectory recordings.
 
-FAST-LIVO2/fused trajectories are aligned with SE(3). Monocular ORB-SLAM3 is
-aligned with Sim(3), because its raw trajectory has no guaranteed metric scale.
+LiDAR/visual-inertial and fused trajectories are aligned with SE(3). Monocular
+ORB-SLAM3 is aligned with Sim(3), because its raw trajectory has no guaranteed metric scale.
 The report records the provenance and limitations of the selected reference.
 """
 from __future__ import annotations
@@ -226,7 +226,7 @@ def analyze_timeline(items: List[dict]) -> dict:
         for sensor in ("lidar", "imu", "camera"):
             values = [bool(item.get("data", {}).get("sensors", {}).get(sensor, {}).get("available", False)) for item in health_items]
             sensor_uptime[sensor] = sum(values) / len(values)
-        for estimator in ("fast_livo2", "orbslam3"):
+        for estimator in ("fast_livo2", "orbslam3", "lvisam"):
             values = [bool(item.get("data", {}).get("estimators", {}).get(estimator, {}).get("healthy", False)) for item in health_items]
             estimator_uptime[estimator] = sum(values) / len(values)
     navigation_items = [item for item in items if item.get("topic") == "/fused_localization/navigation_ok"]
@@ -269,12 +269,12 @@ def plot_source_timeline(items: List[dict], out: Path) -> None:
     if not status:
         return
     t0 = float(status[0].get("receipt_time", 0.0))
-    mapping = {"none": 0, "orbslam3": 1, "fast_livo2": 2}
+    mapping = {"none": 0, "orbslam3": 1, "fast_livo2": 2, "lvisam": 3}
     times = [float(item.get("receipt_time", 0.0)) - t0 for item in status]
     values = [mapping.get(str(item.get("data", {}).get("active_source", "none")), 0) for item in status]
     plt.figure(figsize=(11, 3.5))
     plt.step(times, values, where="post")
-    plt.yticks([0, 1, 2], ["failed", "ORB-SLAM3", "FAST-LIVO2"])
+    plt.yticks([0, 1, 2, 3], ["failed", "ORB-SLAM3", "FAST-LIVO2", "LVI-SAM"])
     plt.xlabel("time [s]")
     plt.title("Active localization source")
     plt.grid(True)
@@ -292,6 +292,7 @@ def plot_health_timeline(items: List[dict], out: Path) -> None:
     series = {
         "FAST-LIVO2 healthy": [bool(item.get("data", {}).get("estimators", {}).get("fast_livo2", {}).get("healthy", False)) for item in health],
         "ORB-SLAM3 healthy": [bool(item.get("data", {}).get("estimators", {}).get("orbslam3", {}).get("healthy", False)) for item in health],
+        "LVI-SAM healthy": [bool(item.get("data", {}).get("estimators", {}).get("lvisam", {}).get("healthy", False)) for item in health],
         "LiDAR available": [bool(item.get("data", {}).get("sensors", {}).get("lidar", {}).get("available", False)) for item in health],
         "IMU available": [bool(item.get("data", {}).get("sensors", {}).get("imu", {}).get("available", False)) for item in health],
         "Camera available": [bool(item.get("data", {}).get("sensors", {}).get("camera", {}).get("available", False)) for item in health],
@@ -326,10 +327,11 @@ def main() -> int:
     files = {
         "fast_livo2": run_dir / "fast_livo2_trajectory.csv",
         "orbslam3": run_dir / "orbslam3_trajectory.csv",
+        "lvisam": run_dir / "lvisam_trajectory.csv",
         "fused": run_dir / "fused_trajectory.csv",
     }
     trajectories = {name: load_trajectory(path) for name, path in files.items()}
-    alignment_modes = {"fast_livo2": "se3", "orbslam3": "sim3", "fused": "se3"}
+    alignment_modes = {"fast_livo2": "se3", "orbslam3": "sim3", "lvisam": "se3", "fused": "se3"}
     orientation_trusted = "gps" not in reference["source_method"].lower()
     metrics: Dict[str, dict] = {}
     aligned: Dict[str, Optional[np.ndarray]] = {}

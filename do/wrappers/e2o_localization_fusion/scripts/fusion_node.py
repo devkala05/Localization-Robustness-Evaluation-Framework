@@ -344,6 +344,20 @@ class LocalizationFusion:
             "valid": True,
         }
 
+    def invalidate_orb_alignment(self, reason: str) -> None:
+        """Require fresh healthy overlap after ORB tracking/map continuity is lost."""
+        if self.cross_fast_from_orb is None and self.orb_fixed_scale <= 0.0:
+            return
+        self.synchronized_pairs.clear()
+        self.last_pair_key = None
+        self.cross_fast_from_orb = None
+        self.orb_metric_scale = self.orb_fixed_scale if self.orb_fixed_scale > 0.0 else None
+        self.source_scale[ORB] = self.orb_metric_scale if self.orb_metric_scale is not None else 1.0
+        self.alignment_quality = {"position_rmse_m": None, "orientation_rmse_rad": None}
+        self.disagreement = {"position_m": None, "orientation_rad": None,
+                             "scale_ratio": None, "valid": False}
+        self.publish_event("alignment_invalidated", ORB, ORB, reason, 0.0)
+
     def source_usable(self, source: str, now: float, stable_duration: float) -> bool:
         if not self.sources[source].stable_healthy(now, stable_duration):
             return False
@@ -374,6 +388,23 @@ class LocalizationFusion:
         return None
 
     def evaluate_state_machine(self, now: float) -> None:
+        orb = self.sources[ORB]
+        orb_reasons = set(orb.health.get("reasons", []))
+        alignment_breaking_reasons = {
+            "camera_unavailable",
+            "process_not_present",
+            "tracking_lost",
+            "timestamp_regression",
+            "non_finite_or_invalid_pose",
+        }
+        if (self.cross_fast_from_orb is not None and
+                not bool(orb.health.get("healthy", False)) and
+                orb.unhealthy_since is not None and
+                now - orb.unhealthy_since >= self.failure_hold and
+                bool(orb_reasons & alignment_breaking_reasons)):
+            reasons = ",".join(sorted(orb_reasons)) or "unhealthy"
+            self.invalidate_orb_alignment(f"orb_unhealthy:{reasons}")
+
         if self.active_source == FAILED:
             selected = self.choose_initial_source(now)
             if selected:

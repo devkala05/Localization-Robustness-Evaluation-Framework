@@ -9,23 +9,25 @@ if [[ -z "${MODE}" || -z "${DATASET}" || -z "${BAG_ARG}" ]]; then
 Usage:
   ./run.sh fast_livo2 e2o /path/to/one_loop.bag
   ./run.sh orbslam3 e2o /path/to/one_loop.bag
+  ./run.sh lvisam e2o /path/to/one_loop.bag
   ./run.sh fusion e2o /path/to/one_loop.bag
   ./run.sh fusion_navigation e2o /path/to/one_loop.bag
 Environment: BAG_RATE, RVIZ=true|false, TF_MODE=direct|map_to_odom|none,
              PRIMARY_SOURCE=fast_livo2|orbslam3, NAVIGATION_LAUNCH_FILE=/workspace/...
              FAULT_INJECTION=true|false, LIDAR_TOPIC, IMU_TOPIC, CAMERA_TOPIC
-             SENSOR_CONFIG, FAST_CONFIG, ORB_CONFIG, FUSION_CONFIG
+             SENSOR_CONFIG, FAST_CONFIG, ORB_CONFIG, LVISAM_LIDAR_CONFIG,
+             LVISAM_CAMERA_CONFIG, FUSION_CONFIG
 USAGE
   exit 2
 fi
-case "${MODE}" in fast_livo2|orbslam3|fusion|fusion_navigation) ;; *) echo "Unknown mode: ${MODE}" >&2; exit 2;; esac
+case "${MODE}" in fast_livo2|orbslam3|lvisam|fusion|fusion_navigation) ;; *) echo "Unknown mode: ${MODE}" >&2; exit 2;; esac
 [[ "${DATASET}" == "e2o" ]] || { echo "Only the E2O dataset is supported." >&2; exit 2; }
 BAG="$(realpath "${BAG_ARG}")"
 [[ -f "${BAG}" ]] || { echo "Bag not found: ${BAG}" >&2; exit 2; }
 
 if [[ -n "${BAG_RATE:-}" ]]; then
   BAG_RATE="${BAG_RATE}"
-elif [[ "${MODE}" == "fast_livo2" ]]; then
+elif [[ "${MODE}" == "fast_livo2" || "${MODE}" == "lvisam" ]]; then
   # The pinned CPU implementation processes this LIVO dataset below real time.
   # Slow offline playback prevents its large native subscriber queues building lag.
   BAG_RATE="0.5"
@@ -45,6 +47,8 @@ SENSOR_CONFIG="${SENSOR_CONFIG:-/workspace/wrappers/localization_benchmark/confi
 FAST_CONFIG="${FAST_CONFIG:-/workspace/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml}"
 ORB_CONFIG="${ORB_CONFIG:-/workspace/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml}"
 ORB_STANDALONE_SCALE="${ORB_STANDALONE_SCALE:-1.0}"
+LVISAM_LIDAR_CONFIG="${LVISAM_LIDAR_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_lidar_e2o.yaml}"
+LVISAM_CAMERA_CONFIG="${LVISAM_CAMERA_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_camera_e2o.yaml}"
 FUSION_CONFIG="${FUSION_CONFIG:-/workspace/wrappers/e2o_localization_fusion/config/fusion.yaml}"
 RUN_ID="$(date +%Y%m%d_%H%M%S)_${MODE}_$$"
 OUT_HOST="${ROOT}/data/output/${RUN_ID}"
@@ -67,6 +71,8 @@ SENSOR_CONFIG=${SENSOR_CONFIG}
 FAST_CONFIG=${FAST_CONFIG}
 ORB_CONFIG=${ORB_CONFIG}
 ORB_STANDALONE_SCALE=${ORB_STANDALONE_SCALE}
+LVISAM_LIDAR_CONFIG=${LVISAM_LIDAR_CONFIG}
+LVISAM_CAMERA_CONFIG=${LVISAM_CAMERA_CONFIG}
 FUSION_CONFIG=${FUSION_CONFIG}
 EOF
 STACK="e2o_loc_${RUN_ID}"
@@ -76,6 +82,7 @@ FAST_CONTAINER=${STACK}_fast
 ORB_CONTAINER=${STACK}_orb
 FUSION_CONTAINER=${STACK}_fusion
 FUSION_NAV_CONTAINER=${STACK}_fusion_nav
+LVISAM_CONTAINER=${STACK}_lvisam
 EOF
 CONTAINERS=()
 
@@ -107,12 +114,16 @@ fi
 if [[ "${MODE}" == "orbslam3" || "${MODE}" == fusion* ]]; then
   docker image inspect orbslam3-e2o:latest >/dev/null 2>&1 || { echo "Missing orbslam3-e2o:latest; run ./build.sh orbslam3" >&2; exit 1; }
 fi
+if [[ "${MODE}" == "lvisam" ]]; then
+  docker image inspect lvisam-e2o:latest >/dev/null 2>&1 || { echo "Missing lvisam-e2o:latest; run ./build.sh lvisam" >&2; exit 1; }
+fi
 
 start_container "${STACK}_roscore" e2o-localization-fusion:latest roscore
 sleep 2
 start_container "${STACK}_input" e2o-localization-fusion:latest \
-  roslaunch localization_benchmark e2o_input_pipeline.launch config:="${SENSOR_CONFIG}" \
-    source_lidar_topic:="${LIDAR_TOPIC}" source_imu_topic:="${IMU_TOPIC}" source_camera_topic:="${CAMERA_TOPIC}"
+  bash -lc 'cp /workspace/wrappers/localization_benchmark/scripts/e2o_sensor_adapter.py /root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/e2o_sensor_adapter.py && cp /workspace/wrappers/localization_benchmark/scripts/e2o_static_tf_publisher.py /root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/e2o_static_tf_publisher.py && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/localization_benchmark/launch/e2o_input_pipeline.launch "$@"' _ \
+    config:="${SENSOR_CONFIG}" source_lidar_topic:="${LIDAR_TOPIC}" \
+    source_imu_topic:="${IMU_TOPIC}" source_camera_topic:="${CAMERA_TOPIC}"
 
 if [[ "${MODE}" == "fast_livo2" || "${MODE}" == fusion* ]]; then
   start_container "${STACK}_fast" fastlivo2-e2o:latest \
@@ -125,10 +136,16 @@ if [[ "${MODE}" == "orbslam3" || "${MODE}" == fusion* ]]; then
   start_container "${STACK}_orb" orbslam3-e2o:latest \
     roslaunch orbslam3_e2o algorithm.launch camera_config:="${ORB_CONFIG}" fixed_pose_scale:="${ORB_POSE_SCALE}" output_odom_topic:="$( [[ "${FAULT_INJECTION}" == "true" ]] && echo /fault/raw/orbslam3 || echo /orbslam3/camera_odometry )"
 fi
+if [[ "${MODE}" == "lvisam" ]]; then
+  start_container "${STACK}_lvisam" lvisam-e2o:latest \
+    roslaunch lvisam_e2o algorithm.launch lidar_config:="${LVISAM_LIDAR_CONFIG}" \
+      camera_config:="${LVISAM_CAMERA_CONFIG}" output_topic:="/lvisam/odometry"
+fi
 
 if [[ "${MODE}" == "fusion" ]]; then
   start_container "${STACK}_fusion" e2o-localization-fusion:latest \
-    roslaunch e2o_localization_fusion fusion.launch config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" \
+    bash -lc 'for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/e2o_localization_fusion/launch/fusion.launch "$@"' _ \
+      config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" \
       tf_mode:="${TF_MODE}" primary_source:="${PRIMARY_SOURCE}" enable_fault_injection:="${FAULT_INJECTION}"
 elif [[ "${MODE}" == "fusion_navigation" ]]; then
   NAV_FILE="${NAVIGATION_LAUNCH_FILE:-}"
@@ -137,11 +154,13 @@ elif [[ "${MODE}" == "fusion_navigation" ]]; then
     NAV_ARGS=(start_navigation:=true navigation_launch_file:="${NAV_FILE}")
   fi
   start_container "${STACK}_fusion_nav" e2o-localization-fusion:latest \
-    roslaunch e2o_localization_fusion fusion_navigation.launch config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" \
+    bash -lc 'for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/e2o_localization_fusion/launch/fusion_navigation.launch "$@"' _ \
+      config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" \
       tf_mode:="${TF_MODE}" primary_source:="${PRIMARY_SOURCE}" enable_fault_injection:="${FAULT_INJECTION}" "${NAV_ARGS[@]}"
 else
   start_container "${STACK}_health" e2o-localization-fusion:latest \
-    roslaunch e2o_localization_fusion health_only.launch config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" enable_fault_injection:="${FAULT_INJECTION}"
+    bash -lc 'for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/e2o_localization_fusion/launch/health_only.launch "$@"' _ \
+      config:="${FUSION_CONFIG}" output_dir:="${OUT_CONTAINER}" enable_fault_injection:="${FAULT_INJECTION}"
 fi
 
 if [[ "${RVIZ}" == "true" ]]; then
@@ -149,6 +168,7 @@ if [[ "${RVIZ}" == "true" ]]; then
     case "${MODE}" in
       fast_livo2) RVIZ_CONFIG="/workspace/rviz/e2o_fast_livo2.rviz" ;;
       orbslam3) RVIZ_CONFIG="/workspace/rviz/e2o_orbslam3.rviz" ;;
+      lvisam) RVIZ_CONFIG="/workspace/rviz/e2o_lvisam.rviz" ;;
       *) RVIZ_CONFIG="/workspace/rviz/e2o_fusion.rviz" ;;
     esac
   fi
