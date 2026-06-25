@@ -1,0 +1,14 @@
+<launch>
+  <arg name="config" default="$(find e2o_localization_fusion)/config/fusion.yaml"/>
+  <arg name="output_dir" default="/data/output/current_run"/>
+  <arg name="enable_fault_injection" default="false"/>
+  <include if="$(arg enable_fault_injection)" file="/workspace/wrappers/e2o_localization_fusion/launch/fault_injection.launch"/>
+  <node pkg="e2o_localization_fusion" type="localization_health_monitor.py"
+        name="localization_health_monitor" output="screen" required="true">
+    <rosparam command="load" file="$(arg config)"/>
+  </node>
+  <node pkg="e2o_localization_fusion" type="multi_trajectory_recorder.py"
+        name="multi_trajectory_recorder" output="screen">
+    <param name="output_dir" value="$(arg output_dir)"/>
+  </node>
+</launch>

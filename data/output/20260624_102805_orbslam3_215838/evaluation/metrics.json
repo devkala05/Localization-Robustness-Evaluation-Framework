@@ -1,0 +1,73 @@
+{
+  "fusion_timeline": {
+    "applied_switches": [],
+    "estimator_healthy_fraction": {
+      "fast_livo2": 0.0,
+      "lvisam": 0.0,
+      "orbslam3": 0.9176928062216462
+    },
+    "max_switch_orientation_jump_deg": 0.0,
+    "max_switch_pose_jump_m": 0.0,
+    "navigation_ok_fraction": null,
+    "sensor_availability_fraction": {
+      "camera": 1.0,
+      "imu": 1.0,
+      "lidar": 1.0
+    },
+    "source_duration_sec": {},
+    "switch_count": 0,
+    "switches": []
+  },
+  "metrics": {
+    "fast_livo2": {
+      "associations": 0,
+      "reason": "fewer_than_3_associations",
+      "valid": false
+    },
+    "fused": {
+      "associations": 0,
+      "reason": "fewer_than_3_associations",
+      "valid": false
+    },
+    "lvisam": {
+      "associations": 0,
+      "reason": "fewer_than_3_associations",
+      "valid": false
+    },
+    "orbslam3": {
+      "alignment": "sim3",
+      "alignment_scale": 7.20911279872222,
+      "association_max_dt_sec": 0.1,
+      "associations": 1391,
+      "ate_m": {
+        "max": 6.689668462040547,
+        "mean": 2.5753772432798527,
+        "median": 2.233530285428791,
+        "p95": 5.758708679154768,
+        "rmse": 3.010041668609969
+      },
+      "rpe_rotation_deg": {
+        "count": 1386,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.7819763113897444,
+        "rmse": 1.0579246453895463
+      },
+      "rpe_translation_m": {
+        "count": 1386,
+        "delta_sec": 1.0,
+        "mean": 0.28297878482817174,
+        "rmse": 0.36726798172997616
+      },
+      "valid": true
+    }
+  },
+  "reference": {
+    "limitations": [
+      "Neither included reference is survey-grade ground truth."
+    ],
+    "notes": "",
+    "path": "/home/ayush/Desktop/Localiztion/e2o_localization_fusion_framework/data/output/20260624_122441_lvisam_913711/lvisam_trajectory.csv",
+    "source_method": "unknown"
+  }
+}

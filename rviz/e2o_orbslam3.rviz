@@ -1,0 +1,48 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: orbslam3_grid
+    Frame Rate: 30
+  Displays:
+    - Class: rviz/Grid
+      Name: Grid
+      Enabled: true
+      Plane: XY
+      Cell Size: 1
+    - Class: rviz/Path
+      Name: ORB-SLAM3 Loop-Corrected Keyframes
+      Enabled: true
+      Topic: /orbslam3/corrected_grid_keyframe_path
+      Line Style: Lines
+      Line Width: 0.04
+    - Class: rviz/PointCloud2
+      Name: ORB-SLAM3 Native Atlas (Grid Aligned)
+      Enabled: true
+      Topic: /orbslam3/raw_grid_map_points
+      Queue Size: 3
+      Style: Points
+      Size (Pixels): 4
+      Color Transformer: FlatColor
+      Color: 255; 255; 255
+      Alpha: 1
+      Decay Time: 0
+    - Class: rviz/Image
+      Name: Camera
+      Enabled: true
+      Image Topic: /camera/right/image_raw
+      Queue Size: 2
+      Transport Hint: raw
+  Enabled: true
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Value: true
+Window Geometry:
+  Height: 900
+  Width: 1440

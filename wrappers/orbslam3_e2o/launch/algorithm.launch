@@ -1,0 +1,43 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="world_frame_id" default="orbslam3_map"/>
+  <arg name="body_frame_id" default="base_link"/>
+  <arg name="output_odom_topic" default="/orbslam3/camera_odometry"/>
+  <arg name="output_path_topic" default="/orbslam3/camera_path"/>
+  <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
+  <!-- Keep 1.0 for fusion, which estimates Sim(3) online. Standalone E2O runs
+       pass the dataset-derived reference scale from run.sh. -->
+  <arg name="fixed_pose_scale" default="1.0"/>
+
+  <include file="$(find orbslam3_e2o)/launch/native.launch">
+    <arg name="camera_config" value="$(arg camera_config)"/>
+  </include>
+
+  <node name="orbslam3_pose_republisher" pkg="orbslam3_e2o"
+        type="pose_republisher_node.py" output="screen" required="true">
+    <param name="world_frame_id" value="$(arg world_frame_id)"/>
+    <param name="body_frame_id" value="$(arg body_frame_id)"/>
+    <param name="use_camera_to_body_extrinsic" value="true"/>
+    <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
+    <param name="output_path_topic" value="$(arg output_path_topic)"/>
+    <param name="raw_odom_topic" value="/orbslam3/raw_camera_odometry"/>
+    <param name="raw_path_topic" value="/orbslam3/raw_camera_path"/>
+    <param name="raw_map_topic" value="/orbslam3/raw_map_points"/>
+    <param name="grid_odom_topic" value="/orbslam3/raw_grid_odometry"/>
+    <param name="grid_path_topic" value="/orbslam3/raw_grid_path"/>
+    <param name="grid_map_topic" value="/orbslam3/raw_grid_map_points"/>
+    <param name="input_keyframe_path_topic" value="/orb_slam3/keyframe_path"/>
+    <param name="grid_keyframe_path_topic" value="/orbslam3/corrected_grid_keyframe_path"/>
+    <param name="normalize_to_start" value="true"/>
+    <param name="fixed_pose_scale" value="$(arg fixed_pose_scale)"/>
+    <param name="max_interframe_translation" value="5.0"/>
+    <param name="max_speed_mps" value="45.0"/>
+    <param name="max_angular_speed_deg_s" value="360.0"/>
+    <param name="tracking_timeout_sec" value="2.0"/>
+    <param name="reanchor_on_discontinuity" value="true"/>
+    <param name="map_voxel_size" value="0.08"/>
+    <param name="max_map_points" value="200000"/>
+    <param name="map_publish_period_sec" value="0.5"/>
+    <param name="path_publish_period_sec" value="0.5"/>
+  </node>
+</launch>

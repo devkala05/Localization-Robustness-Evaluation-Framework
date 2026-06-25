@@ -1,0 +1,12 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="orb_slam3_root" default="$(optenv ORB_SLAM3_ROOT /root/ORB_SLAM3)"/>
+  <arg name="vocabulary" default="$(arg orb_slam3_root)/Vocabulary/ORBvoc.txt"/>
+  <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
+  <node name="orbslam3_mono" pkg="orbslam3_e2o" type="run_orbslam3_native.py"
+        output="screen" required="true" args="$(arg vocabulary) $(arg camera_config)">
+    <remap from="/camera/image_raw" to="/camera/image_raw"/>
+    <remap from="/tf" to="/native/orbslam3/tf"/>
+    <remap from="/tf_static" to="/native/orbslam3/tf_static"/>
+  </node>
+</launch>

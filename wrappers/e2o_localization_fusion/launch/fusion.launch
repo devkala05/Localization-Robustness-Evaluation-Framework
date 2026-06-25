@@ -1,0 +1,33 @@
+<launch>
+  <arg name="config" default="$(find e2o_localization_fusion)/config/fusion.yaml"/>
+  <arg name="record" default="true"/>
+  <arg name="output_dir" default="/data/output/current_run"/>
+  <arg name="publish_tf" default="true"/>
+  <arg name="tf_mode" default="direct"/>
+  <arg name="primary_source" default="fast_livo2"/>
+  <arg name="event_log_path" default="$(arg output_dir)/fusion_events.csv"/>
+  <arg name="enable_fault_injection" default="false"/>
+
+  <include if="$(arg enable_fault_injection)" file="/workspace/wrappers/e2o_localization_fusion/launch/fault_injection.launch"/>
+
+  <node pkg="e2o_localization_fusion" type="localization_health_monitor.py"
+        name="localization_health_monitor" output="screen" required="true">
+    <rosparam command="load" file="$(arg config)"/>
+  </node>
+
+  <node pkg="e2o_localization_fusion" type="fusion_node.py"
+        name="e2o_localization_fusion" output="screen" required="true">
+    <rosparam command="load" file="$(arg config)"/>
+    <param name="fusion/publish_tf" value="$(arg publish_tf)"/>
+    <param name="fusion/tf_mode" value="$(arg tf_mode)"/>
+    <param name="fusion/primary_source" value="$(arg primary_source)"/>
+    <param name="fusion/event_log_path" value="$(arg event_log_path)"/>
+  </node>
+
+  <group if="$(arg record)">
+    <node pkg="e2o_localization_fusion" type="multi_trajectory_recorder.py"
+          name="multi_trajectory_recorder" output="screen">
+      <param name="output_dir" value="$(arg output_dir)"/>
+    </node>
+  </group>
+</launch>
