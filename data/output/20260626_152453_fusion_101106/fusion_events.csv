@@ -1,0 +1,8 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1782467697.3364177,startup,none,none,fusion_node_started,0.0,0.0
+1723528215.4986594,1782467715.2025995,switch,none,fast_livo2,initial_healthy_source,0.0,0.0
+1723528227.3687897,1782467738.9441786,alignment_overlap_reset,fast_livo2,orbslam3,fast_livo2_unhealthy:stale_pose,0.0,0.0
+1723528227.39935,1782467739.004198,switch,fast_livo2,orbslam3,"active_unhealthy:lidar_unavailable,stale_pose",1.7910412935974927e-15,0.0
+1723528227.39935,1782467739.0059776,switch_applied,fast_livo2,orbslam3,"active_unhealthy:lidar_unavailable,stale_pose",0.0,0.0
+1723528236.9015918,1782467758.0086744,switch,orbslam3,fast_livo2,primary_recovered_without_recovery_overlap,3.1401849173675503e-16,0.0
+1723528237.1010573,1782467758.407955,switch_applied,orbslam3,fast_livo2,primary_recovered_without_recovery_overlap,0.12336785955593162,0.5454360597458302

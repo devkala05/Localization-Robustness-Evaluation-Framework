@@ -1,0 +1,20 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="config" default="$(find localization_benchmark)/config/e2o.yaml"/>
+  <arg name="source_lidar_topic" default="/lidar103/velodyne_points"/>
+  <arg name="source_imu_topic" default="/mavros/imu/data"/>
+  <arg name="source_camera_topic" default="/camera/color/image_raw"/>
+  <arg name="publish_static_tf" default="true"/>
+
+  <rosparam command="load" file="$(arg config)" ns="e2o"/>
+  <node name="e2o_sensor_adapter" pkg="localization_benchmark"
+        type="e2o_sensor_adapter.py" output="screen" required="true">
+    <param name="source_lidar_topic" value="$(arg source_lidar_topic)"/>
+    <param name="source_imu_topic" value="$(arg source_imu_topic)"/>
+    <param name="source_camera_topic" value="$(arg source_camera_topic)"/>
+  </node>
+
+  <node if="$(arg publish_static_tf)" name="e2o_static_tf_publisher"
+        pkg="localization_benchmark" type="e2o_static_tf_publisher.py"
+        output="screen" required="true"/>
+</launch>

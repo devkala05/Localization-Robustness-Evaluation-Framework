@@ -1,0 +1,3 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1782464576.664177,startup,none,none,fusion_node_started,0.0,0.0
+1723528214.9975545,1782464593.8856785,switch,none,lvisam,initial_healthy_source,0.0,0.0

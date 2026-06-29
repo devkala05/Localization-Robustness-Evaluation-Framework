@@ -1,0 +1,38 @@
+%YAML:1.0
+
+# ORB-SLAM3 monocular camera config for E2O one_full_loop front camera.
+Camera.type: "PinHole"
+Camera.fx: 668.02585977
+Camera.fy: 658.80930843
+Camera.cx: 657.26752359
+Camera.cy: 363.16409155
+Camera.k1: -0.05078581
+Camera.k2: 0.08456123
+Camera.p1: -0.00046157
+Camera.p2: 0.00656211
+Camera.k3: -0.03406049
+Camera.width: 1280
+Camera.height: 720
+# Measured from the adapted E2O stream: approximately 16.42 Hz over the run.
+# ORB uses this for keyframe timing, so the former 10 Hz value was incorrect.
+Camera.fps: 16.42
+Camera.RGB: 0
+ThDepth: 40.0
+Camera.bf: 0.0
+
+ORBextractor.nFeatures: 2000
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 12
+ORBextractor.minThFAST: 5
+
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500

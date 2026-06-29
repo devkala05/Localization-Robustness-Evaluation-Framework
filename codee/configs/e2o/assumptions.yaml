@@ -1,0 +1,33 @@
+# Calibration and dataset assumptions that require measurement or runtime confirmation.
+dataset:
+  name: E2O one_loop
+  bag_topics:
+    lidar: /lidar103/velodyne_points
+    imu: /mavros/imu/data
+    camera: /camera/color/image_raw
+  camera_encoding_expected: bgr8_or_rgb8
+  lidar_ring_count_assumed: 16
+  point_time_field: time
+  point_time_input_unit: seconds
+calibration:
+  camera_intrinsics_source: supplied E2O calibration
+  lidar_to_camera_source: supplied E2O calibration
+  imu_to_lidar:
+    status: assumed_identity
+    warning: Measure and replace before claiming final localization accuracy.
+  time_offsets:
+    lidar_sec: 0.0
+    imu_sec: 0.0
+    camera_sec: 0.0
+    status: assumed_zero
+  camera_timestamp_mode:
+    value: rebase
+    note: preserves inter-frame deltas while aligning the archived camera epoch to bag time
+orbslam3:
+  standalone_scale: 1.0
+  reference_scale_observed: 11.776749489662226
+  provenance: one_loop_gps_enu Sim3 evaluation only
+  warning: reference scale is not used by default; monocular scale is not intrinsically observable
+references:
+  one_loop_fastlivo2_reference.csv: estimator-derived, not independent ground truth
+  one_loop_gps_enu.csv: GPS position reference, yaw untrusted, meter-level covariance

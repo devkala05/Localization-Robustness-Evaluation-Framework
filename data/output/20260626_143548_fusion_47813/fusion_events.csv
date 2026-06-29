@@ -1,0 +1,7 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1782464752.2235146,startup,none,none,fusion_node_started,0.0,0.0
+1723528215.2005885,1782464770.302771,switch,none,fast_livo2,initial_healthy_source,0.0,0.0
+1723528223.9646854,1782464787.830963,failure,fast_livo2,none,orb_fallback_disabled,0.0,0.0
+1723528224.9652107,1782464789.8327851,switch,none,fast_livo2,initial_healthy_source,1.1443916996305594e-16,0.0
+1723528224.9652107,1782464789.8362093,output_gap,fast_livo2,fast_livo2,gap_sec=1.000,0.0,0.0
+1723528224.9652107,1782464789.8397663,switch_applied,none,fast_livo2,initial_healthy_source,0.0,0.0
