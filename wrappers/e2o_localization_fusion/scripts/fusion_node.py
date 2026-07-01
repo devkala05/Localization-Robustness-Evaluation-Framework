@@ -112,11 +112,11 @@ class LocalizationFusion:
         self.recovery_disagreement_m = float(cfg.get("recovery_disagreement_m", 2.0))
         self.recovery_disagreement_rad = math.radians(float(cfg.get("recovery_disagreement_deg", 20.0)))
         self.require_recovery_consistency = as_bool(cfg.get("require_recovery_consistency", False))
-        self.scale_ratio_min = float(cfg.get("orb_scale_ratio_min", 0.5))
-        self.scale_ratio_max = float(cfg.get("orb_scale_ratio_max", 2.0))
+        self.scale_ratio_min = float(cfg.get("orb_scale_ratio_min", 1.0))
+        self.scale_ratio_max = float(cfg.get("orb_scale_ratio_max", 1.0))
         self.max_alignment_rmse = float(cfg.get("max_alignment_rmse_m", 1.5))
         self.max_alignment_orientation_rmse = math.radians(float(cfg.get("max_alignment_orientation_rmse_deg", 20.0)))
-        self.orb_fixed_scale = float(cfg.get("orb_fixed_scale", 0.0))
+        self.orb_fixed_scale = float(cfg.get("orb_fixed_scale", 1.0))
         self.allow_orb_without_validated_scale = as_bool(cfg.get("allow_orb_without_validated_scale", False))
         self.max_output_gap = float(cfg.get("max_output_gap_sec", 1.0))
         self.max_path_poses = int(cfg.get("max_path_poses", 100000))
@@ -312,7 +312,7 @@ class LocalizationFusion:
                 self.orb_camera_to_base, source_T
             )
         # This branch is disabled by default. It exists only for a user-supplied
-        # fixed scale/explicit override, and continuity alignment is still applied.
+        # explicit unit-scale override, and continuity alignment is still applied.
         fallback_alignment = np.eye(4)
         return apply_camera_to_base_similarity(
             fallback_alignment, self.source_scale[ORB], self.orb_camera_to_base, source_T
@@ -340,7 +340,7 @@ class LocalizationFusion:
         # Never learn scale/alignment from an estimator already declared unhealthy.
         if not all(bool(self.sources[name].health.get("healthy", False)) for name in (self.metric_source, ORB)):
             return
-        # Keep the accepted monocular similarity fixed while ORB is the active
+        # Keep the accepted ORB alignment fixed while ORB is the active
         # fallback. A separate recovery candidate is still learned from fresh
         # post-failure overlap and used only to decide whether primary recovery
         # is geometrically consistent.

@@ -1,6 +1,6 @@
 scenario,expected_active_source,expected_status,expected_tf,expected_navigation,recovery_condition
 camera_unavailable,none,FAILED_BOTH_UNHEALTHY,no new authoritative pose,stopped,camera healthy plus estimator stabilization and valid ORB scale
-lidar_unavailable,orbslam3 then primary,BACKUP_ORB_SLAM3 then PRIMARY_*,continuous fused chain,allowed if ORB healthy and metric scale is validated,LiDAR and metric estimator healthy for primary_recovery_sec; continuity alignment handles disagreement
+lidar_unavailable,orbslam3 then primary,BACKUP_ORB_SLAM3 then PRIMARY_*,continuous fused chain,allowed if ORB RGB-D output is healthy and aligned,LiDAR and metric estimator healthy for primary_recovery_sec; continuity alignment handles disagreement
 imu_unavailable,fast_livo2,PRIMARY_FAST_LIVO2_UNHEALTHY_NO_ORB_FALLBACK,unchanged,stopped until FAST healthy,ORB fallback is blocked unless the active metric failure reason includes lidar_unavailable
 orb_tracking_lost,fast_livo2,PRIMARY_FAST_LIVO2,unchanged,allowed,ORB tracking healthy for recovery_stabilization_sec
 fast_output_frozen,fast_livo2,PRIMARY_FAST_LIVO2_UNHEALTHY_NO_ORB_FALLBACK,unchanged,stopped until FAST healthy,ORB fallback is blocked unless the active metric failure reason includes lidar_unavailable

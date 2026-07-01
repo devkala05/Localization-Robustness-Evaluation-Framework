@@ -224,7 +224,7 @@ class HealthMonitor:
             },
             "orbslam3": {
                 "odom_topic": "/orbslam3/odometry/mapping",
-                "process_patterns": ["orbslam3_mono", "Mono"],
+                "process_patterns": ["orbslam3_rgbd", "RGBD"],
                 "required_sensors": ["camera"],
                 "tracking_required": True,
                 "tracking_topic": "/orbslam3/tracking_status",

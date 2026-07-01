@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""Regression test for the v1 E2O optical-camera/body axis conversion."""
+"""Regression test for ORB optical-to-body axis conversion without scaling."""
 import importlib.util
+import math
 import sys
 import types
 from pathlib import Path
-
-import numpy as np
-
-
-class Pose:
-    pass
 
 
 def stub_module(name, **attributes):
@@ -20,8 +15,35 @@ def stub_module(name, **attributes):
     return module
 
 
+class Value:
+    pass
+
+
+class Pose:
+    def __init__(self):
+        self.position = Value()
+        self.orientation = Value()
+
+
+def quat2mat(q):
+    w, x, y, z = q
+    return module.np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ])
+
+
+def mat2quat(m):
+    trace = float(m[0, 0] + m[1, 1] + m[2, 2])
+    if trace > 0.0:
+        s = math.sqrt(trace + 1.0) * 2.0
+        return [0.25 * s, (m[2, 1] - m[1, 2]) / s, (m[0, 2] - m[2, 0]) / s, (m[1, 0] - m[0, 1]) / s]
+    raise AssertionError("test stub only handles positive trace rotations")
+
+
 stub_module("rospy")
-stub_module("transforms3d", quaternions=types.SimpleNamespace())
+stub_module("transforms3d", quaternions=types.SimpleNamespace(quat2mat=quat2mat, mat2quat=mat2quat))
 stub_module("geometry_msgs")
 stub_module("geometry_msgs.msg", Pose=Pose, PoseStamped=type("PoseStamped", (), {}))
 stub_module("nav_msgs")
@@ -32,45 +54,50 @@ stub_module("sensor_msgs", point_cloud2=types.SimpleNamespace())
 stub_module("sensor_msgs.msg", PointCloud=type("PointCloud", (), {}), PointCloud2=type("PointCloud2", (), {}))
 
 path = Path(__file__).resolve().parents[1] / "wrappers/orbslam3_e2o/scripts/pose_republisher_node.py"
+source = path.read_text(encoding="utf-8")
 spec = importlib.util.spec_from_file_location("orb_pose_republisher", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
 def main() -> None:
-    calibrated_camera_T_body = np.array([
-        [-0.18256836, -0.98306216, -0.01604916, 0.07383026],
-        [0.11110754, -0.00440978, -0.99379861, -0.5358112],
-        [0.97689503, -0.18321936, 0.1100307, -0.31010858],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
-    assert np.allclose(module.E2O_CAMERA_T_BODY, calibrated_camera_T_body)
-    optical_ground = np.array([3.0, 0.0, 7.0, 1.0])
-    grid_ground = module.ORB_WORLD_T_GRID @ optical_ground
-    assert np.isclose(grid_ground[2], 0.0), grid_ground
-    start_camera = np.eye(4)
-    moved_camera = np.eye(4)
-    moved_camera[2, 3] = 5.0
-    start_body = module.camera_pose_to_body(start_camera)
-    moved_body = module.camera_pose_to_body(moved_camera)
-    relative = module.invert_rigid(start_body) @ moved_body
-    expected_translation = calibrated_camera_T_body[:3, :3].T @ np.array([0.0, 0.0, 5.0])
-    assert np.allclose(relative[:3, 3], expected_translation), relative[:3, 3]
-    assert np.allclose(relative[:3, :3], np.eye(3)), relative[:3, :3]
-    assert np.allclose(start_body, module.E2O_CAMERA_T_BODY)
+    forbidden = (
+        "E2O_CAMERA_T_BODY",
+        "camera_pose_to_body",
+        "fixed_pose_scale",
+        "normalize_to_start",
+        "reanchor_on_discontinuity",
+    )
+    for item in forbidden:
+        assert item not in source
 
-    # A loop-closure correction must re-anchor without freezing or jumping the
-    # externally published trajectory.
-    last_output = np.eye(4)
-    last_output[0, 3] = 20.0
-    corrected_raw = np.eye(4)
-    corrected_raw[1, 3] = -8.0
-    continuity = last_output @ module.invert_rigid(corrected_raw)
-    assert np.allclose(continuity @ corrected_raw, last_output)
-    next_raw = corrected_raw.copy()
-    next_raw[0, 3] += 1.0
-    assert np.allclose((continuity @ next_raw)[:3, 3], [21.0, 0.0, 0.0])
-    print("ORB E2O optical/body axis test passed")
+    pose = Pose()
+    pose.position.x = 1.0
+    pose.position.y = -2.0
+    pose.position.z = 3.0
+    pose.orientation.x = 0.0
+    pose.orientation.y = 0.0
+    pose.orientation.z = 0.0
+    pose.orientation.w = 1.0
+    assert module.pose_values_finite(pose)
+    assert module.quaternion_valid(pose)
+    base = module.OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
+    assert module.np.allclose(base[:3], [5.0, 0.0, 0.0])
+    rotated = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
+    assert module.np.allclose(rotated[:3], [-5.0, 0.0, 0.0])
+    transform = module.OPTICAL_TO_BODY.copy()
+    transform[:3, 3] = [6.0, 2.0, 0.0]
+    pivot = module.np.array([5.0, 2.0, 0.0])
+    about_start = module.apply_yaw_about_pivot(transform, 180.0, pivot)
+    assert module.np.allclose(about_start[:3, 3], [4.0, 2.0, 0.0])
+    right = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([2.0, 0.0, 0.0, 1.0])
+    assert module.np.allclose(right[:3], [0.0, 2.0, 0.0])
+    down = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([0.0, 3.0, 0.0, 1.0])
+    assert module.np.allclose(down[:3], [0.0, 0.0, -3.0])
+
+    pose.orientation.w = 0.0
+    assert not module.quaternion_valid(pose)
+    print("ORB optical-to-body axis test passed")
 
 
 if __name__ == "__main__":

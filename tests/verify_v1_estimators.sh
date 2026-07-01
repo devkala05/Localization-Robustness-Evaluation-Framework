@@ -3,7 +3,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 V1="$(cd "$ROOT/../v1" && pwd)"
 RUNTIME_DIR="${1:-}"
-V1_ORB_CONFIG="$(find "$V1/wrappers" -path '*/config/e2o_front_mono_orbslam3.yaml' -print -quit)"
 
 pass() { printf 'PASS: %s\n' "$1"; }
 fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
@@ -11,10 +10,8 @@ fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
 cmp -s "$V1/wrappers/fast_livo2_wrapper/config/fast_livo2_e2o.yaml" \
   "$ROOT/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml" || fail "FAST-LIVO2 E2O config differs from v1"
 pass "FAST-LIVO2 E2O config matches v1"
-[[ -n "$V1_ORB_CONFIG" ]] || fail "v1 ORB-SLAM3 E2O config not found"
-cmp -s "$V1_ORB_CONFIG" \
-  "$ROOT/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml" || fail "ORB-SLAM3 E2O config differs from v1"
-pass "ORB-SLAM3 E2O config matches v1"
+grep -q '^DepthMapFactor:' "$ROOT/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml" || fail "ORB-SLAM3 RGB-D config missing depth factor"
+pass "ORB-SLAM3 E2O config is RGB-D"
 cmp -s "$V1/wrappers/fast_livo2_wrapper/scripts/odometry_alias_node.py" \
   "$ROOT/wrappers/fast_livo2_e2o/scripts/odometry_alias_node.py" || fail "FAST odometry adapter differs from v1"
 pass "FAST odometry adapter matches v1"
@@ -35,7 +32,7 @@ docker run --rm fastlivo2-e2o:latest bash -c \
   'source /root/catkin_ws/devel/setup.bash; rospack find fast_livo >/dev/null; test -x /root/catkin_ws/devel/lib/fast_livo/fastlivo_mapping' || fail "FAST native executable unavailable"
 pass "FAST native package and executable are available"
 docker run --rm orbslam3-e2o:latest bash -c \
-  'test -x /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/Mono; grep -q "MONOCULAR,false" /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/src/ros_mono.cc; grep -q "/orb_slam3/camera_pose" /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/src/ros_mono.cc' || fail "ORB native executable/pose patch invalid"
+  'test -x /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/RGBD; grep -q "RGBD,false" /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/src/ros_rgbd.cc; grep -q "/orb_slam3/camera_pose" /root/ORB_SLAM3/Examples_old/ROS/ORB_SLAM3/src/ros_rgbd.cc' || fail "ORB native executable/pose patch invalid"
 pass "ORB native executable is headless and publishes camera pose"
 
 "$ROOT/tests/static_validation.sh"

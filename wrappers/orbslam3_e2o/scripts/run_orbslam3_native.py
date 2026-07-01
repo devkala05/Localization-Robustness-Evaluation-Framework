@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exec the pinned native ORB-SLAM3 monocular ROS example.
+"""Exec the pinned native ORB-SLAM3 RGB-D ROS example.
 
 roslaunch appends remapping arguments (for example ``__name:=...`` and
 ``/tf:=...``) to this wrapper's argv. They must be forwarded to the C++ binary;
@@ -32,10 +32,10 @@ def split_arguments(argv: Sequence[str]) -> Tuple[List[str], List[str]]:
 def find_native_binary(root: Path) -> Path:
     package = root / "Examples_old" / "ROS" / "ORB_SLAM3"
     candidates = (
-        package / "Mono",
-        package / "bin" / "Mono",
-        package / "build" / "Mono",
-        package / "build" / "bin" / "Mono",
+        package / "RGBD",
+        package / "bin" / "RGBD",
+        package / "build" / "RGBD",
+        package / "build" / "bin" / "RGBD",
     )
     for candidate in candidates:
         if candidate.is_file() and os.access(candidate, os.X_OK):

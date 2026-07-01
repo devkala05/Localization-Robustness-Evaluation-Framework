@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Evaluate E2O estimator and fused trajectory recordings.
 
-LiDAR/visual-inertial and fused trajectories are aligned with SE(3). Monocular
-ORB-SLAM3 is aligned with Sim(3), because its raw trajectory has no guaranteed metric scale.
+LiDAR/visual-inertial, ORB-SLAM3, and fused trajectories are aligned with SE(3).
+Scale is not fitted during evaluation, so recorded trajectory scale is preserved.
 The report records the provenance and limitations of the selected reference.
 """
 from __future__ import annotations
@@ -82,7 +82,7 @@ def read_reference_metadata(path: Path) -> dict:
         metadata["limitations"].append(
             "GPS-ENU reference has meter-level uncertainty and does not provide trustworthy orientation/yaw."
         )
-    metadata["limitations"].append("Neither included reference is survey-grade ground truth.")
+    metadata["limitations"].append("Selected reference is not survey-grade ground truth unless externally verified.")
     return metadata
 
 
@@ -257,7 +257,7 @@ def plot_trajectories(gt: dict, aligned: dict, out: Path) -> None:
     plt.grid(True)
     plt.xlabel("x [m]")
     plt.ylabel("y [m]")
-    plt.title("E2O trajectory comparison (time-associated and aligned)")
+    plt.title("E2O trajectory comparison (time-associated, no scale fitting)")
     plt.legend()
     plt.tight_layout()
     plt.savefig(out, dpi=160)
@@ -313,7 +313,7 @@ def plot_health_timeline(items: List[dict], out: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True)
-    parser.add_argument("--gt", default="data/e2o/ground_truth/one_loop_gps_enu.csv")
+    parser.add_argument("--gt", default="data/e2o/ground_truth/ref.csv")
     parser.add_argument("--max-association-dt", type=float, default=0.1)
     parser.add_argument("--rpe-delta-sec", type=float, default=1.0)
     args = parser.parse_args()
@@ -335,7 +335,7 @@ def main() -> int:
     trajectories = {name: load_trajectory(path) for name, path in files.items()}
     alignment_modes = {
         "fast_livo2": "se3",
-        "orbslam3": "sim3",
+        "orbslam3": "se3",
         "lvisam": "se3",
         "fused": "se3",
         "fused_continuous": "se3",

@@ -12,7 +12,8 @@ FAST_IMAGE="fastlivo2-e2o:latest"
 ORB_IMAGE="orbslam3-e2o:latest"
 LVISAM_IMAGE="lvisam-e2o:latest"
 
-INPUT_OVERLAY_CMD='cp /workspace/wrappers/localization_benchmark/scripts/e2o_sensor_adapter.py /root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/e2o_sensor_adapter.py && cp /workspace/wrappers/localization_benchmark/scripts/e2o_static_tf_publisher.py /root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/e2o_static_tf_publisher.py && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/localization_benchmark/launch/e2o_input_pipeline.launch "$@"'
+INPUT_OVERLAY_CMD='for f in e2o_sensor_adapter.py e2o_static_tf_publisher.py; do cp "/workspace/wrappers/localization_benchmark/scripts/${f}" "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}" && chmod +x "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/localization_benchmark/launch/e2o_input_pipeline.launch "$@"'
+ORB_OVERLAY_CMD='cp /workspace/wrappers/orbslam3_e2o/scripts/pose_republisher_node.py /root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/pose_republisher_node.py && chmod +x /root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/pose_republisher_node.py && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/orbslam3_e2o/launch/algorithm.launch "$@"'
 FUSION_OVERLAY_CMD='for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch "$@"'
 
 usage() {
@@ -39,6 +40,8 @@ Environment:
   PRIMARY_SOURCE=fast_livo2|lvisam|orbslam3
   NAVIGATION_LAUNCH_FILE=/workspace/...
   FAULT_INJECTION=true|false
+  EVALUATE_AFTER_RUN=true|false, EVAL_GT=/path/to/reference.csv
+  Default evaluation reference: data/e2o/ground_truth/ref.csv
   LIDAR_TOPIC, IMU_TOPIC, CAMERA_TOPIC
   SENSOR_CONFIG, FAST_CONFIG, ORB_CONFIG
   LVISAM_LIDAR_CONFIG, LVISAM_CAMERA_CONFIG, FUSION_CONFIG
@@ -136,7 +139,8 @@ start_input_pipeline() {
       config:="$SENSOR_CONFIG" \
       source_lidar_topic:="$LIDAR_TOPIC" \
       source_imu_topic:="$IMU_TOPIC" \
-      source_camera_topic:="$CAMERA_TOPIC"
+      source_camera_topic:="$CAMERA_TOPIC" \
+      source_depth_topic:="$DEPTH_TOPIC"
 }
 
 fault_or_direct_topic() {
@@ -158,12 +162,9 @@ start_fast_livo2() {
 }
 
 start_orbslam3() {
-  local orb_pose_scale="1.0"
-  is_mode orbslam3 && orb_pose_scale="$ORB_STANDALONE_SCALE"
   start_container "${STACK}_orb" "$ORB_IMAGE" \
-    roslaunch orbslam3_e2o algorithm.launch \
+    bash -lc "$ORB_OVERLAY_CMD" _ \
       camera_config:="$ORB_CONFIG" \
-      fixed_pose_scale:="$orb_pose_scale" \
       output_odom_topic:="$(fault_or_direct_topic /fault/raw/orbslam3 /orbslam3/camera_odometry)"
 }
 
@@ -244,10 +245,20 @@ start_rviz() {
 
 cleanup() {
   local code=$?
+  set +e
   for ((idx=${#CONTAINERS[@]}-1; idx>=0; idx--)); do
     docker stop -t 5 "${CONTAINERS[$idx]}" >/dev/null 2>&1 || true
     docker rm -f "${CONTAINERS[$idx]}" >/dev/null 2>&1 || true
   done
+  if [[ "$code" -eq 0 && "${EVALUATE_AFTER_RUN:-true}" == "true" ]]; then
+    echo "[run] evaluating output=${OUT_HOST}"
+    if [[ -n "${EVAL_GT:-}" ]]; then
+      "${ROOT}/evaluation/evaluate.sh" "$OUT_HOST" "$EVAL_GT"
+    else
+      "${ROOT}/evaluation/evaluate.sh" "$OUT_HOST"
+    fi
+    code=$?
+  fi
   echo "[run] output=${OUT_HOST}"
   exit "$code"
 }
@@ -262,14 +273,16 @@ BAG_RATE=${BAG_RATE}
 TF_MODE=${TF_MODE}
 PRIMARY_SOURCE=${PRIMARY_SOURCE}
 FAULT_INJECTION=${FAULT_INJECTION}
+EVALUATE_AFTER_RUN=${EVALUATE_AFTER_RUN}
+EVAL_GT=${EVAL_GT}
 FAST_SAVE_PCD=${FAST_SAVE_PCD}
 LIDAR_TOPIC=${LIDAR_TOPIC}
 IMU_TOPIC=${IMU_TOPIC}
 CAMERA_TOPIC=${CAMERA_TOPIC}
+DEPTH_TOPIC=${DEPTH_TOPIC}
 SENSOR_CONFIG=${SENSOR_CONFIG}
 FAST_CONFIG=${FAST_CONFIG}
 ORB_CONFIG=${ORB_CONFIG}
-ORB_STANDALONE_SCALE=${ORB_STANDALONE_SCALE}
 LVISAM_LIDAR_CONFIG=${LVISAM_LIDAR_CONFIG}
 LVISAM_CAMERA_CONFIG=${LVISAM_CAMERA_CONFIG}
 LVISAM_ENABLE_VISUAL=${LVISAM_ENABLE_VISUAL}
@@ -304,7 +317,7 @@ play_bag() {
     -v "${bag_dir}:/bags:ro" \
     "$FUSION_IMAGE" \
     rosbag play --quiet --clock --rate "$BAG_RATE" "/bags/${bag_file}" --topics \
-      "$LIDAR_TOPIC" "$IMU_TOPIC" "$CAMERA_TOPIC"
+      "$LIDAR_TOPIC" "$IMU_TOPIC" "$CAMERA_TOPIC" "$DEPTH_TOPIC"
   sleep 3
 }
 
@@ -327,14 +340,16 @@ if is_lvisam_fusion_mode && [[ "$PRIMARY_SOURCE" == "fast_livo2" ]]; then
 fi
 
 FAULT_INJECTION="${FAULT_INJECTION:-false}"
+EVALUATE_AFTER_RUN="${EVALUATE_AFTER_RUN:-true}"
+EVAL_GT="${EVAL_GT:-${ROOT}/data/e2o/ground_truth/ref.csv}"
 FAST_SAVE_PCD="${FAST_SAVE_PCD:-false}"
 LIDAR_TOPIC="${LIDAR_TOPIC:-/lidar103/velodyne_points}"
 IMU_TOPIC="${IMU_TOPIC:-/mavros/imu/data}"
 CAMERA_TOPIC="${CAMERA_TOPIC:-/camera/color/image_raw}"
+DEPTH_TOPIC="${DEPTH_TOPIC:-/camera/depth/image_rect_raw}"
 SENSOR_CONFIG="${SENSOR_CONFIG:-/workspace/wrappers/localization_benchmark/config/e2o.yaml}"
 FAST_CONFIG="${FAST_CONFIG:-/workspace/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml}"
 ORB_CONFIG="${ORB_CONFIG:-/workspace/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml}"
-ORB_STANDALONE_SCALE="${ORB_STANDALONE_SCALE:-1.0}"
 LVISAM_LIDAR_CONFIG="${LVISAM_LIDAR_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_lidar_e2o.yaml}"
 LVISAM_CAMERA_CONFIG="${LVISAM_CAMERA_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_camera_e2o.yaml}"
 LVISAM_ENABLE_VISUAL="${LVISAM_ENABLE_VISUAL:-false}"

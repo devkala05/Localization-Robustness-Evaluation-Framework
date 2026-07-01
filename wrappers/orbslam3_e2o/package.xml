@@ -2,7 +2,7 @@
 <package format="2">
   <name>orbslam3_e2o</name>
   <version>1.0.0</version>
-  <description>E2O-only external launch and pose adapter for the native ORB-SLAM3 monocular ROS executable.</description>
+  <description>E2O-only external launch and pose adapter for the native ORB-SLAM3 RGB-D ROS executable.</description>
   <maintainer email="kitnawatayush@gmail.com">Ayush Kitnawat</maintainer>
   <license>MIT</license>
   <buildtool_depend>catkin</buildtool_depend>

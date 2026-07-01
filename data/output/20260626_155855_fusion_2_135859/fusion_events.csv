@@ -1,9 +1,0 @@
-ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
-0.0,1782469741.0158584,startup,none,none,fusion_node_started,0.0,0.0
-1723528215.500193,1782469759.2413664,switch,none,lvisam,initial_healthy_source,0.0,0.0
-1723528311.3637166,1782469950.9685571,alignment_overlap_reset,lvisam,orbslam3,lvisam_unhealthy:lidar_unavailable,0.0,0.0
-1723528311.3637166,1782469950.972883,switch,lvisam,orbslam3,active_unhealthy:lidar_unavailable,3.552713678800501e-15,0.0
-1723528311.3637166,1782469950.979666,output_gap,orbslam3,orbslam3,gap_sec=1.102,0.0,0.0
-1723528311.3693404,1782469950.9852498,switch_applied,lvisam,orbslam3,active_unhealthy:lidar_unavailable,0.0,1.2074182697257333e-06
-1723528334.0995114,1782469996.439986,switch,orbslam3,lvisam,primary_recovered_without_recovery_overlap,0.0,0.0
-1723528334.332067,1782469996.9055212,switch_applied,orbslam3,lvisam,primary_recovered_without_recovery_overlap,0.261240813084921,1.7542380714967827

@@ -33,7 +33,7 @@ def main():
     assert np.allclose(fm.matrix_to_quaternion(fm.quaternion_to_matrix(q)), q) or np.allclose(fm.matrix_to_quaternion(fm.quaternion_to_matrix(q)), -q)
     camera_to_base=np.eye(4); camera_to_base[:3,3]=[0.3,-0.1,0.2]; camera_to_base[:3,:3]=rz(0.2)[:3,:3]
     alignment=rz(0.7); alignment[:3,3]=[5,-3,1]
-    scale=1.8
+    scale=1.0
     pairs=[]
     for i in range(20):
         camera=rz(0.03*i); camera[:3,3]=[0.4*i, math.sin(i*0.2), 0.1*i]

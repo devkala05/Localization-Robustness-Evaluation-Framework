@@ -25,13 +25,14 @@ def main():
         write(run/'fast_livo2_trajectory.csv')
         write(run/'fused_trajectory.csv')
         write(run/'lvisam_trajectory.csv')
-        write(run/'orbslam3_trajectory.csv', scale=0.5)
+        write(run/'orbslam3_trajectory.csv')
         (run/'localization_timeline.jsonl').write_text('')
         subprocess.run(['python3',str(ROOT/'evaluation/evaluate_e2o.py'),'--run-dir',str(run),'--gt',str(gt)],check=True)
         report=json.loads((run/'evaluation/metrics.json').read_text())
         for name in ('fast_livo2','orbslam3','lvisam','fused'):
             assert report['metrics'][name]['valid']
             assert report['metrics'][name]['ate_m']['rmse'] < 1e-8
+            assert report['metrics'][name]['alignment_scale'] == 1.0
         assert (run/'evaluation/trajectory_xy.png').is_file()
     print('evaluation synthetic tests passed')
 if __name__=='__main__': main()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add read-only pose and sparse-map outputs to the native monocular example.
+"""Add read-only pose and sparse-map outputs to the native RGB-D example.
 
 Only the example interface is changed. Tracking, map management, optimization,
 loop closure, place recognition, and feature extraction are untouched.
@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 root = Path(os.environ.get("ORB_SLAM3_ROOT", "/root/ORB_SLAM3"))
-path = root / "Examples_old/ROS/ORB_SLAM3/src/ros_mono.cc"
+path = root / "Examples_old/ROS/ORB_SLAM3/src/ros_rgbd.cc"
 text = path.read_text()
 if "/orb_slam3/camera_pose" in text and "/orb_slam3/map_points" in text:
     raise SystemExit(0)
@@ -60,8 +60,8 @@ else:
     raise RuntimeError("cv_bridge include not found")
 replacements = [
     (
-        "    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true);\n",
-        "    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,false);\n",
+        "    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::RGBD,true);\n",
+        "    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::RGBD,false);\n",
     ),
     (
         "    ImageGrabber(ORB_SLAM3::System* pSLAM):mpSLAM(pSLAM){}\n",
@@ -72,20 +72,20 @@ replacements = [
     ),
     ("    ORB_SLAM3::System* mpSLAM;\n",
      "    ORB_SLAM3::System* mpSLAM;\n    ros::Publisher pose_pub;\n    ros::Publisher map_pub;\n    ros::Publisher keyframe_path_pub;\n"),
-    ("    ImageGrabber igb(&SLAM);\n\n    ros::NodeHandle nodeHandler;\n",
-     "    ros::NodeHandle nodeHandler;\n    ImageGrabber igb(&SLAM, nodeHandler);\n\n"),
-    ("    mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());\n",
-     "    Sophus::SE3f Tcw = mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());\n"
+    ("    ImageGrabber igb(&SLAM);\n\n    ros::NodeHandle nh;\n",
+     "    ros::NodeHandle nh;\n    ImageGrabber igb(&SLAM, nh);\n\n"),
+    ("    mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());\n",
+     "    Sophus::SE3f Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());\n"
      "    if (mpSLAM->GetTrackingState() == 2 && finitePose(Tcw))\n"
      "    {\n"
-     "        pose_pub.publish(poseFromTcw(Tcw, cv_ptr->header.stamp));\n"
+     "        pose_pub.publish(poseFromTcw(Tcw, cv_ptrRGB->header.stamp));\n"
      "        static double last_map_publish_time = -1.0;\n"
-     "        const double map_publish_time = cv_ptr->header.stamp.toSec();\n"
+     "        const double map_publish_time = cv_ptrRGB->header.stamp.toSec();\n"
      "        if (last_map_publish_time < 0.0 || map_publish_time - last_map_publish_time >= 0.5)\n"
      "        {\n"
      "        last_map_publish_time = map_publish_time;\n"
      "        sensor_msgs::PointCloud cloud;\n"
-     "        cloud.header.stamp = cv_ptr->header.stamp;\n"
+     "        cloud.header.stamp = cv_ptrRGB->header.stamp;\n"
      "        cloud.header.frame_id = \"orbslam3_map\";\n"
      "        ORB_SLAM3::Map* current_map = mpSLAM->GetAtlas()->GetCurrentMap();\n"
      "        const std::vector<ORB_SLAM3::MapPoint*> points = current_map\n"
@@ -111,7 +111,7 @@ replacements = [
      "        for (ORB_SLAM3::KeyFrame* keyframe : keyframes)\n"
      "        {\n"
      "            if (!keyframe || keyframe->isBad()) continue;\n"
-     "            keyframe_path.poses.push_back(poseFromTcw(keyframe->GetPose(), cv_ptr->header.stamp));\n"
+     "            keyframe_path.poses.push_back(poseFromTcw(keyframe->GetPose(), ros::Time(keyframe->mTimeStamp)));\n"
      "        }\n"
      "        keyframe_path_pub.publish(keyframe_path);\n"
      "        }\n"

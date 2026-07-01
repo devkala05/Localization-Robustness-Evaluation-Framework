@@ -14,7 +14,7 @@ spec.loader.exec_module(module)
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        binary = root / "Examples_old/ROS/ORB_SLAM3/Mono"
+        binary = root / "Examples_old/ROS/ORB_SLAM3/RGBD"
         binary.parent.mkdir(parents=True)
         binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         binary.chmod(0o755)
@@ -22,8 +22,9 @@ def main() -> None:
             "run_orbslam3_native.py",
             "/root/ORB_SLAM3/Vocabulary/ORBvoc.txt",
             "/workspace/e2o.yaml",
-            "__name:=orbslam3_mono",
-            "/camera/image_raw:=/camera/image_raw",
+            "__name:=orbslam3_rgbd",
+            "/camera/rgb/image_raw:=/camera/rgb/image_raw",
+            "/camera/depth_registered/image_raw:=/camera/depth_registered/image_raw",
             "/tf:=/native/orbslam3/tf",
             "__log:=/tmp/orb.log",
         ]

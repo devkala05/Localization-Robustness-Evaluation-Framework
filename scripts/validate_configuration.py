@@ -54,19 +54,43 @@ def transform(item):
     return T
 
 camera = central["adapter"]["camera"]
+orb_rgbd = central["adapter"].get("orb_rgbd", {})
 if camera.get("timestamp_mode") != "rebase" or "restamp" in camera:
     raise AssertionError("camera timestamps must be epoch-rebased, not callback-restamped")
 checks = {
-    "fx": (camera["K"][0], fast["camera"]["fx"], orb_value("Camera.fx")),
-    "fy": (camera["K"][4], fast["camera"]["fy"], orb_value("Camera.fy")),
-    "cx": (camera["K"][2], fast["camera"]["cx"], orb_value("Camera.cx")),
-    "cy": (camera["K"][5], fast["camera"]["cy"], orb_value("Camera.cy")),
-    "width": (camera["width"], fast["camera"]["image_width"], orb_value("Camera.width")),
-    "height": (camera["height"], fast["camera"]["image_height"], orb_value("Camera.height")),
+    "fx": (camera["K"][0], fast["camera"]["fx"]),
+    "fy": (camera["K"][4], fast["camera"]["fy"]),
+    "cx": (camera["K"][2], fast["camera"]["cx"]),
+    "cy": (camera["K"][5], fast["camera"]["cy"]),
+    "width": (camera["width"], fast["camera"]["image_width"]),
+    "height": (camera["height"], fast["camera"]["image_height"]),
 }
 for name, values in checks.items():
     if max(values) - min(values) > 1.0e-8:
         raise AssertionError(f"camera {name} mismatch: {values}")
+orb_width = float(orb_rgbd.get("width", 0))
+orb_height = float(orb_rgbd.get("height", 0))
+if orb_width <= 0 or orb_height <= 0:
+    raise AssertionError("adapter.orb_rgbd must define positive width/height")
+orb_checks = {
+    "fx": (camera["K"][0] * orb_width / camera["width"], orb_value("Camera.fx")),
+    "fx_camera1": (camera["K"][0] * orb_width / camera["width"], orb_value("Camera1.fx")),
+    "fy": (camera["K"][4] * orb_height / camera["height"], orb_value("Camera.fy")),
+    "fy_camera1": (camera["K"][4] * orb_height / camera["height"], orb_value("Camera1.fy")),
+    "cx": (camera["K"][2] * orb_width / camera["width"], orb_value("Camera.cx")),
+    "cx_camera1": (camera["K"][2] * orb_width / camera["width"], orb_value("Camera1.cx")),
+    "cy": (camera["K"][5] * orb_height / camera["height"], orb_value("Camera.cy")),
+    "cy_camera1": (camera["K"][5] * orb_height / camera["height"], orb_value("Camera1.cy")),
+    "width": (orb_width, orb_value("Camera.width")),
+    "height": (orb_height, orb_value("Camera.height")),
+    "depth_factor": (float(orb_rgbd.get("depth_factor", 0.0)), orb_value("DepthMapFactor")),
+    "rgbd_depth_factor": (float(orb_rgbd.get("depth_factor", 0.0)), orb_value("RGBD.DepthMapFactor")),
+    "stereo_th_depth": (orb_value("ThDepth"), orb_value("Stereo.ThDepth")),
+    "bf": (orb_value("Stereo.b") * orb_value("Camera.fx"), orb_value("Camera.bf")),
+}
+for name, values in orb_checks.items():
+    if max(values) - min(values) > 1.0e-6:
+        raise AssertionError(f"ORB RGB-D {name} mismatch: {values}")
 for index,key in enumerate(("Camera.k1","Camera.k2","Camera.p1","Camera.p2")):
     values=(camera['D'][index], fast['camera']['distortion_coeffs'][index], orb_value(key))
     if max(values)-min(values)>1e-8:
@@ -151,10 +175,10 @@ for name, cfg in (("fusion", fusion["fusion"]), ("fusion_2", fusion_2["fusion"])
     if not bool(cfg.get("require_recovery_consistency", False)):
         raise AssertionError(f"{name} must require recovery consistency")
     if int(cfg.get("min_alignment_pairs", 0)) < 30 or int(cfg.get("alignment_window", 0)) < 100:
-        raise AssertionError(f"{name} ORB alignment window is too small for robust monocular scale")
-    min_scale = 5.0 if name == "fusion_2" else 8.0
+        raise AssertionError(f"{name} ORB alignment window is too small for robust RGB-D consistency")
+    min_scale = 0.5
     max_rmse = 1.2 if name == "fusion_2" else 0.5
-    if float(cfg.get("orb_scale_ratio_min", 0.0)) < min_scale or float(cfg.get("orb_scale_ratio_max", 99.0)) > 15.0:
+    if float(cfg.get("orb_scale_ratio_min", 0.0)) < min_scale or float(cfg.get("orb_scale_ratio_max", 99.0)) > 2.0:
         raise AssertionError(f"{name} ORB scale gate is too permissive")
     if float(cfg.get("max_alignment_rmse_m", 99.0)) > max_rmse:
         raise AssertionError(f"{name} ORB alignment RMSE gate is too permissive")

@@ -132,14 +132,14 @@ def average_transforms(transforms: Iterable[np.ndarray]) -> np.ndarray:
     return out
 
 
-def estimate_camera_to_base_similarity(pairs, camera_to_base: np.ndarray, fixed_scale: float = 0.0):
-    """Estimate a similarity from monocular camera poses to metric base poses.
+def estimate_camera_to_base_similarity(pairs, camera_to_base: np.ndarray, fixed_scale: float = 1.0):
+    """Estimate a rigid world alignment from ORB camera poses to metric base poses.
 
-    ``pairs`` contains ``(T_metric_base, T_mono_camera)``. The known metric
+    ``pairs`` contains ``(T_metric_base, T_orb_camera)``. The known metric
     ``T_camera_base`` lever arm is applied after scale, so rotations of an
     off-center camera do not create a source-switch position error.
 
-    Returns ``(T_metric_world_from_mono_world, scale, position_rmse,
+    Returns ``(T_metric_world_from_orb_world, scale, position_rmse,
     orientation_rmse_rad)``.
     """
     items = list(pairs)
@@ -172,7 +172,7 @@ def estimate_camera_to_base_similarity(pairs, camera_to_base: np.ndarray, fixed_
         scale = float(fixed_scale)
     else:
         if variance < 1.0e-4:
-            raise ValueError("insufficient monocular translation for scale estimation")
+            raise ValueError("insufficient ORB translation for alignment")
         scale = float(np.sum(X * Y) / variance)
     if not math.isfinite(scale) or scale <= 0.0:
         raise ValueError("invalid positive scale estimate")
@@ -197,7 +197,7 @@ def estimate_camera_to_base_similarity(pairs, camera_to_base: np.ndarray, fixed_
 def apply_camera_to_base_similarity(alignment: np.ndarray, scale: float,
                                     camera_to_base: np.ndarray,
                                     T_mono_camera: np.ndarray) -> np.ndarray:
-    """Apply a metric monocular-world alignment and known camera lever arm."""
+    """Apply an ORB-world alignment and known camera lever arm."""
     R_align = alignment[:3, :3]
     R_camera = T_mono_camera[:3, :3]
     out = np.eye(4)

@@ -5,11 +5,13 @@ adapter:
     lidar: /lidar103/velodyne_points
     imu: /mavros/imu/data
     camera: /camera/color/image_raw
+    depth: /camera/depth/image_rect_raw
   outputs:
     lidar: /livox/lidar
     imu: /livox/imu
     camera: /camera/right/image_raw
-    orb_camera: /camera/image_raw
+    orb_camera: /camera/rgb/image_raw
+    orb_depth: /camera/depth_registered/image_raw
     camera_info: /camera/right/camera_info
     lvisam_lidar: /lvisam/points_raw
     lvisam_imu: /lvisam/imu_raw
@@ -19,6 +21,7 @@ adapter:
     lidar: velodyne103
     imu: base_link
     camera_optical: camera_color_optical_frame
+    depth_optical: camera_depth_optical_frame
   lidar:
     point_time_field: time
     point_time_input_unit: seconds
@@ -49,6 +52,12 @@ adapter:
     - -0.00046157
     - 0.00656211
     - -0.03406049
+  orb_rgbd:
+    # The E2O bag stores RGB as 1280x720 and depth as 848x480. ORB-SLAM3 RGB-D
+    # requires matching image dimensions, so the adapter resizes RGB to depth.
+    width: 848
+    height: 480
+    depth_factor: 1000.0
 static_transforms:
 - parent: base_link
   child: velodyne103

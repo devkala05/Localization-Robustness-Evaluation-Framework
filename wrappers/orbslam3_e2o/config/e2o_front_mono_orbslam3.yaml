@@ -1,24 +1,39 @@
 %YAML:1.0
 
-# ORB-SLAM3 monocular camera config for E2O one_full_loop front camera.
+# ORB-SLAM3 RGB-D camera config for E2O one_full_loop front camera.
+# RGB is resized by e2o_sensor_adapter.py from 1280x720 to the depth image
+# resolution, so intrinsics are scaled from the original front color camera.
 Camera.type: "PinHole"
-Camera.fx: 668.02585977
-Camera.fy: 658.80930843
-Camera.cx: 657.26752359
-Camera.cy: 363.16409155
+Camera1.fx: 442.56713210
+Camera1.fy: 439.20620562
+Camera1.cx: 435.43973438
+Camera1.cy: 242.10939437
+Camera1.k1: -0.05078581
+Camera1.k2: 0.08456123
+Camera1.p1: -0.00046157
+Camera1.p2: 0.00656211
+Camera1.k3: -0.03406049
+Camera.fx: 442.56713210
+Camera.fy: 439.20620562
+Camera.cx: 435.43973438
+Camera.cy: 242.10939437
 Camera.k1: -0.05078581
 Camera.k2: 0.08456123
 Camera.p1: -0.00046157
 Camera.p2: 0.00656211
 Camera.k3: -0.03406049
-Camera.width: 1280
-Camera.height: 720
+Camera.width: 848
+Camera.height: 480
 # Measured from the adapted E2O stream: approximately 16.42 Hz over the run.
 # ORB uses this for keyframe timing, so the former 10 Hz value was incorrect.
-Camera.fps: 16.42
-Camera.RGB: 0
+Camera.fps: 16
+Camera.RGB: 1
+Camera.bf: 34.21929065
 ThDepth: 40.0
-Camera.bf: 0.0
+DepthMapFactor: 1000.0
+Stereo.ThDepth: 40.0
+Stereo.b: 0.07732
+RGBD.DepthMapFactor: 1000.0
 
 ORBextractor.nFeatures: 2000
 ORBextractor.scaleFactor: 1.2
@@ -27,12 +42,12 @@ ORBextractor.iniThFAST: 12
 ORBextractor.minThFAST: 5
 
 Viewer.KeyFrameSize: 0.05
-Viewer.KeyFrameLineWidth: 1
+Viewer.KeyFrameLineWidth: 1.0
 Viewer.GraphLineWidth: 0.9
-Viewer.PointSize: 2
+Viewer.PointSize: 2.0
 Viewer.CameraSize: 0.08
-Viewer.CameraLineWidth: 3
-Viewer.ViewpointX: 0
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
-Viewer.ViewpointF: 500
+Viewer.ViewpointF: 500.0

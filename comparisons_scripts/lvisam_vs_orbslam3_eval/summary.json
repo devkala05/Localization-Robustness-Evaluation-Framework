@@ -1,0 +1,74 @@
+{
+  "generated_utc": "2026-06-29T18:02:23.772316+00:00",
+  "input": {
+    "csv_a": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/comparisons/lvisam.csv",
+    "csv_b": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/comparisons/orbslam3.csv",
+    "name_a": "LVISAM",
+    "name_b": "ORBSLAM3",
+    "align": "se2",
+    "interpretation": "Errors are B - A. These are absolute accuracy metrics only if LVISAM is ground truth."
+  },
+  "matching": {
+    "a_samples": 1421,
+    "b_samples": 1136,
+    "matched_samples": 690,
+    "max_time_diff_threshold_s": 0.1,
+    "mean_abs_time_difference_s": 0.0402758090392403,
+    "max_abs_time_difference_s": 0.09951400756835938
+  },
+  "metrics": {
+    "x_error_m": {
+      "mean_signed": 41.79571829950572,
+      "mae": 61.056537979987006,
+      "rmse": 74.37514614156275,
+      "median_abs": 57.54133009910583,
+      "p95_abs": 135.0302625656128,
+      "max_abs": 139.11793518066406
+    },
+    "y_error_m": {
+      "mean_signed": -30.756046270257862,
+      "mae": 36.52743712571598,
+      "rmse": 48.5933494594301,
+      "median_abs": 20.43987798690796,
+      "p95_abs": 91.43152046203613,
+      "max_abs": 94.4591064453125
+    },
+    "z_error_m": {
+      "mean_signed": 1.0645889259057066,
+      "mae": 1.2654241966716866,
+      "rmse": 1.63957282399646,
+      "median_abs": 0.8449671566486359,
+      "p95_abs": 3.066977313160896,
+      "max_abs": 3.1713736951351166
+    },
+    "position_2d_error_m": {
+      "mean_signed": 79.35686643993759,
+      "mae": 79.35686643993759,
+      "rmse": 88.8424221600532,
+      "median_abs": 86.7838620871291,
+      "p95_abs": 135.8205726010061,
+      "max_abs": 139.31489038207016
+    },
+    "position_3d_error_m": {
+      "mean_signed": 79.37178974638203,
+      "mae": 79.37178974638203,
+      "rmse": 88.85754990044627,
+      "median_abs": 86.80829337026987,
+      "p95_abs": 135.823915479846,
+      "max_abs": 139.3158687318394
+    },
+    "yaw_error_deg": {
+      "mean_signed": -3.95504704551467,
+      "mae": 3.95504704551467,
+      "rmse": 4.507849294156534,
+      "median_abs": 3.746970428410945,
+      "p95_abs": 8.303351472942209,
+      "max_abs": 10.210501585656129
+    }
+  },
+  "outputs": {
+    "per_sample_errors_csv": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/comparisons/lvisam_vs_orbslam3_eval/per_sample_errors.csv",
+    "summary_json": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/comparisons/lvisam_vs_orbslam3_eval/summary.json",
+    "summary_txt": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/comparisons/lvisam_vs_orbslam3_eval/summary.txt"
+  }
+}

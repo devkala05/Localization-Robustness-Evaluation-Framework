@@ -121,7 +121,7 @@ The directory contains `run_metadata.env`, trajectory CSVs, status timelines, fu
 | `BAG_RATE=0.5` | Change playback rate. FAST/LVI-SAM-heavy modes default to `0.5`; ORB-only defaults to `1.0`. |
 | `RVIZ=true` | Start RViz with the mode-specific config. |
 | `RVIZ_CONFIG=/workspace/rviz/file.rviz` | Override the RViz config. |
-| `PRIMARY_SOURCE=orbslam3` | Start fusion with ORB as active source when scale is valid. |
+| `PRIMARY_SOURCE=orbslam3` | Start fusion with ORB as active source when the RGB-D ORB stream is healthy and aligned. |
 | `TF_MODE=direct` | Publish `odom -> base_link` directly. This is the default. |
 | `TF_MODE=map_to_odom` | Publish `map -> odom`; requires another owner for `odom -> base_link`. |
 | `FAULT_INJECTION=true` | Enable fault injection nodes for robustness tests. |
@@ -172,17 +172,26 @@ python3 tests/verify_estimator_run.py lvisam data/output/<run_id>
 
 ## Evaluation
 
-Evaluate a run:
+Successful `./run.sh ...` executions evaluate automatically at the end and save
+plots under `data/output/<run_id>/evaluation/`.
+
+Evaluate a run manually:
 
 ```bash
 ./evaluation/evaluate.sh data/output/<run_id>
 ```
 
+By default, plots and metrics compare trajectories against:
+
+```text
+data/e2o/ground_truth/ref.csv
+```
+
 Use an explicit reference:
 
 ```bash
+./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/ref.csv
 ./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/one_loop_gps_enu.csv
-./evaluation/evaluate.sh data/output/<run_id> data/e2o/gt_one_full_loop_fastlivo2_lidar103.csv
 ```
 
 Generated files are under:
@@ -246,7 +255,7 @@ LVI-SAM publishes its native path and registered clouds in `odom`, so the LVI-SA
 - `fusion` fuses FAST-LIVO2 with ORB-SLAM3.
 - `lvisam_fusion` fuses LVI-SAM with ORB-SLAM3; `fusion_2` remains as a legacy alias only.
 - `/fused_localization/odometry` is continuity-preserving; `/fused_localization/metric_odometry` stays in the selected metric source frame and may jump on recovery.
-- ORB-SLAM3 is monocular; fusion estimates a Sim(3) scale from overlap with the metric source.
+- ORB-SLAM3 runs in RGB-D mode; the adapter resizes RGB to the depth image dimensions and fusion checks consistency against the metric source.
 - Native estimator TF is not used for navigation. See `TF_TREE.md`.
 - The supplied archive has LiDAR-to-camera calibration, but IMU-to-LiDAR remains an explicit identity assumption. Replace it before claiming final accuracy.
 

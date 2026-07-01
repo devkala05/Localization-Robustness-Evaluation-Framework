@@ -18,7 +18,9 @@ import time
 from typing import Deque, Dict, Optional, Tuple
 
 import numpy as np
+import cv2
 import rospy
+from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2, PointField
 
 
@@ -76,14 +78,17 @@ class E2OSensorAdapter:
         topics["lidar"] = rospy.get_param("~source_lidar_topic", topics.get("lidar", "/lidar103/velodyne_points"))
         topics["imu"] = rospy.get_param("~source_imu_topic", topics.get("imu", "/mavros/imu/data"))
         topics["camera"] = rospy.get_param("~source_camera_topic", topics.get("camera", "/camera/color/image_raw"))
+        topics["depth"] = rospy.get_param("~source_depth_topic", topics.get("depth", "/camera/depth/image_rect_raw"))
         outputs = cfg.get("outputs", {})
         camera = cfg.get("camera", {})
+        orb_rgbd = cfg.get("orb_rgbd", {})
         lidar = cfg.get("lidar", {})
         frames = cfg.get("frames", {})
 
         self.lidar_frame = str(frames.get("lidar", "velodyne103"))
         self.imu_frame = str(frames.get("imu", "base_link"))
         self.camera_frame = str(frames.get("camera_optical", "camera_color_optical_frame"))
+        self.depth_frame = str(frames.get("depth_optical", "camera_depth_optical_frame"))
         self.point_time_scale = float(lidar.get("point_time_scale", 1.0e6))
         self.auto_detect_time_units = bool(lidar.get("auto_detect_time_units", True))
         self.require_ring = bool(lidar.get("require_ring", True))
@@ -104,11 +109,16 @@ class E2OSensorAdapter:
         self.camera_model = str(camera.get("distortion_model", "plumb_bob"))
         self.fast_camera_max_rate = float(camera.get("fast_max_rate_hz", 0.0))
         self.last_fast_camera_stamp = None
+        self.orb_rgbd_width = int(orb_rgbd.get("width", 0))
+        self.orb_rgbd_height = int(orb_rgbd.get("height", 0))
+        self.bridge = CvBridge()
+        self.latest_depth_size: Optional[Tuple[int, int]] = None
 
         self.lidar_pub = rospy.Publisher(str(outputs.get("lidar", "/livox/lidar")), PointCloud2, queue_size=20)
         self.imu_pub = rospy.Publisher(str(outputs.get("imu", "/livox/imu")), Imu, queue_size=200)
         self.camera_pub = rospy.Publisher(str(outputs.get("camera", "/camera/right/image_raw")), Image, queue_size=20)
-        self.orb_camera_pub = rospy.Publisher(str(outputs.get("orb_camera", "/camera/image_raw")), Image, queue_size=20)
+        self.orb_camera_pub = rospy.Publisher(str(outputs.get("orb_camera", "/camera/rgb/image_raw")), Image, queue_size=20)
+        self.orb_depth_pub = rospy.Publisher(str(outputs.get("orb_depth", "/camera/depth_registered/image_raw")), Image, queue_size=20)
         self.camera_info_pub = rospy.Publisher(str(outputs.get("camera_info", "/camera/right/camera_info")), CameraInfo, queue_size=20)
         self.lvisam_lidar_pub = rospy.Publisher(str(outputs.get("lvisam_lidar", "/lvisam/points_raw")), PointCloud2, queue_size=20)
         self.lvisam_imu_pub = rospy.Publisher(str(outputs.get("lvisam_imu", "/lvisam/imu_raw")), Imu, queue_size=200)
@@ -120,6 +130,7 @@ class E2OSensorAdapter:
             "lidar": StreamFaultGate("lidar", self.publish_lidar),
             "imu": StreamFaultGate("imu", self.publish_imu),
             "camera": StreamFaultGate("camera", self.publish_camera),
+            "depth": StreamFaultGate("depth", self.publish_depth),
         }
 
         rospy.Subscriber(str(topics.get("lidar", "/lidar103/velodyne_points")), PointCloud2,
@@ -128,10 +139,13 @@ class E2OSensorAdapter:
                          lambda msg: self.route("imu", msg), queue_size=200)
         rospy.Subscriber(str(topics.get("camera", "/camera/color/image_raw")), Image,
                          lambda msg: self.route("camera", msg), queue_size=20)
+        rospy.Subscriber(str(topics.get("depth", "/camera/depth/image_rect_raw")), Image,
+                         lambda msg: self.route("depth", msg), queue_size=20)
         rospy.Timer(rospy.Duration(0.01), self.timer_cb)
-        rospy.loginfo("[E2OAdapter] raw topics -> lidar=%s imu=%s camera=%s",
+        rospy.loginfo("[E2OAdapter] raw topics -> lidar=%s imu=%s camera=%s orb_rgb=%s orb_depth=%s",
                       self.lidar_pub.resolved_name, self.imu_pub.resolved_name,
-                      self.camera_pub.resolved_name)
+                      self.camera_pub.resolved_name, self.orb_camera_pub.resolved_name,
+                      self.orb_depth_pub.resolved_name)
 
     @staticmethod
     def _flatten(value, expected: int, name: str):
@@ -261,18 +275,33 @@ class E2OSensorAdapter:
         self.imu_pub.publish(out)
         self.lvisam_imu_pub.publish(out)
 
-    def publish_camera(self, msg: Image) -> None:
+    def _normalize_image_time(self, msg: Image) -> Image:
         out = copy.deepcopy(msg)
         if self.camera_timestamp_mode == "callback":
             out.header.stamp = rospy.Time.now()
         elif self.camera_timestamp_mode == "rebase":
             if self.camera_time_offset is None:
                 self.camera_time_offset = rospy.Time.now() - out.header.stamp
-                rospy.loginfo("[E2OAdapter] camera clock rebased by %.6f s",
+                rospy.loginfo("[E2OAdapter] image clock rebased by %.6f s",
                               self.camera_time_offset.to_sec())
             out.header.stamp = out.header.stamp + self.camera_time_offset
+        return out
+
+    def publish_depth(self, msg: Image) -> None:
+        out = self._normalize_image_time(msg)
+        out.header.frame_id = self.depth_frame
+        width = int(out.width or self.orb_rgbd_width)
+        height = int(out.height or self.orb_rgbd_height)
+        if width > 0 and height > 0:
+            self.latest_depth_size = (width, height)
+        self.orb_depth_pub.publish(out)
+
+    def publish_camera(self, msg: Image) -> None:
+        out = self._normalize_image_time(msg)
         out.header.frame_id = self.camera_frame
-        self.orb_camera_pub.publish(out)
+        orb_rgb = self.make_orb_rgb(out)
+        if orb_rgb is not None:
+            self.orb_camera_pub.publish(orb_rgb)
         self.lvisam_camera_pub.publish(out)
         lvisam_info = self.make_camera_info(out)
         self.lvisam_camera_info_pub.publish(lvisam_info)
@@ -292,6 +321,27 @@ class E2OSensorAdapter:
         self.last_fast_camera_stamp = stamp
         self.camera_pub.publish(out)
         self.camera_info_pub.publish(self.make_camera_info(out))
+
+    def make_orb_rgb(self, image: Image) -> Optional[Image]:
+        target_size = self.latest_depth_size
+        if target_size is None:
+            if self.orb_rgbd_width > 0 and self.orb_rgbd_height > 0:
+                target_size = (self.orb_rgbd_width, self.orb_rgbd_height)
+            else:
+                rospy.logwarn_throttle(5.0, "[E2OAdapter] waiting for depth image before publishing ORB RGB-D color")
+                return None
+        target_width, target_height = target_size
+        if int(image.width) == target_width and int(image.height) == target_height:
+            return image
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding="passthrough")
+            resized = cv2.resize(cv_image, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
+            out = self.bridge.cv2_to_imgmsg(resized, encoding=image.encoding)
+        except (CvBridgeError, cv2.error) as exc:
+            rospy.logerr_throttle(2.0, "[E2OAdapter] failed to resize ORB RGB image: %s", exc)
+            return None
+        out.header = image.header
+        return out
 
     def make_camera_info(self, image: Image) -> CameraInfo:
         info = CameraInfo()

@@ -22,7 +22,7 @@ healthy independent odometries + health state
 
 ## Black-box boundary
 
-FAST-LIVO2 and ORB-SLAM3 are built from pinned upstream refs. The only ORB build patch publishes the pose already computed by the native ROS monocular example; it does not alter tracking or optimization. FAST-LIVO2 is not source-patched. Algorithm TF outputs are remapped away from `/tf` and `/tf_static`, preventing them from competing with the fusion node.
+FAST-LIVO2 and ORB-SLAM3 are built from pinned upstream refs. The only ORB build patch publishes the pose already computed by the native ROS RGB-D example; it does not alter tracking or optimization. FAST-LIVO2 is not source-patched. Algorithm TF outputs are remapped away from `/tf` and `/tf_static`, preventing them from competing with the fusion node.
 
 ## Packages
 
@@ -36,7 +36,7 @@ Loads E2O topics/calibration and starts upstream `fastlivo_mapping`. `odometry_a
 
 ### `orbslam3_e2o`
 
-Starts native ORB-SLAM3 monocular mode. The wrapper converts the published camera pose to stamped odometry, rejects non-finite/out-of-order/kinematically impossible samples, and publishes tracking status. It intentionally does not invent metric scale.
+Starts native ORB-SLAM3 RGB-D mode. The input adapter resizes RGB to the depth image dimensions, and the wrapper converts the published camera pose to stamped odometry, rejects non-finite/out-of-order/kinematically impossible samples, and publishes tracking status.
 
 ### `e2o_localization_fusion`
 

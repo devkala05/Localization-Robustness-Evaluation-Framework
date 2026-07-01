@@ -5,7 +5,7 @@ Visualization Manager:
   Class: ""
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: orbslam3_grid
+    Fixed Frame: orbslam3_map
     Frame Rate: 30
   Displays:
     - Class: rviz/Grid
@@ -14,15 +14,29 @@ Visualization Manager:
       Plane: XY
       Cell Size: 1
     - Class: rviz/Path
-      Name: ORB-SLAM3 Loop-Corrected Keyframes
+      Name: ORB-SLAM3 Live Path
       Enabled: true
-      Topic: /orbslam3/corrected_grid_keyframe_path
+      Topic: /orbslam3/live_camera_path
       Line Style: Lines
       Line Width: 0.04
-    - Class: rviz/PointCloud2
-      Name: ORB-SLAM3 Native Atlas (Grid Aligned)
+    - Class: rviz/Path
+      Name: ORB-SLAM3 Loop-Closed Path
+      Enabled: false
+      Topic: /orbslam3/camera_path
+      Line Style: Lines
+      Line Width: 0.03
+    - Class: rviz/Odometry
+      Name: ORB-SLAM3 Odometry
       Enabled: true
-      Topic: /orbslam3/raw_grid_map_points
+      Topic: /orbslam3/camera_odometry
+      Shape: Arrow
+      Keep: 1000
+      Position Tolerance: 0.05
+      Angle Tolerance: 0.05
+    - Class: rviz/PointCloud2
+      Name: ORB-SLAM3 Map Points
+      Enabled: true
+      Topic: /orbslam3/map_points
       Queue Size: 3
       Style: Points
       Size (Pixels): 4

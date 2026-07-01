@@ -1,5 +1,5 @@
 FROM ros:noetic-ros-base-focal
-LABEL description="Pinned native ORB-SLAM3 monocular with E2O-only external wrapper"
+LABEL description="Pinned native ORB-SLAM3 RGB-D with E2O-only external wrapper"
 ENV DEBIAN_FRONTEND=noninteractive ROS_DISTRO=noetic CATKIN_WS=/root/catkin_ws ORB_SLAM3_ROOT=/root/ORB_SLAM3
 ARG ORB_SLAM3_REF=0df83dde1c85c7ab91a0d47de7a29685d046f637
 ARG PANGOLIN_REF=v0.8

@@ -50,8 +50,8 @@ health:
     max_acceleration_mps2: 20.0
     max_timestamp_lag_sec: 2.0
     process_patterns:
-    - orbslam3_mono
-    - Mono
+    - orbslam3_rgbd
+    - RGBD
     required_sensors:
     - camera
     tracking_required: true
@@ -94,14 +94,11 @@ fusion:
   recovery_disagreement_m: 2.0
   recovery_disagreement_deg: 20.0
   require_recovery_consistency: true
-  orb_scale_ratio_min: 5.0
-  # E2O monocular ORB scale is learned against the selected metric source.
-  # LVI-SAM overlap has been observed near 7x on the E2O loop.
-  orb_scale_ratio_max: 15.0
+  orb_scale_ratio_min: 1.0
+  orb_scale_ratio_max: 1.0
   max_alignment_rmse_m: 1.2
   max_alignment_orientation_rmse_deg: 8.0
-  # ORB's E2O wrapper already publishes body-axis poses using the v1 optical
-  # basis conversion. Keep this identity to avoid applying it twice.
+  # ORB-SLAM3 RGB-D output is consumed at native scale.
   orb_camera_to_base:
     rotation:
     - 1.0
@@ -117,7 +114,7 @@ fusion:
     - 0.0
     - 0.0
     - 0.0
-  orb_fixed_scale: 0.0
+  orb_fixed_scale: 1.0
   allow_orb_without_validated_scale: false
   max_output_gap_sec: 1.0
   max_path_poses: 100000

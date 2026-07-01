@@ -1,4 +1,0 @@
-ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
-0.0,1782468870.229267,startup,none,none,fusion_node_started,0.0,0.0
-1723528215.5058727,1782468888.751408,switch,none,lvisam,initial_healthy_source,0.0,0.0
-1723528239.7679307,1782468937.2756567,alignment_overlap_reset,lvisam,orbslam3,lvisam_unhealthy:lidar_unavailable,0.0,0.0

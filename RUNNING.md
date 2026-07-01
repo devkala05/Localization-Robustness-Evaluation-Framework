@@ -38,11 +38,11 @@ The Docker context excludes output/build artifacts through `.dockerignore`. Unch
 ./run.sh fusion_navigation e2o /path/to/one_loop.bag
 ```
 
-Standalone ORB defaults to its native scale (`ORB_STANDALONE_SCALE=1.0`). A
-reference scale may be supplied explicitly, but monocular initialization scale
-changes between runs and can drift. `fusion` estimates ORB Sim(3) scale from
-FAST-LIVO2 overlap; `lvisam_fusion` estimates ORB Sim(3) scale from LVI-SAM
-overlap. `fusion_2` remains as a legacy alias for `lvisam_fusion`.
+Standalone ORB runs in RGB-D mode. RGB is resized to the depth image dimensions
+by the input adapter, and the default depth topic is `/camera/depth/image_rect_raw`.
+`fusion` and `lvisam_fusion` still validate ORB against the selected metric source
+before using it as a fallback. `fusion_2` remains as a legacy alias for
+`lvisam_fusion`.
 
 Run with visualization:
 
@@ -88,7 +88,7 @@ rostopic echo -n 1 /fused_localization/status
 rostopic echo -n 1 /localization_health/summary
 rostopic echo -n 1 /fused_localization/events
 rosnode info /laserMapping
-rosnode info /orbslam3_mono
+rosnode info /orbslam3_rgbd
 roswtf
 rosrun tf2_tools view_frames.py
 rosrun rqt_graph rqt_graph
@@ -104,8 +104,19 @@ Or collect most of these into a directory:
 
 ## Evaluation
 
+Successful `./run.sh ...` executions run evaluation automatically after all
+containers stop and save plots under `data/output/<run_id>/evaluation/`.
+
 ```bash
 ./evaluation/evaluate.sh data/output/<run_id>
+```
+
+The default comparison reference is `data/e2o/ground_truth/ref.csv`.
+
+Disable automatic evaluation when you only want raw logs/CSVs:
+
+```bash
+EVALUATE_AFTER_RUN=false ./run.sh fusion e2o /path/to/one_loop.bag
 ```
 
 Generated files include:

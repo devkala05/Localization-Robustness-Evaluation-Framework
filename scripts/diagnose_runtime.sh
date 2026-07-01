@@ -11,7 +11,7 @@ run fused_rate rostopic hz -w 20 /fused_localization/odometry
 run fused_status rostopic echo -n 1 /fused_localization/status
 run health rostopic echo -n 1 /localization_health/summary
 run fast_node rosnode info /laserMapping
-run orb_node rosnode info /orbslam3_mono
+run orb_node rosnode info /orbslam3_rgbd
 run roswtf roswtf
 run rqt_graph_snapshot rosrun rqt_graph rqt_graph --force-discover
 run frames rosrun tf2_tools view_frames.py

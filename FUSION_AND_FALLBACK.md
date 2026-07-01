@@ -8,14 +8,14 @@ FAST-LIVO2 is the default primary. ORB-SLAM3 is an independent visual backup and
 
 ## ORB-SLAM3 metric alignment
 
-The E2O ORB pipeline is monocular, so its raw translation scale is arbitrary. During synchronized periods where both health monitors report healthy, the fusion node collects `(FAST base pose, ORB camera pose)` pairs. It estimates:
+The E2O ORB pipeline runs RGB-D, with RGB resized to the depth image dimensions before ORB-SLAM3. During synchronized periods where both health monitors report healthy, the fusion node collects `(FAST base pose, ORB camera pose)` pairs. It estimates:
 
 1. quaternion-safe world-orientation alignment;
-2. a positive scalar translation scale from trajectory motion;
+2. a positive scalar consistency scale from trajectory motion;
 3. world translation;
 4. camera-to-base compensation using the configured metric lever arm after scale.
 
-The result is accepted only when sample count, scale bounds, position RMSE, and orientation RMSE pass configuration thresholds. ORB cannot become fallback by default until this metric alignment is validated. A fixed scale can be supplied only when independently calibrated.
+The result is accepted only when sample count, scale bounds, position RMSE, and orientation RMSE pass configuration thresholds. ORB cannot become fallback by default until this metric alignment is validated.
 
 ## Health criteria
 
@@ -57,4 +57,4 @@ A recovering source must remain healthy for the configured stabilization interva
 
 ## Important limitation
 
-A continuity transform prevents a discontinuity at the switching instant; it does not make an already drifted backup trajectory globally correct. Monocular scale can also change after initialization. The online disagreement monitor detects large divergence but does not solve a full multi-session map-merging problem.
+A continuity transform prevents a discontinuity at the switching instant; it does not make an already drifted backup trajectory globally correct. The online disagreement monitor detects large divergence but does not solve a full multi-session map-merging problem.
