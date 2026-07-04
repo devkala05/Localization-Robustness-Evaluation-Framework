@@ -32,7 +32,7 @@ _rosparam() {
   fi
   local c; c="$(fusion_container)"
   [[ -n "$c" ]] || { printf '%sNo running fusion container and rosparam not found.%s\n' "$RED" "$RST" >&2; exit 1; }
-  docker exec "$c" bash -lc "rosparam $op $(printf '%q ' "$@")"
+  docker exec "$c" bash -lc "source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && rosparam $op $(printf '%q ' "$@")"
 }
 
 sensor() {
@@ -145,7 +145,7 @@ case "$ACTION" in
       printf '%s━━  Sensor gate status  ━━%s  %s(Ctrl-C to stop)%s\n\n' "$BOLD" "$RST" "$DIM" "$RST"
       printf '%-20s %s\n' "Gate" "Mode"
       printf '%s\n' "────────────────────────────────"
-      for gate in lidar camera_rgb camera_depth imu; do
+      for gate in lidar camera depth imu; do
         printf '%-20s ' "/e2o_faults/${gate}/mode"
         gate_colored "/e2o_faults/${gate}/mode"
         printf '\n'

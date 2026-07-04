@@ -10,6 +10,11 @@
   <arg name="live_path_topic" default="/orbslam3/live_camera_path"/>
   <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
   <arg name="executable" default="$(optenv ORB_SLAM3_EXECUTABLE RGBD)"/>
+  <arg name="max_step_m" default="1.25"/>
+  <arg name="max_gap_step_m" default="3.0"/>
+  <arg name="max_speed_mps" default="12.0"/>
+  <arg name="max_yaw_step_deg" default="45.0"/>
+  <arg name="max_backtrack_m" default="0.75"/>
 
   <include file="$(find orbslam3_e2o)/launch/native.launch">
     <arg name="camera_config" value="$(arg camera_config)"/>
@@ -32,5 +37,10 @@
     <param name="input_keyframe_path_topic" value="/orb_slam3/keyframe_path"/>
     <param name="tracking_timeout_sec" value="2.0"/>
     <param name="path_publish_period_sec" value="0.5"/>
+    <param name="max_step_m" value="$(arg max_step_m)"/>
+    <param name="max_gap_step_m" value="$(arg max_gap_step_m)"/>
+    <param name="max_speed_mps" value="$(arg max_speed_mps)"/>
+    <param name="max_yaw_step_deg" value="$(arg max_yaw_step_deg)"/>
+    <param name="max_backtrack_m" value="$(arg max_backtrack_m)"/>
   </node>
 </launch>

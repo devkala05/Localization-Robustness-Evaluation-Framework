@@ -24,9 +24,9 @@ health:
       timeout_sec: 1.0
   fast_livo2:
     odom_topic: /fast_livo2/odometry
-    pose_timeout_sec: 1.0
-    min_pose_rate_hz: 2.0
-    rate_window_sec: 3.0
+    pose_timeout_sec: 5.0
+    min_pose_rate_hz: 0.2
+    rate_window_sec: 8.0
     max_position_jump_m: 3.0
     max_orientation_jump_deg: 50.0
     max_velocity_mps: 35.0
@@ -87,6 +87,7 @@ fusion:
   # Keep fusion1 on FAST-LIVO2 + ORB-SLAM3. LVI-SAM can be launched for
   # comparison, but it is not trusted as a fallback in this profile.
   tertiary_source: ""
+  monitor_sources: []
   map_frame: map
   odom_frame: odom
   base_frame: base_link

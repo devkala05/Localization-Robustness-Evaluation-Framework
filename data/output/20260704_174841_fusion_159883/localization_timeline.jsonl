@@ -1,0 +1,1 @@
+{"data": {"event": "startup", "from_source": "none", "orientation_jump_deg": 0.0, "pose_jump_m": 0.0, "reason": "fusion_node_started", "ros_time": 0.0, "to_source": "none", "wall_time": 1783167526.4696565}, "receipt_time": 0.0, "topic": "/fused_localization/events"}

@@ -1,0 +1,1 @@
+timestamp_s,x_m,y_m,z_m,qx,qy,qz,qw,active_source,state,blend_alpha,switch_count,lidar_ok,imu_ok,camera_ok,fast_livo2_healthy,lvisam_healthy,orbslam3_healthy

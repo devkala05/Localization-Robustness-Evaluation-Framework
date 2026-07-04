@@ -12,6 +12,7 @@ import copy
 import math
 import threading
 import time
+from collections import deque
 
 import numpy as np
 import rospy
@@ -120,6 +121,12 @@ def apply_yaw_about_pivot(transform: np.ndarray, yaw_offset_deg: float, pivot: n
     return out
 
 
+def rotation_angle(transform_a: np.ndarray, transform_b: np.ndarray) -> float:
+    delta = transform_a[:3, :3].T @ transform_b[:3, :3]
+    value = (float(np.trace(delta)) - 1.0) * 0.5
+    return math.acos(max(-1.0, min(1.0, value)))
+
+
 class PoseRepublisher:
     def __init__(self) -> None:
         self.lock = threading.RLock()
@@ -146,6 +153,13 @@ class PoseRepublisher:
         self.tracking_timeout = float(rospy.get_param("~tracking_timeout_sec", 2.0))
         self.max_path_poses = int(rospy.get_param("~max_path_poses", 50000))
         self.path_publish_period = float(rospy.get_param("~path_publish_period_sec", 0.5))
+        self.max_step_m = float(rospy.get_param("~max_step_m", 1.25))
+        self.max_gap_step_m = float(rospy.get_param("~max_gap_step_m", 3.0))
+        self.max_speed_mps = float(rospy.get_param("~max_speed_mps", 12.0))
+        self.max_yaw_step_deg = float(rospy.get_param("~max_yaw_step_deg", 45.0))
+        self.max_backtrack_m = float(rospy.get_param("~max_backtrack_m", 0.75))
+        self.velocity_window = int(rospy.get_param("~velocity_window", 6))
+        self.min_backtrack_speed_mps = float(rospy.get_param("~min_backtrack_speed_mps", 0.3))
 
         self.odom_pub = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=100)
         self.path_pub = rospy.Publisher(self.output_path_topic, Path, queue_size=5, latch=True)
@@ -165,6 +179,8 @@ class PoseRepublisher:
         self.last_path_publish_wall = 0.0
         self.last_receipt_wall = None
         self.last_stamp = None
+        self.last_body_transform = None
+        self.recent_velocities = deque(maxlen=max(2, self.velocity_window))
         self.received = 0
         self.rejected = 0
 
@@ -205,6 +221,9 @@ class PoseRepublisher:
             body_transform = apply_yaw_about_pivot(
                 body_transform, self.body_yaw_offset_deg, self.live_start_pivot
             )
+            if self.unstable_body_pose(body_transform, stamp):
+                self.reject("UNSTABLE_POSE")
+                return
 
             body_odom = copy.deepcopy(raw_odom)
             body_odom.child_frame_id = self.body_frame
@@ -236,8 +255,43 @@ class PoseRepublisher:
                 self.live_path_pub.publish(self.live_path)
 
             self.last_stamp = stamp
+            self.last_body_transform = body_transform.copy()
             self.last_receipt_wall = now
             self.status_pub.publish(String(data="TRACKING"))
+
+    def unstable_body_pose(self, transform: np.ndarray, stamp) -> bool:
+        if self.last_body_transform is None or self.last_stamp is None:
+            return False
+        dt = (stamp - self.last_stamp).to_sec()
+        if dt <= 1.0e-4:
+            return True
+        delta = transform[:3, 3] - self.last_body_transform[:3, 3]
+        step = float(np.linalg.norm(delta))
+        speed = step / dt
+        angle_deg = math.degrees(rotation_angle(self.last_body_transform, transform))
+        step_limit = self.max_step_m if dt <= 0.5 else self.max_gap_step_m
+        step_too_large = step > step_limit
+        if step_too_large or speed > self.max_speed_mps or angle_deg > self.max_yaw_step_deg:
+            rospy.logwarn_throttle(
+                2.0,
+                "[ORBWrapper] unstable pose step=%.3fm speed=%.2fm/s rot=%.1fdeg dt=%.3fs",
+                step, speed, angle_deg, dt,
+            )
+            return True
+        if self.recent_velocities:
+            mean_velocity = np.mean(np.asarray(self.recent_velocities), axis=0)
+            mean_speed = float(np.linalg.norm(mean_velocity))
+            if mean_speed >= self.min_backtrack_speed_mps:
+                backtrack = -float(np.dot(delta, mean_velocity / mean_speed))
+                if backtrack > self.max_backtrack_m:
+                    rospy.logwarn_throttle(
+                        2.0,
+                        "[ORBWrapper] unstable backtrack=%.3fm mean_speed=%.2fm/s",
+                        backtrack, mean_speed,
+                    )
+                    return True
+        self.recent_velocities.append(delta / dt)
+        return False
 
     def keyframe_path_cb(self, msg: Path) -> None:
         """Publish ORB-SLAM3's optimized keyframe path in body axes around its start pose."""

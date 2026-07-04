@@ -108,11 +108,10 @@ class LocalizationFusion:
             _tertiary_cfg != self.metric_source and
             _tertiary_cfg != ORB
         )
-        # Fusion 1 (metric=FAST-LIVO2 + camera-loss fallback to LVI-SAM tertiary)
-        # vs Fusion 2 (metric=LVI-SAM, ORB is the only fallback). These are the
-        # only two supported topologies; which one is active is fully determined
-        # by whether a tertiary source is configured.
-        self.mode = "fusion1" if self.enable_tertiary else "fusion2"
+        # Fusion 1 is FAST-LIVO2 primary; Fusion 2 is LVI-SAM primary.
+        # A tertiary source can be monitored/launched independently, but it
+        # must not redefine the fusion topology.
+        self.mode = "fusion1" if self.metric_source == FAST else "fusion2"
         self.map_frame = str(cfg.get("map_frame", "map"))
         self.odom_frame = str(cfg.get("odom_frame", "odom"))
         self.base_frame = str(cfg.get("base_frame", "base_link"))
@@ -192,6 +191,13 @@ class LocalizationFusion:
             self.sources[self.tertiary_source] = SourceData(self.tertiary_source)
             self.source_to_output[self.tertiary_source] = np.eye(4)
             self.source_scale[self.tertiary_source] = 1.0
+        configured_monitor_sources = cfg.get("monitor_sources", [])
+        self.monitor_sources = []
+        for item in configured_monitor_sources:
+            name = str(item).strip().lower()
+            if name in (FAST, LVISAM) and name not in self.sources:
+                self.sources[name] = SourceData(name)
+                self.monitor_sources.append(name)
         default_orb_alignment_source = self.tertiary_source if self.enable_tertiary else self.metric_source
         self.orb_alignment_source = str(
             cfg.get("orb_alignment_source", default_orb_alignment_source)
@@ -279,6 +285,12 @@ class LocalizationFusion:
                              lambda msg, s=_ts: self.health_cb(s, msg), queue_size=20)
         else:
             self.tertiary_topic = ""
+        for source in self.monitor_sources:
+            _default_topic = "/lvisam/odometry" if source == LVISAM else "/fast_livo2/odometry"
+            topic = str(topics.get(f"{source}_odom", _default_topic))
+            rospy.Subscriber(topic, Odometry, lambda msg, s=source: self.odom_cb(s, msg), queue_size=200)
+            rospy.Subscriber(f"/localization_health/{source}", String,
+                             lambda msg, s=source: self.health_cb(s, msg), queue_size=20)
         rospy.Timer(rospy.Duration(1.0 / max(self.publish_rate_hz, 1.0)), self.timer_cb)
         self.prepare_event_log()
         self.prepare_trajectory_csvs()
@@ -629,7 +641,7 @@ class LocalizationFusion:
         return f"ACTIVE_{source.upper()}"
 
     def choose_initial_source(self, now: float) -> Optional[str]:
-        order = [self.metric_source, self.tertiary_source, ORB] if self.enable_tertiary else [self.metric_source, ORB]
+        order = [self.metric_source]
         if self.primary in order:
             order = [self.primary] + [s for s in order if s != self.primary]
         for source in order:
@@ -645,7 +657,7 @@ class LocalizationFusion:
         self.publish_event("failure", old, FAILED, reason, 0.0)
 
     def evaluate_fusion1(self, now: float) -> None:
-        """FAST-LIVO2 primary; camera loss -> LVI-SAM; LiDAR/IMU loss -> ORB-SLAM3."""
+        """FAST-LIVO2 primary; hard LiDAR/IMU loss can use ORB fallback."""
         active = self.active_source
         metric, tertiary = self.metric_source, self.tertiary_source
         dwell_ok = now - self.last_switch_wall >= self.minimum_dwell
@@ -654,19 +666,15 @@ class LocalizationFusion:
             if self.source_failure_persisted(metric, now):
                 reasons = set(self.sources[metric].health.get("reasons", []))
                 reason_text = ",".join(sorted(reasons)) or "unhealthy"
+                hard_sensor_failure = bool(reasons & LIDAR_OR_IMU_DOWN)
                 if reasons & LIDAR_OR_IMU_DOWN and self.source_usable(ORB, now, self.recovery_stabilization):
                     self.switch_to(ORB, f"{metric}_unhealthy_sensor_fallback:{reason_text}")
                     return
-                if reasons & CAMERA_DOWN and self.source_usable(tertiary, now, self.recovery_stabilization):
+                if self.enable_tertiary and reasons & CAMERA_DOWN and self.source_usable(tertiary, now, self.recovery_stabilization):
                     self.switch_to(tertiary, f"{metric}_unhealthy_camera_fallback:{reason_text}")
                     return
-                # Non-sensor-specific degradation: prefer staying metric-grade
-                # (LVI-SAM) before dropping to the camera-only ORB fallback.
-                if self.source_usable(tertiary, now, self.recovery_stabilization):
+                if self.enable_tertiary and hard_sensor_failure and self.source_usable(tertiary, now, self.recovery_stabilization):
                     self.switch_to(tertiary, f"{metric}_unhealthy_fallback:{reason_text}")
-                    return
-                if self.source_usable(ORB, now, self.recovery_stabilization):
-                    self.switch_to(ORB, f"{metric}_unhealthy_fallback:{reason_text}")
                     return
                 self.state = f"PRIMARY_{metric.upper()}_UNHEALTHY_NO_FALLBACK"
                 self.nav_ok_pub.publish(Bool(data=False))
@@ -696,7 +704,7 @@ class LocalizationFusion:
                     if recovery_allowed:
                         self.switch_to(metric, reason)
                         return
-                elif self.source_usable(tertiary, now, self.recovery_stabilization):
+                elif self.enable_tertiary and self.source_usable(tertiary, now, self.recovery_stabilization):
                     self.switch_to(tertiary, "orb_active_lidar_imu_recovered_camera_still_down")
                     return
             if self.source_failure_persisted(ORB, now):
@@ -1106,11 +1114,13 @@ class LocalizationFusion:
             active = self.transformed_active_pose(now)
             if active is not None and bool(self.sources[self.active_source].health.get("healthy", False)):
                 self.publish_output(active[0], active[1])
-                metric_T = self.metric_source_pose(self.active_source, self.sources[self.active_source].latest_T)
-                self.publish_metric_output(active[0], metric_T)
             elif (self.active_source != FAILED and self.last_output_T is not None and
                   bool(self.sources[self.active_source].health.get("healthy", False))):
                 self.publish_tf_for_pose(self.last_output_T, rospy.Time.now())
+            metric_data = self.sources[self.metric_source]
+            if (metric_data.latest_msg is not None and metric_data.latest_T is not None and
+                    bool(metric_data.health.get("healthy", False))):
+                self.publish_metric_output(metric_data.latest_msg, metric_data.latest_T)
             degraded = self.state.endswith("DEGRADED_DISAGREEMENT")
             navigation_ok = (
                 self.active_source != FAILED and
