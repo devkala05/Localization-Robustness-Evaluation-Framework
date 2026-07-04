@@ -6,11 +6,14 @@
   <arg name="body_yaw_offset_deg" default="180.0"/>
   <arg name="output_odom_topic" default="/orbslam3/camera_odometry"/>
   <arg name="output_path_topic" default="/orbslam3/camera_path"/>
+  <arg name="optimized_path_topic" default="/orbslam3/optimized_camera_path"/>
   <arg name="live_path_topic" default="/orbslam3/live_camera_path"/>
   <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
+  <arg name="executable" default="$(optenv ORB_SLAM3_EXECUTABLE RGBD)"/>
 
   <include file="$(find orbslam3_e2o)/launch/native.launch">
     <arg name="camera_config" value="$(arg camera_config)"/>
+    <arg name="executable" value="$(arg executable)"/>
   </include>
 
   <node name="orbslam3_pose_republisher" pkg="orbslam3_e2o"
@@ -21,6 +24,7 @@
     <param name="body_yaw_offset_deg" value="$(arg body_yaw_offset_deg)"/>
     <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
     <param name="output_path_topic" value="$(arg output_path_topic)"/>
+    <param name="optimized_path_topic" value="$(arg optimized_path_topic)"/>
     <param name="live_path_topic" value="$(arg live_path_topic)"/>
     <param name="raw_odom_topic" value="/orbslam3/raw_camera_odometry"/>
     <param name="raw_path_topic" value="/orbslam3/raw_camera_path"/>

@@ -22,6 +22,7 @@
     <param name="fusion/tf_mode" value="$(arg tf_mode)"/>
     <param name="fusion/primary_source" value="$(arg primary_source)"/>
     <param name="fusion/event_log_path" value="$(arg event_log_path)"/>
+    <param name="fusion/output_dir" value="$(arg output_dir)"/>
   </node>
 
   <group if="$(arg record)">

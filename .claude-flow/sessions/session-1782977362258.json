@@ -1,0 +1,14 @@
+{
+  "id": "session-1782977362258",
+  "startedAt": "2026-07-02T07:29:22.258Z",
+  "cwd": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'",
+  "context": {},
+  "metrics": {
+    "edits": 0,
+    "commands": 0,
+    "tasks": 0,
+    "errors": 0
+  },
+  "endedAt": "2026-07-02T07:29:36.740Z",
+  "duration": 14483
+}

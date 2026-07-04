@@ -7,7 +7,10 @@ health:
   tracking_status_timeout_sec: 2.5
   max_duplicate_stamps: 3
   max_sensor_duplicate_stamps: 3
-  sensor_timestamp_lag_sec: 1.0
+  # Max allowed DEVIATION from the learned clock offset before a sensor is
+  # marked unhealthy.  Absolute lag is not checked — a constant hardware clock
+  # offset (common in multi-sensor bags) is normal and ignored.
+  sensor_timestamp_lag_sec: 2.0
   process_check_enabled: true
   sensors:
     lidar:
@@ -51,15 +54,21 @@ health:
     max_timestamp_lag_sec: 2.0
     process_patterns:
     - orbslam3_rgbd
+    - RGBD_Inertial
     - RGBD
+    # RGBD mode (default) uses only the camera; IMU not required.
+    # Set required_sensors: [camera, imu] only when ORB_SLAM3_EXECUTABLE=RGBD_Inertial.
     required_sensors:
     - camera
     tracking_required: true
   lvisam:
     odom_topic: /lvisam/odometry
-    pose_timeout_sec: 1.0
-    min_pose_rate_hz: 2.0
-    rate_window_sec: 3.0
+    # LVI-SAM publishes odometry at keyframe rate (not every frame).
+    # Allow up to 3 s between keyframes before flagging stale.
+    pose_timeout_sec: 3.0
+    # Keyframe rate can be below 2 Hz in low-motion or initialization phases.
+    min_pose_rate_hz: 0.5
+    rate_window_sec: 6.0
     max_position_jump_m: 3.0
     max_orientation_jump_deg: 50.0
     max_velocity_mps: 35.0
@@ -71,17 +80,21 @@ health:
     required_sensors:
     - lidar
     - imu
-    - camera
     tracking_required: false
 fusion:
   primary_source: fast_livo2
   metric_source: fast_livo2
+  # Keep fusion1 on FAST-LIVO2 + ORB-SLAM3. LVI-SAM can be launched for
+  # comparison, but it is not trusted as a fallback in this profile.
+  tertiary_source: ""
   map_frame: map
   odom_frame: odom
   base_frame: base_link
   tf_mode: direct
+  tf_stamp_mode: current
   publish_tf: true
   publish_rate_hz: 30.0
+  localization_start_delay_sec: 8.0
   sync_slop_sec: 0.05
   alignment_window: 100
   min_alignment_pairs: 30
@@ -100,6 +113,7 @@ fusion:
   max_alignment_rmse_m: 0.5
   max_alignment_orientation_rmse_deg: 8.0
   # ORB-SLAM3 RGB-D output is consumed at native scale.
+  orb_alignment_source: fast_livo2
   orb_camera_to_base:
     rotation:
     - 1.0

@@ -41,6 +41,43 @@ ORBextractor.nLevels: 8
 ORBextractor.iniThFAST: 12
 ORBextractor.minThFAST: 5
 
+# IMU configuration for RGBD_Inertial mode.
+#
+# Tbc: transform FROM camera TO IMU/body frame (4x4, row-major).
+# Used by Tracking.cc (ParseIMUParamFile) in the pinned V1.0 ref.
+# Derived as inverse of params_camera_e2o.yaml extrinsicRotation/Translation
+# (p_imu = R * p_cam + t). IMU is co-located with lidar103 (body frame),
+# so this equals FAST-LIVO2 Rcl/Pcl.
+Tbc: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [-0.18256836, -0.98306216, -0.01604916,  0.07383026,
+           0.11110754, -0.00440978, -0.99379861, -0.53584490,
+           0.97689503, -0.18321936,  0.11003070, -0.31004950,
+           0.0,         0.0,         0.0,         1.0]
+
+# IMU.T_b_c1: same matrix, kept for Settings.cc compatibility in newer ORB-SLAM3 refs.
+IMU.T_b_c1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [-0.18256836, -0.98306216, -0.01604916,  0.07383026,
+           0.11110754, -0.00440978, -0.99379861, -0.53584490,
+           0.97689503, -0.18321936,  0.11003070, -0.31004950,
+           0.0,         0.0,         0.0,         1.0]
+
+# IMU frequency (Hz). E2O IMU is published via MAVROS at 200 Hz.
+IMU.Frequency: 200
+
+# Continuous-time noise densities from shared IMU calibration
+# (acc_n/gyr_n in params_camera_e2o.yaml and acc_cov/gyr_cov in fast_livo2_e2o.yaml).
+IMU.NoiseGyro: 0.3
+IMU.NoiseAcc: 0.5
+IMU.GyroWalk: 0.0001
+IMU.AccWalk: 0.0001
+IMU.g: 9.80511
+
 Viewer.KeyFrameSize: 0.05
 Viewer.KeyFrameLineWidth: 1.0
 Viewer.GraphLineWidth: 0.9

@@ -13,7 +13,7 @@ ORB_IMAGE="orbslam3-e2o:latest"
 LVISAM_IMAGE="lvisam-e2o:latest"
 
 INPUT_OVERLAY_CMD='for f in e2o_sensor_adapter.py e2o_static_tf_publisher.py; do cp "/workspace/wrappers/localization_benchmark/scripts/${f}" "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}" && chmod +x "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/localization_benchmark/launch/e2o_input_pipeline.launch "$@"'
-ORB_OVERLAY_CMD='cp /workspace/wrappers/orbslam3_e2o/scripts/pose_republisher_node.py /root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/pose_republisher_node.py && chmod +x /root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/pose_republisher_node.py && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/orbslam3_e2o/launch/algorithm.launch "$@"'
+ORB_OVERLAY_CMD='for f in pose_republisher_node.py run_orbslam3_native.py; do cp "/workspace/wrappers/orbslam3_e2o/scripts/${f}" "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}" && chmod +x "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}"; done && for f in algorithm.launch native.launch; do cp "/workspace/wrappers/orbslam3_e2o/launch/${f}" "/root/catkin_ws/src/orbslam3_e2o/launch/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/orbslam3_e2o/launch/algorithm.launch "$@"'
 FUSION_OVERLAY_CMD='for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch "$@"'
 
 usage() {
@@ -36,16 +36,18 @@ Modes:
   fusion_navigation  FAST-LIVO2 + ORB-SLAM3 fusion with navigation safety gate.
 
 Environment:
-  BAG_RATE, RVIZ=true|false, TF_MODE=direct|map_to_odom|none
+  BAG_RATE, BAG_DURATION=<seconds>, RVIZ=true|false, TF_MODE=direct|map_to_odom|none
   PRIMARY_SOURCE=fast_livo2|lvisam|orbslam3
   NAVIGATION_LAUNCH_FILE=/workspace/...
   FAULT_INJECTION=true|false
+  FUSION_ENABLE_LVISAM=false|true
   EVALUATE_AFTER_RUN=true|false, EVAL_GT=/path/to/reference.csv
   Default evaluation reference: data/e2o/ground_truth/ref.csv
   LIDAR_TOPIC, IMU_TOPIC, CAMERA_TOPIC
   SENSOR_CONFIG, FAST_CONFIG, ORB_CONFIG
   LVISAM_LIDAR_CONFIG, LVISAM_CAMERA_CONFIG, FUSION_CONFIG
   LVISAM_ENABLE_VISUAL=false|true, LVISAM_TF_TOPIC, LVISAM_TF_STATIC_TOPIC
+  ORB_SLAM3_EXECUTABLE=RGBD|RGBD_Inertial
 USAGE
 }
 
@@ -78,7 +80,7 @@ needs_orb() {
 }
 
 needs_lvisam() {
-  is_mode lvisam || is_lvisam_fusion_mode
+  is_mode lvisam || is_lvisam_fusion_mode || { { is_mode fusion || is_mode fusion_navigation; } && [[ "${FUSION_ENABLE_LVISAM:-false}" == "true" ]]; }
 }
 
 uses_fusion_node() {
@@ -88,10 +90,6 @@ uses_fusion_node() {
 default_bag_rate() {
   if [[ -n "${BAG_RATE:-}" ]]; then
     printf '%s\n' "$BAG_RATE"
-  elif is_mode fast_livo2 || is_mode fusion || is_mode fusion_navigation || is_mode lvisam || is_lvisam_fusion_mode; then
-    # The pinned CPU implementation processes this LIVO dataset below real time.
-    # Slow offline playback prevents its large native subscriber queues building lag.
-    printf '0.5\n'
   else
     printf '1.0\n'
   fi
@@ -165,6 +163,7 @@ start_orbslam3() {
   start_container "${STACK}_orb" "$ORB_IMAGE" \
     bash -lc "$ORB_OVERLAY_CMD" _ \
       camera_config:="$ORB_CONFIG" \
+      executable:="$ORB_EXECUTABLE" \
       output_odom_topic:="$(fault_or_direct_topic /fault/raw/orbslam3 /orbslam3/camera_odometry)"
 }
 
@@ -270,6 +269,7 @@ MODE=${MODE}
 DATASET=e2o
 BAG=${BAG}
 BAG_RATE=${BAG_RATE}
+BAG_DURATION=${BAG_DURATION}
 TF_MODE=${TF_MODE}
 PRIMARY_SOURCE=${PRIMARY_SOURCE}
 FAULT_INJECTION=${FAULT_INJECTION}
@@ -283,9 +283,11 @@ DEPTH_TOPIC=${DEPTH_TOPIC}
 SENSOR_CONFIG=${SENSOR_CONFIG}
 FAST_CONFIG=${FAST_CONFIG}
 ORB_CONFIG=${ORB_CONFIG}
+ORB_EXECUTABLE=${ORB_EXECUTABLE}
 LVISAM_LIDAR_CONFIG=${LVISAM_LIDAR_CONFIG}
 LVISAM_CAMERA_CONFIG=${LVISAM_CAMERA_CONFIG}
 LVISAM_ENABLE_VISUAL=${LVISAM_ENABLE_VISUAL}
+FUSION_ENABLE_LVISAM=${FUSION_ENABLE_LVISAM}
 FUSION_CONFIG=${FUSION_CONFIG}
 STACK=${STACK}
 FAST_CONTAINER=${STACK}_fast
@@ -308,15 +310,18 @@ check_started_containers() {
 }
 
 play_bag() {
-  local bag_dir bag_file
+  local bag_dir bag_file duration_args=()
   bag_dir="$(dirname "$BAG")"
   bag_file="$(basename "$BAG")"
+  if [[ -n "$BAG_DURATION" ]]; then
+    duration_args=(--duration "$BAG_DURATION")
+  fi
   docker run --rm --network host \
     -e ROS_MASTER_URI=http://localhost:11311 \
     -e ROS_HOSTNAME=localhost \
     -v "${bag_dir}:/bags:ro" \
     "$FUSION_IMAGE" \
-    rosbag play --quiet --clock --rate "$BAG_RATE" "/bags/${bag_file}" --topics \
+    rosbag play --quiet --clock --rate "$BAG_RATE" "${duration_args[@]}" "/bags/${bag_file}" --topics \
       "$LIDAR_TOPIC" "$IMU_TOPIC" "$CAMERA_TOPIC" "$DEPTH_TOPIC"
   sleep 3
 }
@@ -331,7 +336,8 @@ BAG="$(realpath "$BAG_ARG")"
 [[ -f "$BAG" ]] || fail "Bag not found: ${BAG}"
 
 BAG_RATE="$(default_bag_rate)"
-RVIZ="${RVIZ:-false}"
+BAG_DURATION="${BAG_DURATION:-}"
+RVIZ="${RVIZ:-true}"
 RVIZ_CONFIG="${RVIZ_CONFIG:-}"
 TF_MODE="${TF_MODE:-direct}"
 PRIMARY_SOURCE="$(default_primary_source)"
@@ -350,9 +356,11 @@ DEPTH_TOPIC="${DEPTH_TOPIC:-/camera/depth/image_rect_raw}"
 SENSOR_CONFIG="${SENSOR_CONFIG:-/workspace/wrappers/localization_benchmark/config/e2o.yaml}"
 FAST_CONFIG="${FAST_CONFIG:-/workspace/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml}"
 ORB_CONFIG="${ORB_CONFIG:-/workspace/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml}"
+ORB_EXECUTABLE="${ORB_SLAM3_EXECUTABLE:-RGBD}"
 LVISAM_LIDAR_CONFIG="${LVISAM_LIDAR_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_lidar_e2o.yaml}"
 LVISAM_CAMERA_CONFIG="${LVISAM_CAMERA_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_camera_e2o.yaml}"
 LVISAM_ENABLE_VISUAL="${LVISAM_ENABLE_VISUAL:-false}"
+FUSION_ENABLE_LVISAM="${FUSION_ENABLE_LVISAM:-false}"
 FUSION_CONFIG="$(default_fusion_config)"
 
 RUN_ID="$(date +%Y%m%d_%H%M%S)_${MODE}_$$"

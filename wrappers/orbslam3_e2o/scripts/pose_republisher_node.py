@@ -130,6 +130,9 @@ class PoseRepublisher:
         self.input_map_topic = str(rospy.get_param("~input_map_topic", "/orb_slam3/map_points"))
         self.output_odom_topic = str(rospy.get_param("~output_odom_topic", "/orbslam3/camera_odometry"))
         self.output_path_topic = str(rospy.get_param("~output_path_topic", "/orbslam3/camera_path"))
+        self.optimized_path_topic = str(
+            rospy.get_param("~optimized_path_topic", "/orbslam3/optimized_camera_path")
+        )
         self.live_path_topic = str(rospy.get_param("~live_path_topic", "/orbslam3/live_camera_path"))
         self.output_map_topic = str(rospy.get_param("~output_map_topic", "/orbslam3/map_points"))
         self.raw_odom_topic = str(rospy.get_param("~raw_odom_topic", "/orbslam3/raw_camera_odometry"))
@@ -146,6 +149,7 @@ class PoseRepublisher:
 
         self.odom_pub = rospy.Publisher(self.output_odom_topic, Odometry, queue_size=100)
         self.path_pub = rospy.Publisher(self.output_path_topic, Path, queue_size=5, latch=True)
+        self.optimized_path_pub = rospy.Publisher(self.optimized_path_topic, Path, queue_size=5, latch=True)
         self.live_path_pub = rospy.Publisher(self.live_path_topic, Path, queue_size=5, latch=True)
         self.map_pub = rospy.Publisher(self.output_map_topic, PointCloud2, queue_size=2)
         self.raw_odom_pub = rospy.Publisher(self.raw_odom_topic, Odometry, queue_size=100)
@@ -228,6 +232,7 @@ class PoseRepublisher:
             if now - self.last_path_publish_wall >= self.path_publish_period:
                 self.last_path_publish_wall = now
                 self.raw_path_pub.publish(self.raw_path)
+                self.path_pub.publish(self.live_path)
                 self.live_path_pub.publish(self.live_path)
 
             self.last_stamp = stamp
@@ -247,7 +252,7 @@ class PoseRepublisher:
             body_transforms.append(OPTICAL_TO_BODY @ pose_to_matrix(source.pose))
             source_poses.append(source)
         if not body_transforms:
-            self.path_pub.publish(out)
+            self.optimized_path_pub.publish(out)
             return
         pivot = body_transforms[0][:3, 3].copy()
         for source, body_transform in zip(source_poses, body_transforms):
@@ -258,7 +263,7 @@ class PoseRepublisher:
                 apply_yaw_about_pivot(body_transform, self.body_yaw_offset_deg, pivot)
             )
             out.poses.append(pose)
-        self.path_pub.publish(out)
+        self.optimized_path_pub.publish(out)
 
     def map_cb(self, msg: PointCloud) -> None:
         """Publish ORB map points in body axes and raw optical axes."""

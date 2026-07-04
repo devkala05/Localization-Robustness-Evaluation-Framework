@@ -42,6 +42,15 @@ LVISAM = "lvisam"
 ORB = "orbslam3"
 FAILED = "none"
 
+CSV_ALIAS = {FAST: "fastlivo2", LVISAM: "lvisam", ORB: "orbslam3"}
+
+# Health "reasons" that indicate a specific failed sensor category, as opposed to
+# generic pose-quality degradation (jitter, discontinuity, stale output, ...).
+# Only these reasons drive the sensor-aware fallback selection below; any other
+# reason falls through to the mode's default fallback order.
+LIDAR_OR_IMU_DOWN = {"lidar_unavailable", "imu_unavailable"}
+CAMERA_DOWN = {"camera_unavailable"}
+
 
 def as_bool(value) -> bool:
     if isinstance(value, bool):
@@ -91,6 +100,19 @@ class LocalizationFusion:
         if self.primary != ORB and self.primary != self.metric_source:
             raise rospy.ROSInitException("non-ORB primary_source must match metric_source")
         self.secondary = ORB if self.primary == self.metric_source else self.metric_source
+        _tertiary_cfg = str(cfg.get("tertiary_source", "")).strip().lower()
+        self.tertiary_source = _tertiary_cfg
+        self.enable_tertiary = (
+            bool(_tertiary_cfg) and
+            _tertiary_cfg in (FAST, LVISAM) and
+            _tertiary_cfg != self.metric_source and
+            _tertiary_cfg != ORB
+        )
+        # Fusion 1 (metric=FAST-LIVO2 + camera-loss fallback to LVI-SAM tertiary)
+        # vs Fusion 2 (metric=LVI-SAM, ORB is the only fallback). These are the
+        # only two supported topologies; which one is active is fully determined
+        # by whether a tertiary source is configured.
+        self.mode = "fusion1" if self.enable_tertiary else "fusion2"
         self.map_frame = str(cfg.get("map_frame", "map"))
         self.odom_frame = str(cfg.get("odom_frame", "odom"))
         self.base_frame = str(cfg.get("base_frame", "base_link"))
@@ -98,7 +120,11 @@ class LocalizationFusion:
         if self.tf_mode not in ("direct", "map_to_odom", "none"):
             raise rospy.ROSInitException("tf_mode must be direct, map_to_odom, or none")
         self.publish_tf = as_bool(cfg.get("publish_tf", True)) and self.tf_mode != "none"
+        self.tf_stamp_mode = str(cfg.get("tf_stamp_mode", "current")).strip().lower()
+        if self.tf_stamp_mode not in ("current", "source"):
+            raise rospy.ROSInitException("tf_stamp_mode must be current or source")
         self.publish_rate_hz = float(cfg.get("publish_rate_hz", 30.0))
+        self.localization_start_delay = float(cfg.get("localization_start_delay_sec", 8.0))
         self.sync_slop = float(cfg.get("sync_slop_sec", 0.05))
         self.alignment_window = int(cfg.get("alignment_window", 40))
         self.min_alignment_pairs = int(cfg.get("min_alignment_pairs", 8))
@@ -121,6 +147,8 @@ class LocalizationFusion:
         self.max_output_gap = float(cfg.get("max_output_gap_sec", 1.0))
         self.max_path_poses = int(cfg.get("max_path_poses", 100000))
         self.event_log_path = str(cfg.get("event_log_path", "/data/output/fusion_events.csv"))
+        self.output_dir = str(cfg.get("output_dir") or os.path.dirname(self.event_log_path) or "/data/output/current_run")
+        self.fused_csv_path = os.path.join(self.output_dir, "fused.csv")
         self.stop_navigation_on_failure = as_bool(cfg.get("stop_navigation_on_failure", True))
         extrinsic = cfg.get("orb_camera_to_base", {})
         self.orb_camera_to_base = np.eye(4, dtype=float)
@@ -160,6 +188,21 @@ class LocalizationFusion:
             self.metric_source: 1.0,
             ORB: self.orb_fixed_scale if self.orb_fixed_scale > 0.0 else 1.0,
         }
+        if self.enable_tertiary:
+            self.sources[self.tertiary_source] = SourceData(self.tertiary_source)
+            self.source_to_output[self.tertiary_source] = np.eye(4)
+            self.source_scale[self.tertiary_source] = 1.0
+        default_orb_alignment_source = self.tertiary_source if self.enable_tertiary else self.metric_source
+        self.orb_alignment_source = str(
+            cfg.get("orb_alignment_source", default_orb_alignment_source)
+        ).strip().lower()
+        if self.orb_alignment_source not in self.sources or self.orb_alignment_source == ORB:
+            raise rospy.ROSInitException("orb_alignment_source must be a configured metric estimator")
+        self.raw_csv_writers: Dict[str, csv.writer] = {}
+        self.raw_csv_handles: Dict[str, object] = {}
+        self.fused_csv_writer = None
+        self.fused_csv_handle = None
+        self.last_blend_alpha = 1.0
         self.synchronized_pairs: Deque[Tuple[np.ndarray, np.ndarray]] = collections.deque(maxlen=self.alignment_window)
         self.recovery_pairs: Deque[Tuple[np.ndarray, np.ndarray]] = collections.deque(maxlen=self.alignment_window)
         self.cross_fast_from_orb: Optional[np.ndarray] = None
@@ -175,6 +218,7 @@ class LocalizationFusion:
 
         self.active_source = FAILED
         self.state = "WAITING_FOR_LOCALIZATION"
+        self.bag_start_wall: Optional[float] = None
         self.last_switch_wall = 0.0
         self.switch_count = 0
         self.switch_start_wall: Optional[float] = None
@@ -183,7 +227,10 @@ class LocalizationFusion:
         self.last_output_T: Optional[np.ndarray] = None
         self.last_output_stamp: Optional[float] = None
         self.last_output_wall: Optional[float] = None
-        self.last_output_source_stamp: Dict[str, Optional[float]] = {self.metric_source: None, ORB: None}
+        _stamps: Dict[str, Optional[float]] = {self.metric_source: None, ORB: None}
+        if self.enable_tertiary:
+            _stamps[self.tertiary_source] = None
+        self.last_output_source_stamp: Dict[str, Optional[float]] = _stamps
         self.last_twist = Twist()
         self.path = Path()
         self.path.header.frame_id = self.map_frame
@@ -223,11 +270,24 @@ class LocalizationFusion:
         rospy.Subscriber(f"/localization_health/{self.metric_source}", String,
                          lambda msg: self.health_cb(self.metric_source, msg), queue_size=20)
         rospy.Subscriber("/localization_health/orbslam3", String, lambda msg: self.health_cb(ORB, msg), queue_size=20)
+        if self.enable_tertiary:
+            _default_tertiary_topic = "/lvisam/odometry" if self.tertiary_source == LVISAM else "/fast_livo2/odometry"
+            self.tertiary_topic = str(topics.get(f"{self.tertiary_source}_odom", _default_tertiary_topic))
+            _ts = self.tertiary_source
+            rospy.Subscriber(self.tertiary_topic, Odometry, lambda msg, s=_ts: self.odom_cb(s, msg), queue_size=200)
+            rospy.Subscriber(f"/localization_health/{self.tertiary_source}", String,
+                             lambda msg, s=_ts: self.health_cb(s, msg), queue_size=20)
+        else:
+            self.tertiary_topic = ""
         rospy.Timer(rospy.Duration(1.0 / max(self.publish_rate_hz, 1.0)), self.timer_cb)
         self.prepare_event_log()
+        self.prepare_trajectory_csvs()
+        rospy.on_shutdown(self.close_trajectory_csvs)
         self.publish_event("startup", FAILED, FAILED, "fusion_node_started", 0.0)
-        rospy.loginfo("[Fusion] primary=%s metric=%s metric_topic=%s orb=%s tf_mode=%s",
-                      self.primary, self.metric_source, self.metric_topic, self.orb_topic, self.tf_mode)
+        rospy.loginfo("[Fusion] primary=%s metric=%s metric_topic=%s orb=%s tf_mode=%s tf_stamp=%s orb_ref=%s tertiary=%s",
+                      self.primary, self.metric_source, self.metric_topic, self.orb_topic, self.tf_mode,
+                      self.tf_stamp_mode, self.orb_alignment_source,
+                      self.tertiary_source if self.enable_tertiary else "disabled")
 
     def prepare_event_log(self) -> None:
         if not self.event_log_path:
@@ -240,6 +300,70 @@ class LocalizationFusion:
         except OSError as exc:
             rospy.logwarn("[Fusion] cannot prepare event log %s: %s", self.event_log_path, exc)
             self.event_log_path = ""
+
+    def prepare_trajectory_csvs(self) -> None:
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+            for name in self.sources:
+                alias = CSV_ALIAS.get(name, name)
+                path = os.path.join(self.output_dir, f"{alias}.csv")
+                handle = open(path, "w", newline="", encoding="utf-8")
+                writer = csv.writer(handle)
+                writer.writerow(["timestamp_s", "x_m", "y_m", "z_m", "qx", "qy", "qz", "qw"])
+                self.raw_csv_handles[name] = handle
+                self.raw_csv_writers[name] = writer
+            self.fused_csv_handle = open(self.fused_csv_path, "w", newline="", encoding="utf-8")
+            self.fused_csv_writer = csv.writer(self.fused_csv_handle)
+            self.fused_csv_writer.writerow([
+                "timestamp_s", "x_m", "y_m", "z_m", "qx", "qy", "qz", "qw",
+                "active_source", "state", "blend_alpha", "switch_count",
+                "lidar_ok", "imu_ok", "camera_ok",
+                "fast_livo2_healthy", "lvisam_healthy", "orbslam3_healthy",
+            ])
+        except OSError as exc:
+            rospy.logwarn("[Fusion] cannot prepare trajectory CSVs in %s: %s", self.output_dir, exc)
+
+    def write_raw_csv_row(self, source: str, msg: Odometry) -> None:
+        writer = self.raw_csv_writers.get(source)
+        if writer is None:
+            return
+        p = msg.pose.pose.position
+        q = msg.pose.pose.orientation
+        writer.writerow([msg.header.stamp.to_sec(), p.x, p.y, p.z, q.x, q.y, q.z, q.w])
+        self.raw_csv_handles[source].flush()
+
+    def sensor_status(self, sensor: str) -> Optional[bool]:
+        """Best-effort sensor-category health, read off whichever running
+        estimator's health report already tracks that sensor (they all share
+        the same underlying sensor monitor, so any reporter agrees)."""
+        for data in self.sources.values():
+            available = data.health.get("sensor_available") or {}
+            if sensor in available:
+                return bool(available[sensor])
+        return None
+
+    def health_snapshot_row(self) -> list:
+        healthy = {name: bool(self.sources[name].health.get("healthy", False)) for name in self.sources}
+        return [
+            self.sensor_status("lidar"),
+            self.sensor_status("imu"),
+            self.sensor_status("camera"),
+            healthy.get(FAST),
+            healthy.get(LVISAM),
+            healthy.get(ORB),
+        ]
+
+    def close_trajectory_csvs(self) -> None:
+        for handle in self.raw_csv_handles.values():
+            try:
+                handle.close()
+            except Exception:
+                pass
+        if self.fused_csv_handle is not None:
+            try:
+                self.fused_csv_handle.close()
+            except Exception:
+                pass
 
     def append_event_log(self, row) -> None:
         if not self.event_log_path:
@@ -295,6 +419,7 @@ class LocalizationFusion:
             data.latest_T = T
             data.latest_stamp = stamp
             data.buffer.append((stamp, T))
+            self.write_raw_csv_row(source, msg)
             self.update_cross_alignment(source)
 
     def nearest_sample(self, data: SourceData, stamp: float) -> Optional[Tuple[float, np.ndarray]]:
@@ -305,6 +430,8 @@ class LocalizationFusion:
 
     def metric_source_pose(self, source: str, source_T: np.ndarray) -> np.ndarray:
         if source == self.metric_source:
+            return source_T.copy()
+        if self.enable_tertiary and source == self.tertiary_source:
             return source_T.copy()
         if self.cross_fast_from_orb is not None and self.orb_metric_scale is not None:
             return apply_camera_to_base_similarity(
@@ -319,36 +446,38 @@ class LocalizationFusion:
         )
 
     def update_cross_alignment(self, source: str) -> None:
+        if source not in (self.orb_alignment_source, ORB):
+            return
         current = self.sources[source]
-        other_name = ORB if source == self.metric_source else self.metric_source
+        other_name = ORB if source == self.orb_alignment_source else self.orb_alignment_source
         other = self.sources[other_name]
         if current.latest_stamp is None or current.latest_T is None:
             return
         match = self.nearest_sample(other, current.latest_stamp)
         if match is None:
             return
-        if source == self.metric_source:
-            metric_stamp, orb_stamp = current.latest_stamp, match[0]
-            T_metric, T_orb = current.latest_T.copy(), match[1].copy()
+        if source == self.orb_alignment_source:
+            reference_stamp, orb_stamp = current.latest_stamp, match[0]
+            T_reference, T_orb = current.latest_T.copy(), match[1].copy()
         else:
-            metric_stamp, orb_stamp = match[0], current.latest_stamp
-            T_metric, T_orb = match[1].copy(), current.latest_T.copy()
-        pair_key = (metric_stamp, orb_stamp)
+            reference_stamp, orb_stamp = match[0], current.latest_stamp
+            T_reference, T_orb = match[1].copy(), current.latest_T.copy()
+        pair_key = (reference_stamp, orb_stamp)
         if self.last_pair_key == pair_key:
             return
         self.last_pair_key = pair_key
         # Never learn scale/alignment from an estimator already declared unhealthy.
-        if not all(bool(self.sources[name].health.get("healthy", False)) for name in (self.metric_source, ORB)):
+        if not all(bool(self.sources[name].health.get("healthy", False)) for name in (self.orb_alignment_source, ORB)):
             return
         # Keep the accepted ORB alignment fixed while ORB is the active
         # fallback. A separate recovery candidate is still learned from fresh
         # post-failure overlap and used only to decide whether primary recovery
         # is geometrically consistent.
         if self.active_source == ORB:
-            self.update_recovery_alignment(T_metric, T_orb)
-            self.update_disagreement(T_metric, T_orb)
+            self.update_recovery_alignment(T_reference, T_orb)
+            self.update_disagreement(T_reference, T_orb)
             return
-        self.synchronized_pairs.append((T_metric, T_orb))
+        self.synchronized_pairs.append((T_reference, T_orb))
         try:
             estimate = self.estimate_alignment(self.synchronized_pairs, "primary")
         except ValueError as exc:
@@ -363,7 +492,7 @@ class LocalizationFusion:
                 "position_rmse_m": position_rmse,
                 "orientation_rmse_rad": orientation_rmse,
             }
-        self.update_disagreement(T_metric, T_orb)
+        self.update_disagreement(T_reference, T_orb)
 
     def update_disagreement(self, T_metric: np.ndarray, T_orb: np.ndarray) -> None:
         if self.cross_fast_from_orb is None or self.orb_metric_scale is None:
@@ -490,20 +619,139 @@ class LocalizationFusion:
         return (not bool(data.health.get("healthy", False)) and data.unhealthy_since is not None and
                 now - data.unhealthy_since >= self.failure_hold)
 
-    def backup_allowed_for_failure(self, active: str, backup: str) -> bool:
-        if active == self.metric_source and backup == ORB:
-            reasons = set(self.sources[active].health.get("reasons", []))
-            return "lidar_unavailable" in reasons
-        return True
+    def source_label(self, source: str) -> str:
+        if source == self.metric_source:
+            return f"PRIMARY_{self.metric_source.upper()}"
+        if self.enable_tertiary and source == self.tertiary_source:
+            return f"BACKUP_{self.tertiary_source.upper()}"
+        if source == ORB:
+            return "BACKUP_ORB_SLAM3"
+        return f"ACTIVE_{source.upper()}"
 
     def choose_initial_source(self, now: float) -> Optional[str]:
-        if self.source_usable(self.primary, now, self.recovery_stabilization):
-            return self.primary
-        if self.source_usable(self.secondary, now, self.recovery_stabilization):
-            return self.secondary
+        order = [self.metric_source, self.tertiary_source, ORB] if self.enable_tertiary else [self.metric_source, ORB]
+        if self.primary in order:
+            order = [self.primary] + [s for s in order if s != self.primary]
+        for source in order:
+            if self.source_usable(source, now, self.recovery_stabilization):
+                return source
         return None
 
+    def declare_failed(self, reason: str) -> None:
+        old = self.active_source
+        self.active_source = FAILED
+        self.state = "FAILED_ALL_UNHEALTHY"
+        self.nav_ok_pub.publish(Bool(data=False))
+        self.publish_event("failure", old, FAILED, reason, 0.0)
+
+    def evaluate_fusion1(self, now: float) -> None:
+        """FAST-LIVO2 primary; camera loss -> LVI-SAM; LiDAR/IMU loss -> ORB-SLAM3."""
+        active = self.active_source
+        metric, tertiary = self.metric_source, self.tertiary_source
+        dwell_ok = now - self.last_switch_wall >= self.minimum_dwell
+
+        if active == metric:
+            if self.source_failure_persisted(metric, now):
+                reasons = set(self.sources[metric].health.get("reasons", []))
+                reason_text = ",".join(sorted(reasons)) or "unhealthy"
+                if reasons & LIDAR_OR_IMU_DOWN and self.source_usable(ORB, now, self.recovery_stabilization):
+                    self.switch_to(ORB, f"{metric}_unhealthy_sensor_fallback:{reason_text}")
+                    return
+                if reasons & CAMERA_DOWN and self.source_usable(tertiary, now, self.recovery_stabilization):
+                    self.switch_to(tertiary, f"{metric}_unhealthy_camera_fallback:{reason_text}")
+                    return
+                # Non-sensor-specific degradation: prefer staying metric-grade
+                # (LVI-SAM) before dropping to the camera-only ORB fallback.
+                if self.source_usable(tertiary, now, self.recovery_stabilization):
+                    self.switch_to(tertiary, f"{metric}_unhealthy_fallback:{reason_text}")
+                    return
+                if self.source_usable(ORB, now, self.recovery_stabilization):
+                    self.switch_to(ORB, f"{metric}_unhealthy_fallback:{reason_text}")
+                    return
+                self.state = f"PRIMARY_{metric.upper()}_UNHEALTHY_NO_FALLBACK"
+                self.nav_ok_pub.publish(Bool(data=False))
+                return
+            self.state = self.source_label(metric)
+
+        elif active == tertiary:
+            if dwell_ok and self.source_usable(metric, now, self.primary_recovery):
+                recovery_allowed, reason = self.primary_recovery_allowed()
+                if recovery_allowed:
+                    self.switch_to(metric, reason)
+                    return
+            if self.source_failure_persisted(tertiary, now):
+                reasons = ",".join(self.sources[tertiary].health.get("reasons", ["unhealthy"]))
+                if self.source_usable(ORB, now, self.recovery_stabilization):
+                    self.switch_to(ORB, f"{tertiary}_unhealthy_fallback:{reasons}")
+                    return
+                self.state = f"BACKUP_{tertiary.upper()}_UNHEALTHY_NO_FALLBACK"
+                self.nav_ok_pub.publish(Bool(data=False))
+                return
+            self.state = self.source_label(tertiary)
+
+        else:  # active == ORB
+            if dwell_ok:
+                if self.source_usable(metric, now, self.primary_recovery):
+                    recovery_allowed, reason = self.primary_recovery_allowed()
+                    if recovery_allowed:
+                        self.switch_to(metric, reason)
+                        return
+                elif self.source_usable(tertiary, now, self.recovery_stabilization):
+                    self.switch_to(tertiary, "orb_active_lidar_imu_recovered_camera_still_down")
+                    return
+            if self.source_failure_persisted(ORB, now):
+                self.declare_failed("orb_unhealthy_no_fallback")
+                return
+            self.state = self.source_label(ORB)
+
+        if active == ORB and all(bool(self.sources[s].health.get("healthy", False)) for s in (metric, ORB)) and not self.consistency_ok():
+            self.state += "_DEGRADED_DISAGREEMENT"
+
+    def evaluate_fusion2(self, now: float) -> None:
+        """LVI-SAM primary; LiDAR/IMU loss -> ORB-SLAM3; ORB loss -> fusion fails."""
+        active = self.active_source
+        metric = self.metric_source
+        dwell_ok = now - self.last_switch_wall >= self.minimum_dwell
+
+        if active == metric:
+            if self.source_failure_persisted(metric, now):
+                reasons = ",".join(self.sources[metric].health.get("reasons", ["unhealthy"]))
+                if self.source_usable(ORB, now, self.recovery_stabilization):
+                    self.switch_to(ORB, f"{metric}_unhealthy_fallback:{reasons}")
+                    return
+                self.state = f"PRIMARY_{metric.upper()}_UNHEALTHY_NO_ORB_FALLBACK"
+                self.nav_ok_pub.publish(Bool(data=False))
+                return
+            self.state = self.source_label(metric)
+        else:  # active == ORB
+            if dwell_ok and self.source_usable(metric, now, self.primary_recovery):
+                recovery_allowed, reason = self.primary_recovery_allowed()
+                if recovery_allowed:
+                    self.switch_to(metric, reason)
+                    return
+            if self.source_failure_persisted(ORB, now):
+                self.declare_failed("orb_unhealthy_no_lvisam_fallback")
+                return
+            self.state = self.source_label(ORB)
+
+        if active == ORB and all(bool(self.sources[s].health.get("healthy", False)) for s in (metric, ORB)) and not self.consistency_ok():
+            self.state += "_DEGRADED_DISAGREEMENT"
+
     def evaluate_state_machine(self, now: float) -> None:
+        ros_now = rospy.Time.now().to_sec()
+        if ros_now <= 0.0:
+            self.state = "WAITING_FOR_BAG_CLOCK"
+            self.nav_ok_pub.publish(Bool(data=False))
+            return
+        if self.bag_start_wall is None:
+            self.bag_start_wall = now
+            self.publish_event("bag_clock_started", FAILED, FAILED, "waiting_for_localization_start_delay", 0.0)
+        elapsed_since_bag_start = now - self.bag_start_wall
+        if elapsed_since_bag_start < self.localization_start_delay:
+            self.state = "WAITING_FOR_LOCALIZATION_START_DELAY"
+            self.nav_ok_pub.publish(Bool(data=False))
+            return
+
         orb = self.sources[ORB]
         orb_reasons = set(orb.health.get("reasons", []))
         alignment_breaking_reasons = {
@@ -522,7 +770,9 @@ class LocalizationFusion:
             self.invalidate_orb_alignment(f"orb_unhealthy:{reasons}")
 
         metric = self.sources[self.metric_source]
+        alignment_reference = self.sources[self.orb_alignment_source]
         metric_reasons = set(metric.health.get("reasons", []))
+        alignment_reference_reasons = set(alignment_reference.health.get("reasons", []))
         metric_overlap_breaking_reasons = {
             "lidar_unavailable",
             "imu_unavailable",
@@ -537,14 +787,18 @@ class LocalizationFusion:
             "orientation_discontinuity",
             "process_not_present",
         }
+        reference_reset_reason = ",".join(sorted(alignment_reference_reasons & metric_overlap_breaking_reasons))
         reset_reason = ",".join(sorted(metric_reasons & metric_overlap_breaking_reasons))
-        if (reset_reason and not bool(metric.health.get("healthy", False)) and
-                metric.unhealthy_since is not None and
-                now - metric.unhealthy_since >= self.failure_hold and
-                reset_reason != self.last_metric_fault_reset_reason):
-            self.last_metric_fault_reset_reason = reset_reason
-            self.clear_overlap_buffers(f"{self.metric_source}_unhealthy:{reset_reason}")
-        elif bool(metric.health.get("healthy", False)):
+        reset_source = self.orb_alignment_source if reference_reset_reason else self.metric_source
+        reset_reasons = reference_reset_reason or reset_reason
+        reset_data = self.sources[reset_source]
+        if (reset_reasons and not bool(reset_data.health.get("healthy", False)) and
+                reset_data.unhealthy_since is not None and
+                now - reset_data.unhealthy_since >= self.failure_hold and
+                f"{reset_source}:{reset_reasons}" != self.last_metric_fault_reset_reason):
+            self.last_metric_fault_reset_reason = f"{reset_source}:{reset_reasons}"
+            self.clear_overlap_buffers(f"{reset_source}_unhealthy:{reset_reasons}")
+        elif bool(metric.health.get("healthy", False)) and bool(alignment_reference.health.get("healthy", False)):
             self.last_metric_fault_reset_reason = None
 
         if self.active_source == FAILED:
@@ -552,42 +806,13 @@ class LocalizationFusion:
             if selected:
                 self.switch_to(selected, "initial_healthy_source")
             else:
-                self.state = "FAILED_BOTH_UNHEALTHY"
+                self.state = "WAITING_FOR_LOCALIZATION"
             return
 
-        active = self.active_source
-        backup = ORB if active == self.metric_source else self.metric_source
-        if self.source_failure_persisted(active, now):
-            if (self.backup_allowed_for_failure(active, backup) and
-                    self.source_usable(backup, now, self.recovery_stabilization)):
-                reasons = ",".join(self.sources[active].health.get("reasons", ["unhealthy"]))
-                self.switch_to(backup, f"active_unhealthy:{reasons}")
-            else:
-                if active == self.metric_source and backup == ORB:
-                    self.state = f"PRIMARY_{self.metric_source.upper()}_UNHEALTHY_NO_ORB_FALLBACK"
-                    self.nav_ok_pub.publish(Bool(data=False))
-                else:
-                    old = self.active_source
-                    self.active_source = FAILED
-                    self.state = "FAILED_BOTH_UNHEALTHY"
-                    self.nav_ok_pub.publish(Bool(data=False))
-                    self.publish_event("failure", old, FAILED, "both_estimators_unhealthy", 0.0)
-            return
-
-        if active == self.secondary:
-            primary_ready = self.source_usable(self.primary, now, self.primary_recovery)
-            dwell_ok = now - self.last_switch_wall >= self.minimum_dwell
-            recovery_allowed, reason = self.primary_recovery_allowed()
-            if primary_ready and dwell_ok and recovery_allowed:
-                self.switch_to(self.primary, reason)
-                return
-
-        if active == self.metric_source:
-            self.state = f"PRIMARY_{self.metric_source.upper()}"
+        if self.mode == "fusion1":
+            self.evaluate_fusion1(now)
         else:
-            self.state = "BACKUP_ORB_SLAM3"
-        if all(bool(self.sources[s].health.get("healthy", False)) for s in (self.metric_source, ORB)) and not self.consistency_ok():
-            self.state += "_DEGRADED_DISAGREEMENT"
+            self.evaluate_fusion2(now)
 
     def switch_to(self, new_source: str, reason: str) -> None:
         data = self.sources[new_source]
@@ -606,7 +831,7 @@ class LocalizationFusion:
             self.synchronized_pairs = collections.deque(self.recovery_pairs, maxlen=self.alignment_window)
             self.reset_recovery_alignment()
         native_metric_pose = self.metric_source_pose(new_source, data.latest_T)
-        if before is None:
+        if before is None or new_source == self.metric_source:
             self.source_to_output[new_source] = np.eye(4)
             after = native_metric_pose
         else:
@@ -621,7 +846,7 @@ class LocalizationFusion:
         self.switch_anchor_T = before
         self.last_output_source_stamp[new_source] = None
         self.switch_count += 1
-        self.state = f"PRIMARY_{self.metric_source.upper()}" if new_source == self.metric_source else "BACKUP_ORB_SLAM3"
+        self.state = self.source_label(new_source)
         self.pending_switch_event = ({"old": old, "new": new_source, "reason": reason}
                                      if before is not None else None)
         self.publish_event("switch", old, new_source, reason, jump)
@@ -638,10 +863,14 @@ class LocalizationFusion:
             self.active_source, data.latest_T
         )
         T_out = T_target
+        self.last_blend_alpha = 1.0
         if self.switch_anchor_T is not None and self.switch_start_wall is not None and self.blend_duration > 0.0:
             alpha = (now - self.switch_start_wall) / self.blend_duration
             if alpha < 1.0:
+                # alpha is the new source's weight (0 at the switch instant, 1 once
+                # settled); the outgoing source's contribution is (1 - alpha).
                 T_out = interpolate_transform(self.switch_anchor_T, T_target, alpha)
+                self.last_blend_alpha = max(0.0, alpha)
             else:
                 self.switch_anchor_T = None
                 self.switch_start_wall = None
@@ -681,12 +910,21 @@ class LocalizationFusion:
         out.angular.x, out.angular.y, out.angular.z = map(float, angular)
         return out
 
+    def tf_publish_stamp(self, source_stamp: rospy.Time) -> rospy.Time:
+        if self.tf_stamp_mode == "source":
+            return source_stamp
+        now = rospy.Time.now()
+        if now.to_sec() <= 0.0 or now < source_stamp:
+            return source_stamp
+        return now
+
     def publish_tf_for_pose(self, T_map_base: np.ndarray, stamp: rospy.Time) -> None:
         if not self.publish_tf or self.tf_broadcaster is None:
             return
+        tf_stamp = self.tf_publish_stamp(stamp)
         if self.tf_mode == "direct":
             msg = TransformStamped()
-            msg.header.stamp = stamp
+            msg.header.stamp = tf_stamp
             msg.header.frame_id = self.odom_frame
             msg.child_frame_id = self.base_frame
             msg.transform.translation.x, msg.transform.translation.y, msg.transform.translation.z = map(float, T_map_base[:3, 3])
@@ -694,7 +932,7 @@ class LocalizationFusion:
             self.tf_broadcaster.sendTransform(msg)
         elif self.tf_mode == "map_to_odom":
             try:
-                tf = self.tf_buffer.lookup_transform(self.odom_frame, self.base_frame, stamp, rospy.Duration(0.05))
+                tf = self.tf_buffer.lookup_transform(self.odom_frame, self.base_frame, tf_stamp, rospy.Duration(0.05))
                 odom_pose = PoseStamped()
                 odom_pose.pose.position.x = tf.transform.translation.x
                 odom_pose.pose.position.y = tf.transform.translation.y
@@ -703,7 +941,7 @@ class LocalizationFusion:
                 T_odom_base = pose_to_matrix(odom_pose.pose)
                 T_map_odom = T_map_base @ invert_transform(T_odom_base)
                 msg = TransformStamped()
-                msg.header.stamp = stamp
+                msg.header.stamp = tf_stamp
                 msg.header.frame_id = self.map_frame
                 msg.child_frame_id = self.odom_frame
                 msg.transform.translation.x, msg.transform.translation.y, msg.transform.translation.z = map(float, T_map_odom[:3, 3])
@@ -769,6 +1007,18 @@ class LocalizationFusion:
         self.last_output_stamp = stamp_value
         self.last_output_wall = time.monotonic()
         self.last_output_source_stamp[self.active_source] = stamp_value
+        self.write_fused_csv_row(stamp_value, pose)
+
+    def write_fused_csv_row(self, stamp_value: float, pose) -> None:
+        if self.fused_csv_writer is None:
+            return
+        self.fused_csv_writer.writerow([
+            stamp_value, pose.position.x, pose.position.y, pose.position.z,
+            pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w,
+            self.active_source, self.state, round(self.last_blend_alpha, 4), self.switch_count,
+            *self.health_snapshot_row(),
+        ])
+        self.fused_csv_handle.flush()
 
     def publish_metric_output(self, source_msg: Odometry, T: np.ndarray) -> None:
         stamp_value = source_msg.header.stamp.to_sec()
@@ -811,12 +1061,22 @@ class LocalizationFusion:
             "state": self.state,
             "valid": self.active_source != FAILED and bool(self.sources[self.active_source].health.get("healthy", False)),
             "active_source": self.active_source,
+            "mode": self.mode,
             "primary_source": self.primary,
             "metric_source": self.metric_source,
+            "orb_alignment_source": self.orb_alignment_source,
+            "tertiary_source": self.tertiary_source if self.enable_tertiary else None,
             "switch_count": self.switch_count,
+            "blend_alpha": round(self.last_blend_alpha, 4),
             "tf_mode": self.tf_mode,
+            "tf_stamp_mode": self.tf_stamp_mode,
             "frames": {"map": self.map_frame, "odom": self.odom_frame, "base": self.base_frame},
             "health": {name: data.health for name, data in self.sources.items()},
+            "sensors": {
+                "lidar": self.sensor_status("lidar"),
+                "imu": self.sensor_status("imu"),
+                "camera": self.sensor_status("camera"),
+            },
             "orb_metric_scale_ready": self.orb_metric_scale is not None and self.cross_fast_from_orb is not None,
             "orb_metric_scale": self.orb_metric_scale,
             "alignment_quality": {
@@ -830,7 +1090,7 @@ class LocalizationFusion:
             "disagreement": {
                 "position_m": self.disagreement.get("position_m"),
                 "orientation_deg": None if self.disagreement.get("orientation_rad") is None else math.degrees(self.disagreement["orientation_rad"]),
-                f"scale_ratio_{self.metric_source}_over_orb": self.disagreement.get("scale_ratio"),
+                f"scale_ratio_{self.orb_alignment_source}_over_orb": self.disagreement.get("scale_ratio"),
                 "consistent": self.consistency_ok() if self.disagreement.get("valid") else False,
                 "recovery_position_m": self.recovery_disagreement.get("position_m"),
                 "recovery_orientation_deg": None if self.recovery_disagreement.get("orientation_rad") is None else math.degrees(self.recovery_disagreement["orientation_rad"]),
@@ -848,6 +1108,9 @@ class LocalizationFusion:
                 self.publish_output(active[0], active[1])
                 metric_T = self.metric_source_pose(self.active_source, self.sources[self.active_source].latest_T)
                 self.publish_metric_output(active[0], metric_T)
+            elif (self.active_source != FAILED and self.last_output_T is not None and
+                  bool(self.sources[self.active_source].health.get("healthy", False))):
+                self.publish_tf_for_pose(self.last_output_T, rospy.Time.now())
             degraded = self.state.endswith("DEGRADED_DISAGREEMENT")
             navigation_ok = (
                 self.active_source != FAILED and

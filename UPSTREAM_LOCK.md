@@ -9,5 +9,6 @@ Docker builds use explicit refs so rebuilding does not silently change native es
 | Sophus | `strasdat/Sophus` | `a621ff` |
 | ORB-SLAM3 | `UZ-SLAMLab/ORB_SLAM3` | `0df83dde1c85c7ab91a0d47de7a29685d046f637` (V1.0 tree) |
 | Pangolin | `stevenlovegrove/Pangolin` | `v0.8` |
+| LVI-SAM | `TixiaoShan/LVI-SAM` | pinned in `docker/lvisam/Dockerfile` |
 
 Change a Docker build argument deliberately to update a dependency, then rerun all failure and trajectory tests.

@@ -3,6 +3,7 @@
 import csv
 import json
 import os
+import shutil
 import threading
 
 import rospy
@@ -26,19 +27,18 @@ class MultiTrajectoryRecorder:
         })
         path_topics = rospy.get_param("~path_topics", {
             "orbslam3": "/orbslam3/camera_path",
+            "orbslam3_optimized": "/orbslam3/optimized_camera_path",
         })
         self.files = {}
         self.writers = {}
+        self.has_data = set()
         for name, topic in topics.items():
-            handle, writer = self.open_csv(name)
-            self.files[name] = handle
-            self.writers[name] = writer
             rospy.Subscriber(topic, Odometry, lambda msg, n=name: self.odom_cb(n, msg), queue_size=500)
         self.path_names = set()
+        self.final_aliases = rospy.get_param("~final_aliases", {
+            "orbslam3_optimized": "orbslam3",
+        })
         for name, topic in path_topics.items():
-            handle, writer = self.open_csv(name)
-            self.files[name] = handle
-            self.writers[name] = writer
             self.path_names.add(name)
             rospy.Subscriber(topic, Path, lambda msg, n=name: self.path_cb(n, msg), queue_size=5)
         self.timeline = open(os.path.join(self.output_dir, "localization_timeline.jsonl"), "w", encoding="utf-8")
@@ -55,13 +55,22 @@ class MultiTrajectoryRecorder:
         writer.writerow(["timestamp_s", "x_m", "y_m", "z_m", "qx", "qy", "qz", "qw", "frame_id", "child_frame_id"])
         return handle, writer
 
+    def ensure_csv(self, name: str):
+        if name not in self.writers:
+            handle, writer = self.open_csv(name)
+            self.files[name] = handle
+            self.writers[name] = writer
+        return self.files[name], self.writers[name]
+
     def odom_cb(self, name: str, msg: Odometry) -> None:
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
         with self.lock:
-            self.writers[name].writerow([msg.header.stamp.to_sec(), p.x, p.y, p.z, q.x, q.y, q.z, q.w,
-                                         msg.header.frame_id, msg.child_frame_id])
-            self.files[name].flush()
+            handle, writer = self.ensure_csv(name)
+            writer.writerow([msg.header.stamp.to_sec(), p.x, p.y, p.z, q.x, q.y, q.z, q.w,
+                             msg.header.frame_id, msg.child_frame_id])
+            self.has_data.add(name)
+            handle.flush()
 
     def path_cb(self, name: str, msg: Path) -> None:
         rows = []
@@ -72,15 +81,19 @@ class MultiTrajectoryRecorder:
             rows.append([pose.header.stamp.to_sec(), p.x, p.y, p.z, q.x, q.y, q.z, q.w,
                          frame_id, ""])
         with self.lock:
+            if not rows:
+                return
             try:
-                self.files[name].close()
+                self.files.pop(name).close()
             except Exception:
                 pass
+            self.writers.pop(name, None)
             handle, writer = self.open_csv(name)
             writer.writerows(rows)
             handle.flush()
             self.files[name] = handle
             self.writers[name] = writer
+            self.has_data.add(name)
 
     def text_cb(self, topic: str, msg: String) -> None:
         with self.lock:
@@ -105,6 +118,14 @@ class MultiTrajectoryRecorder:
                     handle.close()
                 except Exception:
                     pass
+            for source, target in self.final_aliases.items():
+                source_path = os.path.join(self.output_dir, f"{source}_trajectory.csv")
+                target_path = os.path.join(self.output_dir, f"{target}_trajectory.csv")
+                if source in self.has_data and os.path.isfile(source_path) and os.path.getsize(source_path) > 0:
+                    try:
+                        shutil.copyfile(source_path, target_path)
+                    except Exception as exc:
+                        rospy.logwarn("[Recorder] failed to finalize %s from %s: %s", target_path, source_path, exc)
             try:
                 self.timeline.close()
             except Exception:

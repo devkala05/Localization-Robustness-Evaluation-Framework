@@ -28,7 +28,11 @@ RUN cd ${ORB_SLAM3_ROOT}/Thirdparty/DBoW2 && mkdir -p build && cd build && cmake
 RUN cd ${ORB_SLAM3_ROOT} && tar -xf Vocabulary/ORBvoc.txt.tar.gz -C Vocabulary/ && \
     mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make -j"$(nproc)"
 COPY docker/orbslam3/patches/add_orbslam3_pose_publishers.py /tmp/add_pose_publishers.py
+COPY docker/orbslam3/patches/add_rgbd_inertial.py /tmp/add_rgbd_inertial.py
+# Patch 1: add read-only pose/map publishers to ros_rgbd.cc
 RUN python3 /tmp/add_pose_publishers.py
+# Patch 2: create ros_rgbd_inertial.cc (IMU_RGBD mode) and add CMakeLists target
+RUN python3 /tmp/add_rgbd_inertial.py
 ENV ROS_PACKAGE_PATH=/opt/ros/noetic/share:${ORB_SLAM3_ROOT}/Examples_old/ROS
 RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && \
     export ROS_PACKAGE_PATH=/opt/ros/noetic/share:${ORB_SLAM3_ROOT}/Examples_old/ROS && \

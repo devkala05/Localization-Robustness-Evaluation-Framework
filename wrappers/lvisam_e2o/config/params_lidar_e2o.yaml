@@ -24,7 +24,7 @@ lvi_sam:
   timeField: "time"
   downsampleRate: 1
 
-  # E2O/UrbanNav-class calibrated values. The previous loose values
+  # E2O calibrated values. The previous loose values
   # effectively downweighted IMU consistency and let lidar matching drift.
   imuAccNoise: 0.01119741
   imuGyrNoise: 0.01027090

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exec the pinned native ORB-SLAM3 RGB-D ROS example.
+"""Exec a pinned native ORB-SLAM3 ROS example.
 
 roslaunch appends remapping arguments (for example ``__name:=...`` and
 ``/tf:=...``) to this wrapper's argv. They must be forwarded to the C++ binary;
@@ -29,26 +29,29 @@ def split_arguments(argv: Sequence[str]) -> Tuple[List[str], List[str]]:
     return positional, remaps
 
 
-def find_native_binary(root: Path) -> Path:
+def find_native_binary(root: Path, executable: str = "RGBD") -> Path:
+    if not executable or "/" in executable:
+        raise ValueError(f"invalid ORB-SLAM3 executable name: {executable!r}")
     package = root / "Examples_old" / "ROS" / "ORB_SLAM3"
     candidates = (
-        package / "RGBD",
-        package / "bin" / "RGBD",
-        package / "build" / "RGBD",
-        package / "build" / "bin" / "RGBD",
+        package / executable,
+        package / "bin" / executable,
+        package / "build" / executable,
+        package / "build" / "bin" / executable,
     )
     for candidate in candidates:
         if candidate.is_file() and os.access(candidate, os.X_OK):
             return candidate
     searched = "\n  ".join(str(path) for path in candidates)
-    raise FileNotFoundError(f"native ORB-SLAM3 executable not found; searched:\n  {searched}")
+    raise FileNotFoundError(f"native ORB-SLAM3 {executable} executable not found; searched:\n  {searched}")
 
 
 def build_exec_argv(argv: Sequence[str], root: Path) -> Tuple[Path, List[str]]:
     positional, remaps = split_arguments(argv)
     if len(positional) != 3:
         raise ValueError("Usage: run_orbslam3_native.py VOCABULARY CAMERA_CONFIG")
-    binary = find_native_binary(root)
+    executable = os.environ.get("ORB_SLAM3_EXECUTABLE", "RGBD")
+    binary = find_native_binary(root, executable)
     # Preserve remaps after the two application arguments. ros::init removes
     # them from argc before ORB-SLAM3's native ``argc != 3`` check.
     return binary, [str(binary), positional[1], positional[2], *remaps]

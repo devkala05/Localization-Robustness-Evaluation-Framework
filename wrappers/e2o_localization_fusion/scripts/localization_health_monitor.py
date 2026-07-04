@@ -34,6 +34,38 @@ def as_bool(value) -> bool:
     return str(value).strip().lower() in ("1", "true", "yes", "on")
 
 
+def ros_time_now_sec(default: float = 0.0) -> float:
+    try:
+        return rospy.Time.now().to_sec()
+    except AttributeError:
+        return default
+
+
+def _windowed_linear_rate(history: "Deque[tuple]") -> Optional[np.ndarray]:
+    """Least-squares slope (d(value)/dt) across a short window of (t, value) samples.
+
+    A raw backward finite difference between only the two most recent samples
+    is highly sensitive to per-sample arrival jitter: real estimators do not
+    publish at perfectly even intervals, and a slightly-too-small dt combined
+    with ordinary pose noise divides that noise by a tiny number, producing a
+    spuriously huge instantaneous rate even though the underlying motion is
+    smooth. Fitting a line across the whole window via least squares
+    suppresses that per-sample noise/jitter amplification while still
+    tracking genuine sustained changes in rate.
+    """
+    if len(history) < 3:
+        return None
+    times = np.array([t for t, _ in history])
+    values = np.stack([v for _, v in history])
+    t_mean = times.mean()
+    dt = times - t_mean
+    denom = float(np.sum(dt * dt))
+    if denom <= 1.0e-9:
+        return None
+    v_mean = values.mean(axis=0)
+    return (dt[:, None] * (values - v_mean)).sum(axis=0) / denom
+
+
 @dataclass
 class SensorState:
     name: str
@@ -44,8 +76,15 @@ class SensorState:
     stamp_regressions: int = 0
     duplicate_stamp_count: int = 0
     last_timestamp_issue_wall: Optional[float] = None
+    # Adaptive clock-offset tracking: EMA of (ros_now - stamp).
+    # Sensor timestamps may have a large constant offset from the ROS sim clock
+    # (e.g. in bags where different sensors use different clock sources).
+    # We learn this offset and check deviation from it, not the raw lag, so
+    # a constant hardware offset never causes a false-positive health failure.
+    _lag_ema: Optional[float] = None
+    _LAG_ALPHA: float = 0.05   # EMA coefficient — adapts slowly to filter spikes
 
-    def update(self, stamp: float) -> None:
+    def update(self, stamp: float, ros_now: float = 0.0) -> None:
         now = time.monotonic()
         if self.last_stamp is not None and stamp > 0.0:
             if stamp < self.last_stamp - 1.0e-6:
@@ -58,6 +97,12 @@ class SensorState:
                 self.duplicate_stamp_count = 0
         if stamp > 0.0:
             self.last_stamp = stamp
+            if ros_now > 0.0:
+                lag = ros_now - stamp
+                if self._lag_ema is None:
+                    self._lag_ema = lag
+                else:
+                    self._lag_ema = self._LAG_ALPHA * lag + (1.0 - self._LAG_ALPHA) * self._lag_ema
         self.last_wall = now
         self.count += 1
 
@@ -69,9 +114,11 @@ class SensorState:
             return False
         if self.last_timestamp_issue_wall is not None and now - self.last_timestamp_issue_wall <= self.timeout:
             return False
-        if self.last_stamp is not None and ros_now > 0.0:
-            lag = ros_now - self.last_stamp
-            if lag > max_stamp_lag or lag < -0.5:
+        # Check for a SUDDEN change in timestamp lag (not the absolute lag).
+        # A constant hardware clock offset is normal; a sudden jump or freeze is not.
+        if self.last_stamp is not None and ros_now > 0.0 and self._lag_ema is not None:
+            current_lag = ros_now - self.last_stamp
+            if abs(current_lag - self._lag_ema) > max_stamp_lag or current_lag < self._lag_ema - 0.5:
                 return False
         return True
 
@@ -95,7 +142,8 @@ class EstimatorState:
     last_wall: Optional[float] = None
     last_stamp: Optional[float] = None
     last_T: Optional[np.ndarray] = None
-    last_velocity: Optional[np.ndarray] = None
+    pos_history: Deque = field(default_factory=lambda: collections.deque(maxlen=6))
+    vel_history: Deque = field(default_factory=lambda: collections.deque(maxlen=6))
     last_valid: bool = False
     last_message_reasons: List[str] = field(default_factory=list)
     duplicate_stamp_count: int = 0
@@ -104,6 +152,9 @@ class EstimatorState:
     rejected: int = 0
     tracking_state: str = "UNKNOWN"
     tracking_wall: Optional[float] = None
+    # Adaptive clock-offset EMA (see SensorState for rationale).
+    _lag_ema: Optional[float] = None
+    _LAG_ALPHA: float = 0.05
 
     def update_tracking(self, value: str) -> None:
         self.tracking_state = value.strip().upper()
@@ -112,8 +163,15 @@ class EstimatorState:
     def update_odom(self, msg: Odometry) -> None:
         now = time.monotonic()
         stamp = msg.header.stamp.to_sec()
+        ros_now = ros_time_now_sec()
         reasons: List[str] = []
         self.total += 1
+        if stamp > 0.0 and ros_now > 0.0:
+            lag = ros_now - stamp
+            if self._lag_ema is None:
+                self._lag_ema = lag
+            else:
+                self._lag_ema = self._LAG_ALPHA * lag + (1.0 - self._LAG_ALPHA) * self._lag_ema
         try:
             T = pose_to_matrix(msg.pose.pose)
         except Exception as exc:
@@ -138,27 +196,36 @@ class EstimatorState:
             else:
                 self.duplicate_stamp_count = 0
 
-        velocity = None
         if timestamp_advances and self.last_T is not None and self.last_stamp is not None:
             dt = stamp - self.last_stamp
             delta = np.linalg.inv(self.last_T) @ T
             jump = float(np.linalg.norm(T[:3, 3] - self.last_T[:3, 3]))
             angle = rotation_angle(delta[:3, :3])
-            velocity = (T[:3, 3] - self.last_T[:3, 3]) / dt
-            speed = float(np.linalg.norm(velocity))
             angular_speed = angle / dt
             if jump > self.max_position_jump:
                 reasons.append("position_discontinuity")
             if angle > self.max_orientation_jump_rad:
                 reasons.append("orientation_discontinuity")
-            if speed > self.max_velocity:
-                reasons.append("unrealistic_velocity")
             if angular_speed > self.max_angular_velocity:
                 reasons.append("unrealistic_angular_velocity")
-            if self.last_velocity is not None:
-                acceleration = float(np.linalg.norm(velocity - self.last_velocity) / dt)
-                if acceleration > self.max_acceleration:
-                    reasons.append("unrealistic_acceleration")
+
+            # Speed/acceleration use a windowed least-squares rate (see
+            # _windowed_linear_rate) instead of a raw two-sample finite
+            # difference: real estimators publish at jittery, not perfectly
+            # even, intervals, and dividing ordinary pose noise by an
+            # occasional small dt otherwise produces spurious spikes.
+            self.pos_history.append((stamp, T[:3, 3].copy()))
+            velocity = _windowed_linear_rate(self.pos_history)
+            if velocity is not None:
+                speed = float(np.linalg.norm(velocity))
+                if speed > self.max_velocity:
+                    reasons.append("unrealistic_velocity")
+                self.vel_history.append((stamp, velocity))
+                acceleration_vec = _windowed_linear_rate(self.vel_history)
+                if acceleration_vec is not None:
+                    acceleration = float(np.linalg.norm(acceleration_vec))
+                    if acceleration > self.max_acceleration:
+                        reasons.append("unrealistic_acceleration")
 
         # A repeated/regressed stamp must not move the kinematic baseline backward.
         # Forward-stamped discontinuities do become the new baseline so an injected
@@ -166,8 +233,6 @@ class EstimatorState:
         if timestamp_advances:
             self.last_T = T
             self.last_stamp = stamp
-            if velocity is not None:
-                self.last_velocity = velocity
         self.last_wall = now
         self.arrival_times.append(now)
         self.last_valid = not reasons
@@ -224,15 +289,15 @@ class HealthMonitor:
             },
             "orbslam3": {
                 "odom_topic": "/orbslam3/odometry/mapping",
-                "process_patterns": ["orbslam3_rgbd", "RGBD"],
-                "required_sensors": ["camera"],
+                "process_patterns": ["orbslam3_rgbd", "RGBD_Inertial", "RGBD"],
+                "required_sensors": ["camera", "imu"],
                 "tracking_required": True,
                 "tracking_topic": "/orbslam3/tracking_status",
             },
             "lvisam": {
                 "odom_topic": "/lvisam/odometry",
                 "process_patterns": ["lvi_sam_mapOptmization"],
-                "required_sensors": ["lidar", "imu", "camera"],
+                "required_sensors": ["lidar", "imu"],
                 "tracking_required": False,
             },
         }
@@ -271,7 +336,7 @@ class HealthMonitor:
 
     def sensor_cb(self, name: str, msg) -> None:
         with self.lock:
-            self.sensors[name].update(msg.header.stamp.to_sec())
+            self.sensors[name].update(msg.header.stamp.to_sec(), ros_time_now_sec())
 
     def odom_cb(self, name: str, msg: Odometry) -> None:
         with self.lock:
@@ -306,12 +371,15 @@ class HealthMonitor:
             reasons.append("no_pose_received")
         elif age > state.timeout:
             reasons.append("stale_pose")
-        ros_now = rospy.Time.now().to_sec()
-        if state.last_stamp is not None and ros_now > 0.0:
+        ros_now = ros_time_now_sec()
+        if state.last_stamp is not None and ros_now > 0.0 and state._lag_ema is not None:
             stamp_lag = ros_now - state.last_stamp
-            if stamp_lag > state.max_timestamp_lag:
+            lag_deviation = stamp_lag - state._lag_ema
+            # Flag if lag SUDDENLY increases beyond expected (e.g. algorithm froze)
+            # or the timestamp jumps backwards. A constant hardware clock offset is normal.
+            if lag_deviation > state.max_timestamp_lag:
                 reasons.append("delayed_pose_timestamp")
-            elif stamp_lag < -0.5:
+            elif lag_deviation < -0.5:
                 reasons.append("future_pose_timestamp")
         if state.last_message_reasons:
             reasons.extend(state.last_message_reasons)
@@ -339,7 +407,7 @@ class HealthMonitor:
         healthy = not reasons
         score = max(0.0, 1.0 - 0.15 * len(reasons))
         return {
-            "stamp": rospy.Time.now().to_sec(),
+            "stamp": ros_time_now_sec(),
             "name": state.name,
             "healthy": healthy,
             "score": score,
@@ -349,6 +417,7 @@ class HealthMonitor:
             "pose_rate_hz": rate,
             "last_pose_stamp": state.last_stamp,
             "pose_timestamp_lag_sec": None if state.last_stamp is None or ros_now <= 0.0 else ros_now - state.last_stamp,
+            "pose_clock_offset_sec": state._lag_ema,
             "tracking_state": state.tracking_state,
             "process_present": self.process_present(state),
             "total_messages": state.total,
@@ -379,7 +448,7 @@ class HealthMonitor:
             statuses = {name: self.build_status(state, now) for name, state in self.estimators.items()}
             for name, status in statuses.items():
                 self.status_pubs[name].publish(String(data=json.dumps(status, sort_keys=True)))
-            ros_now = rospy.Time.now().to_sec()
+            ros_now = ros_time_now_sec()
             sensor_summary = {
                 name: {
                     "available": state.healthy(now, ros_now, self.max_sensor_duplicate_stamps, self.sensor_timestamp_lag),
@@ -391,7 +460,7 @@ class HealthMonitor:
                 }
                 for name, state in self.sensors.items()
             }
-            summary = {"stamp": rospy.Time.now().to_sec(), "estimators": statuses, "sensors": sensor_summary}
+            summary = {"stamp": ros_time_now_sec(), "estimators": statuses, "sensors": sensor_summary}
             self.summary_pub.publish(String(data=json.dumps(summary, sort_keys=True)))
             diagnostics = DiagnosticArray()
             diagnostics.header.stamp = rospy.Time.now()

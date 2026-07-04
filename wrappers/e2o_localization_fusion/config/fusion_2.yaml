@@ -7,7 +7,7 @@ health:
   tracking_status_timeout_sec: 2.5
   max_duplicate_stamps: 3
   max_sensor_duplicate_stamps: 3
-  sensor_timestamp_lag_sec: 1.0
+  sensor_timestamp_lag_sec: 2.0
   process_check_enabled: true
   sensors:
     lidar:
@@ -51,15 +51,16 @@ health:
     max_timestamp_lag_sec: 2.0
     process_patterns:
     - orbslam3_rgbd
+    - RGBD_Inertial
     - RGBD
     required_sensors:
     - camera
     tracking_required: true
   lvisam:
     odom_topic: /lvisam/odometry
-    pose_timeout_sec: 1.0
-    min_pose_rate_hz: 2.0
-    rate_window_sec: 3.0
+    pose_timeout_sec: 3.0
+    min_pose_rate_hz: 0.5
+    rate_window_sec: 6.0
     max_position_jump_m: 3.0
     max_orientation_jump_deg: 50.0
     max_velocity_mps: 35.0
@@ -79,8 +80,10 @@ fusion:
   odom_frame: odom
   base_frame: base_link
   tf_mode: direct
+  tf_stamp_mode: current
   publish_tf: true
   publish_rate_hz: 30.0
+  localization_start_delay_sec: 8.0
   sync_slop_sec: 0.05
   alignment_window: 100
   min_alignment_pairs: 30
@@ -99,6 +102,7 @@ fusion:
   max_alignment_rmse_m: 1.2
   max_alignment_orientation_rmse_deg: 8.0
   # ORB-SLAM3 RGB-D output is consumed at native scale.
+  orb_alignment_source: lvisam
   orb_camera_to_base:
     rotation:
     - 1.0

@@ -12,7 +12,6 @@ No estimator implementation is changed by this node.
 import collections
 import copy
 import math
-import struct
 import threading
 import time
 from typing import Deque, Dict, Optional, Tuple
@@ -25,7 +24,23 @@ from sensor_msgs.msg import CameraInfo, Image, Imu, PointCloud2, PointField
 
 
 class StreamFaultGate:
-    """Runtime-configurable pass/drop/freeze/delay gate for one sensor stream."""
+    """Runtime-configurable pass/drop/freeze/delay gate for one sensor stream.
+
+    Mode/delay parameters are cached and refreshed on a slow periodic timer
+    instead of being re-queried from the ROS parameter server on every
+    message. rospy.get_param() is an XML-RPC round trip to the master; at
+    combined native sensor rates (LiDAR + IMU + camera + depth can exceed
+    100 Hz together) doing that round trip per message serializes real-time
+    sensor delivery behind network calls. A 5 Hz refresh is far more than
+    enough for a runtime fault-injection toggle used by test operators, and
+    is not part of the real-time data path.
+
+    Bookkeeping (mode transitions, frozen snapshot, delay queue) is guarded
+    by a lock scoped to THIS gate only, so one sensor stream's processing
+    never blocks another's — each sensor is an independent pipeline.
+    """
+
+    MODE_REFRESH_PERIOD_SEC = 0.2
 
     def __init__(self, name: str, publish_callback):
         self.name = name
@@ -33,41 +48,69 @@ class StreamFaultGate:
         self.frozen = None
         self.delay_queue: Deque[Tuple[float, object]] = collections.deque()
         self.last_mode = "pass"
+        self.lock = threading.Lock()
+        self._cached_mode = "pass"
+        self._cached_delay_sec = 1.0
+        self._last_mode_refresh = 0.0
 
     @property
     def prefix(self) -> str:
         return f"/e2o_faults/{self.name}"
 
-    def mode(self) -> str:
-        return str(rospy.get_param(f"{self.prefix}/mode", "pass")).strip().lower()
+    def refresh_mode(self, now: float) -> None:
+        if now - self._last_mode_refresh < self.MODE_REFRESH_PERIOD_SEC:
+            return
+        self._last_mode_refresh = now
+        mode = str(rospy.get_param(f"{self.prefix}/mode", "pass")).strip().lower()
+        delay_sec = max(0.0, float(rospy.get_param(f"{self.prefix}/delay_sec", 1.0)))
+        with self.lock:
+            self._cached_mode = mode
+            self._cached_delay_sec = delay_sec
 
     def handle(self, msg) -> None:
-        mode = self.mode()
-        if mode != self.last_mode:
-            if mode != "delay":
-                self.delay_queue.clear()
-            if mode == "pass":
-                self.frozen = None
-            self.last_mode = mode
-        if mode == "drop":
-            return
-        if mode == "freeze":
-            if self.frozen is None:
-                self.frozen = copy.deepcopy(msg)
-            self.publish_callback(copy.deepcopy(self.frozen))
-            return
-        if mode == "delay":
-            delay = max(0.0, float(rospy.get_param(f"{self.prefix}/delay_sec", 1.0)))
-            self.delay_queue.append((time.monotonic() + delay, copy.deepcopy(msg)))
-            return
-        if mode != "pass":
-            rospy.logwarn_throttle(2.0, "[E2OAdapter] unknown %s mode=%s; passing", self.name, mode)
-        self.frozen = copy.deepcopy(msg)
-        self.publish_callback(msg)
+        # Heavy work (the actual publish_callback, which does per-message
+        # numpy/cv2 processing) always runs OUTSIDE the lock so it can never
+        # block a concurrent flush()/mode transition, and so this gate's own
+        # bookkeeping stays cheap and fast.
+        with self.lock:
+            mode = self._cached_mode
+            if mode != self.last_mode:
+                if mode != "delay":
+                    self.delay_queue.clear()
+                if mode == "pass":
+                    self.frozen = None
+                self.last_mode = mode
+            if mode == "drop":
+                return
+            if mode == "freeze":
+                if self.frozen is None:
+                    self.frozen = copy.deepcopy(msg)
+                frozen_copy = copy.deepcopy(self.frozen)
+            elif mode == "delay":
+                self.delay_queue.append((time.monotonic() + self._cached_delay_sec, copy.deepcopy(msg)))
+                return
+            else:
+                if mode != "pass":
+                    rospy.logwarn_throttle(2.0, "[E2OAdapter] unknown %s mode=%s; passing", self.name, mode)
+                frozen_copy = None
+        # NOTE: no unconditional "self.frozen = copy.deepcopy(msg)" on the
+        # pass-through path here (unlike the previous implementation). That
+        # deep-copied every single message — including full LiDAR scans and
+        # raw camera/depth frames — purely as a defensive snapshot for a
+        # fault mode that, in normal (non-faulted) real-time operation, is
+        # never entered. It doubled the per-message memcpy/CPU cost of the
+        # entire real-time data path for no functional benefit: a frozen
+        # snapshot is only ever needed once "freeze" mode is actually
+        # requested, at which point it is captured lazily above.
+        self.publish_callback(frozen_copy if mode == "freeze" else msg)
 
     def flush(self, now: float) -> None:
-        while self.delay_queue and self.delay_queue[0][0] <= now:
-            _, msg = self.delay_queue.popleft()
+        to_publish = []
+        with self.lock:
+            while self.delay_queue and self.delay_queue[0][0] <= now:
+                _, msg = self.delay_queue.popleft()
+                to_publish.append(msg)
+        for msg in to_publish:
             self.publish_callback(msg)
 
 
@@ -125,7 +168,10 @@ class E2OSensorAdapter:
         self.lvisam_camera_pub = rospy.Publisher(str(outputs.get("lvisam_camera", "/lvisam/camera/image_raw")), Image, queue_size=20)
         self.lvisam_camera_info_pub = rospy.Publisher(str(outputs.get("lvisam_camera_info", "/lvisam/camera/camera_info")), CameraInfo, queue_size=20)
 
-        self.lock = threading.RLock()
+        # No adapter-wide lock: each StreamFaultGate below guards its own
+        # bookkeeping, so lidar/imu/camera/depth processing runs as four
+        # independent pipelines instead of being serialized behind one
+        # global critical section (see StreamFaultGate docstring).
         self.gates: Dict[str, StreamFaultGate] = {
             "lidar": StreamFaultGate("lidar", self.publish_lidar),
             "imu": StreamFaultGate("imu", self.publish_imu),
@@ -155,18 +201,40 @@ class E2OSensorAdapter:
         return array.tolist()
 
     def route(self, sensor: str, msg) -> None:
-        with self.lock:
-            self.gates[sensor].handle(msg)
+        self.gates[sensor].handle(msg)
 
     def timer_cb(self, _event) -> None:
-        with self.lock:
-            now = time.monotonic()
-            for gate in self.gates.values():
-                gate.flush(now)
+        now = time.monotonic()
+        for gate in self.gates.values():
+            gate.refresh_mode(now)
+            gate.flush(now)
 
     @staticmethod
     def _field(msg: PointCloud2, name: str) -> Optional[PointField]:
         return next((field for field in msg.fields if field.name == name), None)
+
+    @staticmethod
+    def _strided_field_view(byte_array: np.ndarray, msg: PointCloud2, field: PointField, dtype):
+        """Zero-copy (height, width) view of one PointCloud2 field over a uint8 buffer.
+
+        Replaces a per-point struct.unpack/pack Python loop with a single strided
+        numpy view so scaling/shifting is one vectorized op instead of O(n) Python
+        calls. At bag rate 1 a 16-line scan has tens of thousands of points per
+        message; the per-point loop could not keep up with real sensor rate.
+        """
+        itemsize = np.dtype(dtype).itemsize
+        if msg.width <= 0 or msg.height <= 0:
+            return None
+        needed = field.offset + msg.row_step * (msg.height - 1) + msg.point_step * (msg.width - 1) + itemsize
+        if byte_array.size < needed:
+            return None
+        return np.ndarray(
+            shape=(msg.height, msg.width),
+            dtype=dtype,
+            buffer=byte_array,
+            offset=field.offset,
+            strides=(msg.row_step, msg.point_step),
+        )
 
     def _scale_point_time(self, msg: PointCloud2) -> PointCloud2:
         if math.isclose(self.point_time_scale, 1.0):
@@ -181,32 +249,28 @@ class E2OSensorAdapter:
         if not msg.data or msg.point_step <= field.offset:
             return msg
 
+        dtype = np.float32 if field.datatype == PointField.FLOAT32 else np.float64
+        src = np.frombuffer(msg.data, dtype=np.uint8)
+        src_view = self._strided_field_view(src, msg, field, dtype)
+        if src_view is None:
+            return msg
+
+        finite = np.isfinite(src_view)
+        if self.auto_detect_time_units and finite.any():
+            flat = src_view[finite]
+            limit = min(flat.size, 4096)
+            # Spread the sample across the whole cloud (not just the first
+            # scan line) so unit auto-detection sees every ring, not only ring 0.
+            sample_idx = np.linspace(0, flat.size - 1, num=limit, dtype=np.int64)
+            if np.max(np.abs(flat[sample_idx])) > 1.0e3:
+                # Already appears to be microseconds/nanoseconds. Avoid multiplying twice.
+                return msg
+
         out = copy.deepcopy(msg)
         raw = bytearray(out.data)
-        endian = ">" if out.is_bigendian else "<"
-        fmt = endian + ("f" if field.datatype == PointField.FLOAT32 else "d")
-        width = struct.calcsize(fmt)
-        samples = []
-        limit = min(max(1, out.width * out.height), 64)
-        for index in range(limit):
-            row, col = divmod(index, max(1, out.width))
-            offset = row * out.row_step + col * out.point_step + field.offset
-            if offset + width <= len(raw):
-                value = struct.unpack_from(fmt, raw, offset)[0]
-                if math.isfinite(value):
-                    samples.append(abs(value))
-        if self.auto_detect_time_units and samples and max(samples) > 1.0e3:
-            # Already appears to be microseconds/nanoseconds. Avoid multiplying twice.
-            return out
-
-        for row in range(max(1, out.height)):
-            base = row * out.row_step + field.offset
-            for col in range(out.width):
-                offset = base + col * out.point_step
-                if offset + width > len(raw):
-                    break
-                value = struct.unpack_from(fmt, raw, offset)[0]
-                struct.pack_into(fmt, raw, offset, value * self.point_time_scale)
+        dst = np.frombuffer(raw, dtype=np.uint8)
+        dst_view = self._strided_field_view(dst, out, field, dtype)
+        dst_view *= self.point_time_scale
         out.data = bytes(raw)
         return out
 
@@ -217,38 +281,27 @@ class E2OSensorAdapter:
         if not msg.data or msg.point_step <= field.offset:
             return msg
 
+        dtype = np.float32 if field.datatype == PointField.FLOAT32 else np.float64
+        src = np.frombuffer(msg.data, dtype=np.uint8)
+        src_view = self._strided_field_view(src, msg, field, dtype)
+        if src_view is None:
+            return msg
+
+        finite = np.isfinite(src_view)
+        if not finite.any():
+            return msg
+        min_time = float(np.min(src_view[finite]))
+        if min_time >= -1.0e-6:
+            return msg
+
         out = copy.deepcopy(msg)
         raw = bytearray(out.data)
-        endian = ">" if out.is_bigendian else "<"
-        fmt = endian + ("f" if field.datatype == PointField.FLOAT32 else "d")
-        width = struct.calcsize(fmt)
-        values = []
-        for row in range(max(1, out.height)):
-            base = row * out.row_step + field.offset
-            for col in range(out.width):
-                offset = base + col * out.point_step
-                if offset + width > len(raw):
-                    break
-                value = struct.unpack_from(fmt, raw, offset)[0]
-                if math.isfinite(value):
-                    values.append(value)
-        if not values:
-            return out
-
-        min_time = min(values)
-        if min_time >= -1.0e-6:
-            return out
-        out.header.stamp = out.header.stamp + rospy.Duration.from_sec(min_time)
-        for row in range(max(1, out.height)):
-            base = row * out.row_step + field.offset
-            for col in range(out.width):
-                offset = base + col * out.point_step
-                if offset + width > len(raw):
-                    break
-                value = struct.unpack_from(fmt, raw, offset)[0]
-                if math.isfinite(value):
-                    struct.pack_into(fmt, raw, offset, value - min_time)
+        dst = np.frombuffer(raw, dtype=np.uint8)
+        dst_view = self._strided_field_view(dst, out, field, dtype)
+        finite_dst = np.isfinite(dst_view)
+        dst_view[finite_dst] -= min_time
         out.data = bytes(raw)
+        out.header.stamp = out.header.stamp + rospy.Duration.from_sec(min_time)
         rospy.loginfo_once("[E2OAdapter] normalized negative LVI-SAM point times to scan start")
         return out
 
