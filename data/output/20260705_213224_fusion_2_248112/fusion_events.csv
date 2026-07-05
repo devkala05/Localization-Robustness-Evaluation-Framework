@@ -1,0 +1,8 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1783267348.3915677,startup,none,none,fusion_node_started,0.0,0.0
+1723528213.213457,1783267361.2380106,bag_clock_started,none,none,waiting_for_localization_start_delay,0.0,0.0
+1723528221.2178173,1783267369.2425594,switch,none,lvisam,initial_healthy_source,0.0,0.0
+1723528240.3475795,1783267388.373937,alignment_overlap_reset,lvisam,orbslam3,lvisam_unhealthy:delayed_pose_timestamp,0.0,0.0
+1723528240.3475795,1783267388.3776004,switch,lvisam,orbslam3,lvisam_unhealthy_fallback:delayed_pose_timestamp,4.440892098500626e-16,0.0
+1723528240.3475795,1783267388.3808527,output_gap,orbslam3,orbslam3,gap_sec=2.724,0.0,0.0
+1723528240.3576477,1783267388.383671,switch_applied,lvisam,orbslam3,lvisam_unhealthy_fallback:delayed_pose_timestamp,0.0,0.0

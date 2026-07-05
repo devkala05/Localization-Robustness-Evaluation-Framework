@@ -6,6 +6,10 @@
   <arg name="enable_visual" default="false"/>
   <arg name="tf_topic" default="/tf"/>
   <arg name="tf_static_topic" default="/tf_static"/>
+  <arg name="rebase_on_start" default="true"/>
+  <arg name="anchor_pose_topic" default="/fused_localization/pose"/>
+  <arg name="anchor_wait_sec" default="2.0"/>
+  <arg name="anchor_max_age_sec" default="2.0"/>
 
   <rosparam command="load" file="$(arg lidar_config)"/>
   <param name="vins_config_file" type="string" value="$(arg camera_config)"/>
@@ -51,5 +55,9 @@
         type="odometry_alias_node.py" output="screen" required="true">
     <param name="input_topic" value="/lvi_sam/lidar/mapping/odometry"/>
     <param name="output_topic" value="$(arg output_topic)"/>
+    <param name="rebase_on_start" value="$(arg rebase_on_start)"/>
+    <param name="anchor_pose_topic" value="$(arg anchor_pose_topic)"/>
+    <param name="anchor_wait_sec" value="$(arg anchor_wait_sec)"/>
+    <param name="anchor_max_age_sec" value="$(arg anchor_max_age_sec)"/>
   </node>
 </launch>

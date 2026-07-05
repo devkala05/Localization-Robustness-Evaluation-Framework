@@ -8,6 +8,7 @@ import threading
 
 import rospy
 from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool, String
 
 
@@ -15,6 +16,8 @@ class MultiTrajectoryRecorder:
     def __init__(self):
         self.lock = threading.Lock()
         self.output_dir = rospy.get_param("~output_dir", "/data/output/current_run")
+        self.visual_path_frame = rospy.get_param("~visual_path_frame", "map")
+        self.max_path_poses = int(rospy.get_param("~max_path_poses", 100000))
         os.makedirs(self.output_dir, exist_ok=True)
         topics = rospy.get_param("~topics", {
             "fast_livo2": "/fast_livo2/odometry",
@@ -32,8 +35,14 @@ class MultiTrajectoryRecorder:
         self.files = {}
         self.writers = {}
         self.has_data = set()
+        self.path_pubs = {}
+        self.paths = {}
         for name, topic in topics.items():
             rospy.Subscriber(topic, Odometry, lambda msg, n=name: self.odom_cb(n, msg), queue_size=500)
+            self.path_pubs[name] = rospy.Publisher(f"/debug_paths/{name}", Path, queue_size=2, latch=True)
+            path = Path()
+            path.header.frame_id = self.visual_path_frame
+            self.paths[name] = path
         self.path_names = set()
         self.final_aliases = rospy.get_param("~final_aliases", {
             "orbslam3_optimized": "orbslam3",
@@ -71,6 +80,16 @@ class MultiTrajectoryRecorder:
                              msg.header.frame_id, msg.child_frame_id])
             self.has_data.add(name)
             handle.flush()
+            pose = PoseStamped()
+            pose.header.stamp = msg.header.stamp
+            pose.header.frame_id = self.visual_path_frame
+            pose.pose = msg.pose.pose
+            path = self.paths[name]
+            path.header.stamp = msg.header.stamp
+            path.poses.append(pose)
+            if len(path.poses) > self.max_path_poses:
+                path.poses = path.poses[-self.max_path_poses:]
+            self.path_pubs[name].publish(path)
 
     def path_cb(self, name: str, msg: Path) -> None:
         rows = []

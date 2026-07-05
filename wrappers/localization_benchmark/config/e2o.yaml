@@ -58,6 +58,15 @@ adapter:
     width: 848
     height: 480
     depth_factor: 1000.0
+    # ORB-SLAM3's native binary is compute-bound and cannot always process
+    # frames as fast as the bag's real-time clock advances. Feeding it faster
+    # than it can keep up backs up its internal message_filters sync queue,
+    # so published poses carry ever-older timestamps relative to /clock and
+    # the health monitor's lag detector eventually flags it as unhealthy even
+    # though tracking itself is fine. Throttling the RGB-D input keeps ORB's
+    # pose timestamps close to real time. Lower further (e.g. 5.0) if ORB is
+    # still observed falling behind the bag.
+    max_rate_hz: 8.0
 static_transforms:
 - parent: base_link
   child: velodyne103

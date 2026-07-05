@@ -1,0 +1,4 @@
+ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
+0.0,1783262512.6582787,startup,none,none,fusion_node_started,0.0,0.0
+1723528213.2133496,1783262525.3968496,bag_clock_started,none,none,waiting_for_localization_start_delay,0.0,0.0
+1723528221.2141426,1783262533.3985465,switch,none,lvisam,initial_healthy_source,0.0,0.0

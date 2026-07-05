@@ -3,7 +3,7 @@
   <arg name="world_frame_id" default="orbslam3_map"/>
   <arg name="camera_frame_id" default="camera_color_optical_frame"/>
   <arg name="body_frame_id" default="base_link"/>
-  <arg name="body_yaw_offset_deg" default="180.0"/>
+  <arg name="body_yaw_offset_deg" default="0.0"/>
   <arg name="output_odom_topic" default="/orbslam3/camera_odometry"/>
   <arg name="output_path_topic" default="/orbslam3/camera_path"/>
   <arg name="optimized_path_topic" default="/orbslam3/optimized_camera_path"/>
@@ -15,6 +15,9 @@
   <arg name="max_speed_mps" default="12.0"/>
   <arg name="max_yaw_step_deg" default="45.0"/>
   <arg name="max_backtrack_m" default="0.75"/>
+  <arg name="reanchor_on_loop_closure" default="true"/>
+  <arg name="max_reanchor_step_m" default="80.0"/>
+  <arg name="max_reanchor_rotation_deg" default="90.0"/>
 
   <include file="$(find orbslam3_e2o)/launch/native.launch">
     <arg name="camera_config" value="$(arg camera_config)"/>
@@ -27,6 +30,11 @@
     <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="body_frame_id" value="$(arg body_frame_id)"/>
     <param name="body_yaw_offset_deg" value="$(arg body_yaw_offset_deg)"/>
+    <rosparam param="optical_to_body_rotation">
+      [-0.18256836, 0.11110754, 0.97689503,
+       -0.98306216, -0.00440978, -0.18321936,
+       -0.01604916, -0.99379861, 0.11003070]
+    </rosparam>
     <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
     <param name="output_path_topic" value="$(arg output_path_topic)"/>
     <param name="optimized_path_topic" value="$(arg optimized_path_topic)"/>
@@ -42,5 +50,8 @@
     <param name="max_speed_mps" value="$(arg max_speed_mps)"/>
     <param name="max_yaw_step_deg" value="$(arg max_yaw_step_deg)"/>
     <param name="max_backtrack_m" value="$(arg max_backtrack_m)"/>
+    <param name="reanchor_on_loop_closure" value="$(arg reanchor_on_loop_closure)"/>
+    <param name="max_reanchor_step_m" value="$(arg max_reanchor_step_m)"/>
+    <param name="max_reanchor_rotation_deg" value="$(arg max_reanchor_rotation_deg)"/>
   </node>
 </launch>

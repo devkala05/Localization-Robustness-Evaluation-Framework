@@ -65,6 +65,42 @@ restart_container() {
   [[ -n "$n" ]] && docker restart "$n" >/dev/null
 }
 
+gate_mode() {
+  local value
+  value="$(_rosparam get "/e2o_faults/${1}/mode" 2>/dev/null || true)"
+  value="$(printf '%s' "$value" | tr -d '"' | tr '[:upper:]' '[:lower:]')"
+  [[ -z "$value" || "$value" == "not set" ]] && value="pass"
+  printf '%s\n' "$value"
+}
+
+gate_pass() {
+  [[ "$(gate_mode "$1")" == "pass" ]]
+}
+
+restart_ready_estimators() {
+  # The adapter refreshes fault gate params at 5 Hz. Give it time to observe
+  # pass mode and publish fresh sensor messages before native estimator init.
+  sleep "${RECOVERY_RESTART_DELAY_SEC:-0.75}"
+  local restarted=()
+  if gate_pass lidar && gate_pass imu && gate_pass camera; then
+    restart_container fast
+    restarted+=("fast")
+  fi
+  if gate_pass lidar && gate_pass imu; then
+    restart_container lvisam
+    restarted+=("lvisam")
+  fi
+  if gate_pass camera && gate_pass depth; then
+    restart_container orb
+    restarted+=("orb")
+  fi
+  if ((${#restarted[@]})); then
+    printf '%sRestarted ready estimators: %s%s\n' "$GRN" "${restarted[*]}" "$RST"
+  else
+    printf '%sNo estimator has all required sensor gates in pass mode yet.%s\n' "$YEL" "$RST"
+  fi
+}
+
 gate_val() {
   _rosparam get "$1" 2>/dev/null || echo "(not set)"
 }
@@ -174,8 +210,9 @@ case "$ACTION" in
     ;;
 
   recover-all)
-    for s in camera lidar imu; do sensor "$s" pass; done
+    for s in camera depth lidar imu; do sensor "$s" pass; done
     for e in fast_livo2 lvisam orbslam3; do pose "$e" pass; done
+    restart_ready_estimators
     printf '%sAll sensor and pose faults cleared.%s\n' "$GRN" "$RST"
     ;;
 
@@ -188,18 +225,18 @@ case "$ACTION" in
     ;;
 
   # ── sensor stream faults ──────────────────────────────────────────────────
-  camera_drop)    sensor camera drop ;;
-  camera_freeze)  sensor camera freeze ;;
-  camera_delay)   sensor camera delay "${1:-1.0}" ;;
-  camera_recover) sensor camera pass; restart_container orb; restart_container lvisam ;;
+  camera_drop)    sensor camera drop; sensor depth drop ;;
+  camera_freeze)  sensor camera freeze; sensor depth freeze ;;
+  camera_delay)   sensor camera delay "${1:-1.0}"; sensor depth delay "${1:-1.0}" ;;
+  camera_recover) sensor camera pass; sensor depth pass; restart_ready_estimators ;;
   lidar_drop)     sensor lidar drop ;;
   lidar_freeze)   sensor lidar freeze ;;
   lidar_delay)    sensor lidar delay "${1:-1.0}" ;;
-  lidar_recover)  sensor lidar pass; restart_container fast; restart_container lvisam ;;
+  lidar_recover)  sensor lidar pass; restart_ready_estimators ;;
   imu_drop)       sensor imu drop ;;
   imu_freeze)     sensor imu freeze ;;
   imu_delay)      sensor imu delay "${1:-1.0}" ;;
-  imu_recover)    sensor imu pass; restart_container fast; restart_container lvisam ;;
+  imu_recover)    sensor imu pass; restart_ready_estimators ;;
 
   # ── estimator pose faults ─────────────────────────────────────────────────
   fast_freeze)       pose fast_livo2 freeze ;;

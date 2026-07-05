@@ -6,6 +6,7 @@
   <maintainer email="kitnawatayush@gmail.com">Ayush Kitnawat</maintainer>
   <license>MIT</license>
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>rospy</depend>
 </package>

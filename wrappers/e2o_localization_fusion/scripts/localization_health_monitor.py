@@ -135,6 +135,8 @@ class EstimatorState:
     max_angular_velocity: float
     max_acceleration: float
     max_timestamp_lag: float
+    max_kinematic_gap: float
+    kinematic_grace: float
     process_patterns: List[str]
     required_sensors: List[str]
     tracking_required: bool = False
@@ -152,6 +154,8 @@ class EstimatorState:
     rejected: int = 0
     tracking_state: str = "UNKNOWN"
     tracking_wall: Optional[float] = None
+    sensor_recovery_grace_until: float = 0.0
+    kinematic_grace_until: float = 0.0
     # Adaptive clock-offset EMA (see SensorState for rationale).
     _lag_ema: Optional[float] = None
     _LAG_ALPHA: float = 0.05
@@ -159,6 +163,15 @@ class EstimatorState:
     def update_tracking(self, value: str) -> None:
         self.tracking_state = value.strip().upper()
         self.tracking_wall = time.monotonic()
+
+    def reset_motion_baseline(self, now: float, recovery_grace: float) -> None:
+        self.last_T = None
+        self.last_stamp = None
+        self.pos_history.clear()
+        self.vel_history.clear()
+        self.last_message_reasons = []
+        self.duplicate_stamp_count = 0
+        self.sensor_recovery_grace_until = max(self.sensor_recovery_grace_until, now + recovery_grace)
 
     def update_odom(self, msg: Odometry) -> None:
         now = time.monotonic()
@@ -196,36 +209,46 @@ class EstimatorState:
             else:
                 self.duplicate_stamp_count = 0
 
-        if timestamp_advances and self.last_T is not None and self.last_stamp is not None:
+        in_sensor_recovery_grace = now < self.sensor_recovery_grace_until
+        in_kinematic_grace = now < self.kinematic_grace_until
+        if timestamp_advances and self.last_T is not None and self.last_stamp is not None and not in_sensor_recovery_grace:
             dt = stamp - self.last_stamp
-            delta = np.linalg.inv(self.last_T) @ T
-            jump = float(np.linalg.norm(T[:3, 3] - self.last_T[:3, 3]))
-            angle = rotation_angle(delta[:3, :3])
-            angular_speed = angle / dt
-            if jump > self.max_position_jump:
-                reasons.append("position_discontinuity")
-            if angle > self.max_orientation_jump_rad:
-                reasons.append("orientation_discontinuity")
-            if angular_speed > self.max_angular_velocity:
-                reasons.append("unrealistic_angular_velocity")
+            if dt > self.max_kinematic_gap:
+                # Estimator output paused or callbacks were delayed. Do not turn
+                # the next ordinary traveled distance into a false discontinuity.
+                self.pos_history.clear()
+                self.vel_history.clear()
+                self.kinematic_grace_until = max(self.kinematic_grace_until, now + self.kinematic_grace)
+            elif not in_kinematic_grace:
+                delta = np.linalg.inv(self.last_T) @ T
+                jump = float(np.linalg.norm(T[:3, 3] - self.last_T[:3, 3]))
+                angle = rotation_angle(delta[:3, :3])
+                angular_speed = angle / dt
+                allowed_jump = max(self.max_position_jump, self.max_velocity * dt * 1.2)
+                if jump > allowed_jump:
+                    reasons.append("position_discontinuity")
+                if angle > self.max_orientation_jump_rad:
+                    reasons.append("orientation_discontinuity")
+                if angular_speed > self.max_angular_velocity:
+                    reasons.append("unrealistic_angular_velocity")
 
-            # Speed/acceleration use a windowed least-squares rate (see
-            # _windowed_linear_rate) instead of a raw two-sample finite
-            # difference: real estimators publish at jittery, not perfectly
-            # even, intervals, and dividing ordinary pose noise by an
-            # occasional small dt otherwise produces spurious spikes.
-            self.pos_history.append((stamp, T[:3, 3].copy()))
-            velocity = _windowed_linear_rate(self.pos_history)
-            if velocity is not None:
-                speed = float(np.linalg.norm(velocity))
-                if speed > self.max_velocity:
-                    reasons.append("unrealistic_velocity")
-                self.vel_history.append((stamp, velocity))
-                acceleration_vec = _windowed_linear_rate(self.vel_history)
-                if acceleration_vec is not None:
-                    acceleration = float(np.linalg.norm(acceleration_vec))
-                    if acceleration > self.max_acceleration:
-                        reasons.append("unrealistic_acceleration")
+                # Speed/acceleration use a windowed least-squares rate (see
+                # _windowed_linear_rate) instead of a raw two-sample finite
+                # difference: real estimators publish at jittery, not perfectly
+                # even, intervals, and dividing ordinary pose noise by an
+                # occasional small dt otherwise produces spurious spikes.
+                self.pos_history.append((stamp, T[:3, 3].copy()))
+                velocity = _windowed_linear_rate(self.pos_history)
+                if velocity is not None:
+                    speed = float(np.linalg.norm(velocity))
+                    if speed > self.max_velocity:
+                        reasons.append("unrealistic_velocity")
+                    self.vel_history.append((stamp, velocity))
+                    acceleration_vec = _windowed_linear_rate(self.vel_history)
+                    if acceleration_vec is not None:
+                        acceleration = float(np.linalg.norm(acceleration_vec))
+                        if acceleration > self.max_acceleration:
+                            reasons.append("unrealistic_acceleration")
 
         # A repeated/regressed stamp must not move the kinematic baseline backward.
         # Forward-stamped discontinuities do become the new baseline so an injected
@@ -261,6 +284,7 @@ class HealthMonitor:
         self.max_duplicate_stamps = int(cfg.get("max_duplicate_stamps", 3))
         self.max_sensor_duplicate_stamps = int(cfg.get("max_sensor_duplicate_stamps", 3))
         self.sensor_timestamp_lag = float(cfg.get("sensor_timestamp_lag_sec", 1.0))
+        self.sensor_recovery_grace = float(cfg.get("sensor_recovery_grace_sec", 5.0))
         self.process_check_enabled = as_bool(cfg.get("process_check_enabled", True))
         self.last_node_check = 0.0
         self.nodes: List[str] = []
@@ -315,6 +339,8 @@ class HealthMonitor:
                 max_angular_velocity=math.radians(float(item.get("max_angular_velocity_deg_s", 300.0))),
                 max_acceleration=float(item.get("max_acceleration_mps2", 20.0)),
                 max_timestamp_lag=float(item.get("max_timestamp_lag_sec", 2.0)),
+                max_kinematic_gap=float(item.get("max_kinematic_gap_sec", 1.0)),
+                kinematic_grace=float(item.get("kinematic_grace_sec", 1.0)),
                 process_patterns=list(item.get("process_patterns", [])),
                 required_sensors=list(item.get("required_sensors", [])),
                 tracking_required=as_bool(item.get("tracking_required", False)),
@@ -445,13 +471,20 @@ class HealthMonitor:
         with self.lock:
             now = time.monotonic()
             self.refresh_nodes(now)
+            ros_now = ros_time_now_sec()
+            sensor_available = {
+                name: state.healthy(now, ros_now, self.max_sensor_duplicate_stamps, self.sensor_timestamp_lag)
+                for name, state in self.sensors.items()
+            }
+            for state in self.estimators.values():
+                if any(not sensor_available.get(name, False) for name in state.required_sensors):
+                    state.reset_motion_baseline(now, self.sensor_recovery_grace)
             statuses = {name: self.build_status(state, now) for name, state in self.estimators.items()}
             for name, status in statuses.items():
                 self.status_pubs[name].publish(String(data=json.dumps(status, sort_keys=True)))
-            ros_now = ros_time_now_sec()
             sensor_summary = {
                 name: {
-                    "available": state.healthy(now, ros_now, self.max_sensor_duplicate_stamps, self.sensor_timestamp_lag),
+                    "available": sensor_available[name],
                     "receipt_age_sec": None if state.last_wall is None else now - state.last_wall,
                     "timestamp_lag_sec": None if state.last_stamp is None or ros_now <= 0.0 else ros_now - state.last_stamp,
                     "count": state.count,

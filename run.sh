@@ -13,7 +13,9 @@ ORB_IMAGE="orbslam3-e2o:latest"
 LVISAM_IMAGE="lvisam-e2o:latest"
 
 INPUT_OVERLAY_CMD='for f in e2o_sensor_adapter.py e2o_static_tf_publisher.py; do cp "/workspace/wrappers/localization_benchmark/scripts/${f}" "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}" && chmod +x "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/localization_benchmark/launch/e2o_input_pipeline.launch "$@"'
+FAST_OVERLAY_CMD='cp "/workspace/wrappers/fast_livo2_e2o/scripts/odometry_alias_node.py" "/root/catkin_ws/devel/.private/fast_livo2_e2o/lib/fast_livo2_e2o/odometry_alias_node.py" && chmod +x "/root/catkin_ws/devel/.private/fast_livo2_e2o/lib/fast_livo2_e2o/odometry_alias_node.py" && cp "/workspace/wrappers/fast_livo2_e2o/launch/algorithm.launch" "/root/catkin_ws/src/fast_livo2_e2o/launch/algorithm.launch" && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/fast_livo2_e2o/launch/algorithm.launch "$@"'
 ORB_OVERLAY_CMD='for f in pose_republisher_node.py run_orbslam3_native.py; do cp "/workspace/wrappers/orbslam3_e2o/scripts/${f}" "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}" && chmod +x "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}"; done && for f in algorithm.launch native.launch; do cp "/workspace/wrappers/orbslam3_e2o/launch/${f}" "/root/catkin_ws/src/orbslam3_e2o/launch/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/orbslam3_e2o/launch/algorithm.launch "$@"'
+LVISAM_OVERLAY_CMD='cp "/workspace/wrappers/lvisam_e2o/scripts/odometry_alias_node.py" "/root/catkin_ws/devel/.private/lvisam_e2o/lib/lvisam_e2o/odometry_alias_node.py" && chmod +x "/root/catkin_ws/devel/.private/lvisam_e2o/lib/lvisam_e2o/odometry_alias_node.py" && cp "/workspace/wrappers/lvisam_e2o/launch/algorithm.launch" "/root/catkin_ws/src/lvisam_e2o/launch/algorithm.launch" && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch /workspace/wrappers/lvisam_e2o/launch/algorithm.launch "$@"'
 FUSION_OVERLAY_CMD='for f in fusion_math.py localization_health_monitor.py fusion_node.py cmd_vel_safety_gate.py multi_trajectory_recorder.py pose_fault_injector.py; do cp "/workspace/wrappers/e2o_localization_fusion/scripts/${f}" "/root/catkin_ws/devel/.private/e2o_localization_fusion/lib/e2o_localization_fusion/${f}"; done && source /opt/ros/noetic/setup.bash && source /root/catkin_ws/devel/setup.bash && export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH} && rospack profile >/dev/null && exec roslaunch "$@"'
 
 usage() {
@@ -22,6 +24,7 @@ Usage:
   ./run.sh fast_livo2 e2o /path/to/one_loop.bag
   ./run.sh orbslam3 e2o /path/to/one_loop.bag
   ./run.sh lvisam e2o /path/to/one_loop.bag
+  ./run.sh all e2o /path/to/one_loop.bag
   ./run.sh fusion e2o /path/to/one_loop.bag
   ./run.sh lvisam_fusion e2o /path/to/one_loop.bag
   ./run.sh fusion_navigation e2o /path/to/one_loop.bag
@@ -30,6 +33,7 @@ Modes:
   fast_livo2          FAST-LIVO2 only, plus health/recorder.
   orbslam3           ORB-SLAM3 only, plus health/recorder.
   lvisam             LVI-SAM only, plus health/recorder.
+  all                FAST-LIVO2 + ORB-SLAM3 + LVI-SAM + fusion + RViz debug paths.
   fusion             FAST-LIVO2 + ORB-SLAM3 fusion.
   lvisam_fusion      LVI-SAM + ORB-SLAM3 fusion.
   fusion_2           Backwards-compatible alias for lvisam_fusion.
@@ -66,25 +70,56 @@ is_lvisam_fusion_mode() {
 
 is_known_mode() {
   case "$MODE" in
-    fast_livo2|orbslam3|lvisam|fusion|lvisam_fusion|fusion_2|fusion_navigation) return 0 ;;
+    fast_livo2|orbslam3|lvisam|all|fusion|lvisam_fusion|fusion_2|fusion_navigation) return 0 ;;
     *) return 1 ;;
   esac
 }
 
 needs_fast() {
-  is_mode fast_livo2 || is_mode fusion || is_mode fusion_navigation
+  is_mode fast_livo2 || is_mode all || is_mode fusion || is_mode fusion_navigation
 }
 
 needs_orb() {
-  is_mode orbslam3 || is_mode fusion || is_lvisam_fusion_mode || is_mode fusion_navigation
+  is_mode orbslam3 || is_mode all || is_mode fusion || is_lvisam_fusion_mode || is_mode fusion_navigation
 }
 
 needs_lvisam() {
-  is_mode lvisam || is_lvisam_fusion_mode || { { is_mode fusion || is_mode fusion_navigation; } && [[ "${FUSION_ENABLE_LVISAM:-false}" == "true" ]]; }
+  is_mode lvisam || is_mode all || is_lvisam_fusion_mode || { { is_mode fusion || is_mode fusion_navigation; } && [[ "${FUSION_ENABLE_LVISAM:-false}" == "true" ]]; }
+}
+
+fusion_config_host_path() {
+  local config="$1"
+  if [[ "$config" == /workspace/* ]]; then
+    printf '%s/%s\n' "$ROOT" "${config#/workspace/}"
+  else
+    printf '%s\n' "$config"
+  fi
+}
+
+default_fusion_enable_lvisam() {
+  if [[ -n "${FUSION_ENABLE_LVISAM:-}" ]]; then
+    printf '%s\n' "$FUSION_ENABLE_LVISAM"
+    return
+  fi
+  if is_mode all; then
+    printf 'true\n'
+    return
+  fi
+  if ! { is_mode fusion || is_mode fusion_navigation; }; then
+    printf 'false\n'
+    return
+  fi
+  local config_path
+  config_path="$(fusion_config_host_path "$FUSION_CONFIG")"
+  if [[ -f "$config_path" ]] && grep -Eq '^[[:space:]]*tertiary_source:[[:space:]]*["'\'']?lvisam["'\'']?[[:space:]]*$' "$config_path"; then
+    printf 'true\n'
+  else
+    printf 'false\n'
+  fi
 }
 
 uses_fusion_node() {
-  is_mode fusion || is_lvisam_fusion_mode || is_mode fusion_navigation
+  is_mode all || is_mode fusion || is_lvisam_fusion_mode || is_mode fusion_navigation
 }
 
 default_bag_rate() {
@@ -152,7 +187,7 @@ fault_or_direct_topic() {
 
 start_fast_livo2() {
   start_container "${STACK}_fast" "$FAST_IMAGE" \
-    roslaunch fast_livo2_e2o algorithm.launch \
+    bash -lc "$FAST_OVERLAY_CMD" _ \
       config_path:="$FAST_CONFIG" \
       pcd_save_en:="$FAST_SAVE_PCD" \
       output_topic:="$(fault_or_direct_topic /fault/raw/fast_livo2 /fast_livo2/odometry)" \
@@ -175,7 +210,7 @@ start_lvisam() {
     lvisam_tf_static_topic="${LVISAM_TF_STATIC_TOPIC:-/native/lvisam/tf_static}"
   fi
   start_container "${STACK}_lvisam" "$LVISAM_IMAGE" \
-    roslaunch lvisam_e2o algorithm.launch \
+    bash -lc "$LVISAM_OVERLAY_CMD" _ \
       lidar_config:="$LVISAM_LIDAR_CONFIG" \
       camera_config:="$LVISAM_CAMERA_CONFIG" \
       output_topic:="$(fault_or_direct_topic /fault/raw/lvisam /lvisam/odometry)" \
@@ -360,8 +395,8 @@ ORB_EXECUTABLE="${ORB_SLAM3_EXECUTABLE:-RGBD}"
 LVISAM_LIDAR_CONFIG="${LVISAM_LIDAR_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_lidar_e2o.yaml}"
 LVISAM_CAMERA_CONFIG="${LVISAM_CAMERA_CONFIG:-/workspace/wrappers/lvisam_e2o/config/params_camera_e2o.yaml}"
 LVISAM_ENABLE_VISUAL="${LVISAM_ENABLE_VISUAL:-false}"
-FUSION_ENABLE_LVISAM="${FUSION_ENABLE_LVISAM:-false}"
 FUSION_CONFIG="$(default_fusion_config)"
+FUSION_ENABLE_LVISAM="$(default_fusion_enable_lvisam)"
 
 RUN_ID="$(date +%Y%m%d_%H%M%S)_${MODE}_$$"
 OUT_HOST="${ROOT}/data/output/${RUN_ID}"

@@ -154,6 +154,9 @@ class E2OSensorAdapter:
         self.last_fast_camera_stamp = None
         self.orb_rgbd_width = int(orb_rgbd.get("width", 0))
         self.orb_rgbd_height = int(orb_rgbd.get("height", 0))
+        self.orb_rgbd_max_rate = float(orb_rgbd.get("max_rate_hz", 0.0))
+        self.last_orb_camera_stamp: Optional[float] = None
+        self.last_orb_depth_stamp: Optional[float] = None
         self.bridge = CvBridge()
         self.latest_depth_size: Optional[Tuple[int, int]] = None
 
@@ -340,6 +343,14 @@ class E2OSensorAdapter:
             out.header.stamp = out.header.stamp + self.camera_time_offset
         return out
 
+    @staticmethod
+    def _admit_at_rate(last_stamp: Optional[float], stamp: float, max_rate_hz: float) -> bool:
+        if max_rate_hz <= 0.0 or last_stamp is None:
+            return True
+        if stamp <= last_stamp:
+            return False
+        return stamp - last_stamp >= 1.0 / max_rate_hz - 1.0e-4
+
     def publish_depth(self, msg: Image) -> None:
         out = self._normalize_image_time(msg)
         out.header.frame_id = self.depth_frame
@@ -347,14 +358,20 @@ class E2OSensorAdapter:
         height = int(out.height or self.orb_rgbd_height)
         if width > 0 and height > 0:
             self.latest_depth_size = (width, height)
-        self.orb_depth_pub.publish(out)
+        stamp = out.header.stamp.to_sec()
+        if self._admit_at_rate(self.last_orb_depth_stamp, stamp, self.orb_rgbd_max_rate):
+            self.last_orb_depth_stamp = stamp
+            self.orb_depth_pub.publish(out)
 
     def publish_camera(self, msg: Image) -> None:
         out = self._normalize_image_time(msg)
         out.header.frame_id = self.camera_frame
         orb_rgb = self.make_orb_rgb(out)
         if orb_rgb is not None:
-            self.orb_camera_pub.publish(orb_rgb)
+            orb_stamp = orb_rgb.header.stamp.to_sec()
+            if self._admit_at_rate(self.last_orb_camera_stamp, orb_stamp, self.orb_rgbd_max_rate):
+                self.last_orb_camera_stamp = orb_stamp
+                self.orb_camera_pub.publish(orb_rgb)
         self.lvisam_camera_pub.publish(out)
         lvisam_info = self.make_camera_info(out)
         self.lvisam_camera_info_pub.publish(lvisam_info)

@@ -83,7 +83,8 @@ def main():
         name="test", timeout=1.0, min_rate_hz=1.0, max_rate_window=3.0,
         max_position_jump=3.0, max_orientation_jump_rad=1.0,
         max_velocity=35.0, max_angular_velocity=5.0, max_acceleration=20.0,
-        max_timestamp_lag=2.0, process_patterns=[], required_sensors=[]
+        max_timestamp_lag=2.0, max_kinematic_gap=1.0, kinematic_grace=1.0,
+        process_patterns=[], required_sensors=[]
     )
     state.update_odom(odom(10.0, 0.0))
     assert state.last_stamp == 10.0 and state.last_valid
@@ -98,6 +99,18 @@ def main():
     state.update_odom(odom(12.0, float("nan")))
     assert state.last_stamp == 11.0
     assert "non_finite_or_invalid_pose" in state.last_message_reasons
+
+    gap_state = module.EstimatorState(
+        name="gap", timeout=1.0, min_rate_hz=1.0, max_rate_window=3.0,
+        max_position_jump=3.0, max_orientation_jump_rad=1.0,
+        max_velocity=35.0, max_angular_velocity=5.0, max_acceleration=20.0,
+        max_timestamp_lag=2.0, max_kinematic_gap=1.0, kinematic_grace=1.0,
+        process_patterns=[], required_sensors=[]
+    )
+    gap_state.update_odom(odom(20.0, 0.0))
+    gap_state.update_odom(odom(22.0, 4.0))
+    assert gap_state.last_valid
+    assert "position_discontinuity" not in gap_state.last_message_reasons
     print("health-state timestamp test passed")
 
 

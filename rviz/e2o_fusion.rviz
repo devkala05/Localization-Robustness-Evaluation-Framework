@@ -25,8 +25,69 @@ Visualization Manager:
       Name: Fused path
       Enabled: true
       Topic: /fused_localization/path
+      Color: 255; 255; 255
       Line Style: Lines
       Line Width: 0.03
+    - Class: rviz/Path
+      Name: FAST-LIVO2 aligned path
+      Enabled: true
+      Topic: /fused_localization/aligned_fast_livo2_path
+      Color: 0; 255; 0
+      Line Style: Lines
+      Line Width: 0.05
+    - Class: rviz/Path
+      Name: ORB-SLAM3 aligned path
+      Enabled: true
+      Topic: /fused_localization/aligned_orbslam3_path
+      Color: 255; 128; 0
+      Line Style: Lines
+      Line Width: 0.05
+    - Class: rviz/Path
+      Name: LVI-SAM aligned path
+      Enabled: true
+      Topic: /fused_localization/aligned_lvisam_path
+      Color: 0; 160; 255
+      Line Style: Lines
+      Line Width: 0.05
+    - Class: rviz/Path
+      Name: Weighted fused debug path
+      Enabled: true
+      Topic: /debug_paths/fused
+      Color: 255; 255; 255
+      Line Style: Lines
+      Line Width: 0.08
+    - Class: rviz/Path
+      Name: Fused continuous debug path
+      Enabled: true
+      Topic: /debug_paths/fused_continuous
+      Color: 255; 0; 255
+      Line Style: Lines
+      Line Width: 0.04
+    - Class: rviz/Path
+      Name: Fused metric debug path
+      Enabled: true
+      Topic: /debug_paths/fused_metric
+      Color: 255; 255; 0
+      Line Style: Lines
+      Line Width: 0.04
+    - Class: rviz/Odometry
+      Name: FAST-LIVO2 odometry
+      Enabled: true
+      Topic: /fast_livo2/odometry
+      Color: 0; 255; 0
+      Keep: 20
+    - Class: rviz/Odometry
+      Name: ORB-SLAM3 odometry
+      Enabled: true
+      Topic: /orbslam3/camera_odometry
+      Color: 255; 128; 0
+      Keep: 20
+    - Class: rviz/Odometry
+      Name: LVI-SAM odometry
+      Enabled: true
+      Topic: /lvisam/odometry
+      Color: 0; 160; 255
+      Keep: 20
     - Class: rviz/PointCloud2
       Name: E2O LiDAR
       Enabled: true

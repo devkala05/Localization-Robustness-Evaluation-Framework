@@ -50,12 +50,35 @@ CSV_ALIAS = {FAST: "fastlivo2", LVISAM: "lvisam", ORB: "orbslam3"}
 # reason falls through to the mode's default fallback order.
 LIDAR_OR_IMU_DOWN = {"lidar_unavailable", "imu_unavailable"}
 CAMERA_DOWN = {"camera_unavailable"}
+METRIC_RESTART_REASONS = {
+    "position_discontinuity",
+    "orientation_discontinuity",
+    "unrealistic_velocity",
+    "unrealistic_acceleration",
+    "unrealistic_angular_velocity",
+}
+# These indicate missing/invalid data rather than a recovered estimator whose
+# native map frame needs rebasing. Do not force-use a source in these states.
+RECOVERY_BLOCKING_REASONS = {
+    "no_pose_received",
+    "stale_pose",
+    "delayed_pose_timestamp",
+    "future_pose_timestamp",
+    "timestamp_regression",
+    "frozen_or_repeated_output",
+    "non_finite_or_invalid_pose",
+    "process_not_present",
+}
 
 
 def as_bool(value) -> bool:
     if isinstance(value, bool):
         return value
     return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, float(value)))
 
 
 @dataclass
@@ -132,6 +155,14 @@ class LocalizationFusion:
         self.primary_recovery = float(cfg.get("primary_recovery_sec", 5.0))
         self.minimum_dwell = float(cfg.get("minimum_source_dwell_sec", 3.0))
         self.blend_duration = float(cfg.get("blend_duration_sec", 1.0))
+        self.weighted_fusion_enabled = as_bool(cfg.get("weighted_fusion_enabled", False))
+        self.weight_rise_time = float(cfg.get("weight_rise_time_sec", 6.0))
+        self.weight_fall_time = float(cfg.get("weight_fall_time_sec", 1.0))
+        self.lidar_recovery_override = float(cfg.get("lidar_recovery_override_sec", 8.0))
+        self.metric_nominal_weight = float(cfg.get("metric_nominal_weight", 0.9))
+        self.lvisam_recovery_weight = float(cfg.get("lvisam_recovery_weight", 0.9))
+        self.orb_nominal_weight = float(cfg.get("orb_nominal_weight", 0.1))
+        self.orb_backup_weight = float(cfg.get("orb_backup_weight", 1.0))
         self.max_disagreement_m = float(cfg.get("max_disagreement_m", 4.0))
         self.max_disagreement_rad = math.radians(float(cfg.get("max_disagreement_deg", 35.0)))
         self.recovery_disagreement_m = float(cfg.get("recovery_disagreement_m", 2.0))
@@ -209,6 +240,25 @@ class LocalizationFusion:
         self.fused_csv_writer = None
         self.fused_csv_handle = None
         self.last_blend_alpha = 1.0
+        self.weighted_sources = [self.metric_source]
+        if self.enable_tertiary:
+            self.weighted_sources.append(self.tertiary_source)
+        self.weighted_sources.append(ORB)
+        self.fusion_weights: Dict[str, float] = {
+            source: 0.0 for source in self.weighted_sources
+        }
+        self.target_fusion_weights: Dict[str, float] = dict(self.fusion_weights)
+        self.last_weight_update_wall: Optional[float] = None
+        self.weighted_last_stamp: Optional[float] = None
+        self.weighted_active_label = FAILED
+        self.weighted_state = "WAITING_FOR_LOCALIZATION"
+        self.force_reanchor: Dict[str, bool] = {source: False for source in self.weighted_sources}
+        self.recovery_override_until: Dict[str, float] = {source: 0.0 for source in self.weighted_sources}
+        # True only while a source has a currently/recently unavailable required
+        # sensor. Gates metric_restart_recovery_status so a bare pose glitch
+        # (discontinuity/unrealistic kinematics) with no real sensor outage is
+        # never mistaken for "sensor came back, re-anchor me".
+        self.sensor_outage_active: Dict[str, bool] = {source: False for source in self.weighted_sources}
         self.synchronized_pairs: Deque[Tuple[np.ndarray, np.ndarray]] = collections.deque(maxlen=self.alignment_window)
         self.recovery_pairs: Deque[Tuple[np.ndarray, np.ndarray]] = collections.deque(maxlen=self.alignment_window)
         self.cross_fast_from_orb: Optional[np.ndarray] = None
@@ -236,12 +286,20 @@ class LocalizationFusion:
         _stamps: Dict[str, Optional[float]] = {self.metric_source: None, ORB: None}
         if self.enable_tertiary:
             _stamps[self.tertiary_source] = None
+        _stamps["weighted"] = None
         self.last_output_source_stamp: Dict[str, Optional[float]] = _stamps
         self.last_twist = Twist()
         self.path = Path()
         self.path.header.frame_id = self.map_frame
         self.metric_path = Path()
         self.metric_path.header.frame_id = self.map_frame
+        self.aligned_source_paths: Dict[str, Path] = {}
+        self.last_aligned_source_stamp: Dict[str, Optional[float]] = {}
+        for source in self.weighted_source_order():
+            path = Path()
+            path.header.frame_id = self.map_frame
+            self.aligned_source_paths[source] = path
+            self.last_aligned_source_stamp[source] = None
         self.last_metric_output_T: Optional[np.ndarray] = None
         self.last_metric_output_stamp: Optional[float] = None
 
@@ -254,6 +312,11 @@ class LocalizationFusion:
         self.metric_odom_pub = rospy.Publisher(self.metric_odom_topic, Odometry, queue_size=100)
         self.metric_pose_pub = rospy.Publisher(self.metric_pose_topic, PoseStamped, queue_size=100)
         self.metric_path_pub = rospy.Publisher(self.metric_path_topic, Path, queue_size=5, latch=True)
+        self.aligned_source_path_pubs = {
+            FAST: rospy.Publisher("/fused_localization/aligned_fast_livo2_path", Path, queue_size=5, latch=True),
+            LVISAM: rospy.Publisher("/fused_localization/aligned_lvisam_path", Path, queue_size=5, latch=True),
+            ORB: rospy.Publisher("/fused_localization/aligned_orbslam3_path", Path, queue_size=5, latch=True),
+        }
         self.status_pub = rospy.Publisher(self.status_topic, String, queue_size=10, latch=True)
         self.active_pub = rospy.Publisher(self.active_topic, String, queue_size=10, latch=True)
         self.event_pub = rospy.Publisher(self.event_topic, String, queue_size=50, latch=True)
@@ -403,6 +466,39 @@ class LocalizationFusion:
         self.append_event_log([payload[k] for k in ("ros_time", "wall_time", "event", "from_source", "to_source", "reason", "pose_jump_m", "orientation_jump_deg")])
         rospy.logwarn("[FusionEvent] %s", text)
 
+    def is_metric_recovery_source(self, source: str) -> bool:
+        return source in (self.metric_source, self.tertiary_source)
+
+    def metric_restart_recovery_status(self, source: str, status: dict) -> bool:
+        if not self.is_metric_recovery_source(source):
+            return False
+        if not getattr(self, "sensor_outage_active", {}).get(source, False):
+            # No required sensor has actually been unavailable recently, so a
+            # discontinuity/unrealistic-kinematics reason here is a genuine
+            # estimator fault (corrupted pose), not a sensor-recovery restart.
+            # Let the normal unhealthy/failover path handle it instead of
+            # force-reanchoring the fused output onto a bad pose.
+            return False
+        reasons = set(status.get("reasons", []))
+        if not reasons or reasons & RECOVERY_BLOCKING_REASONS:
+            return False
+        sensor_available = status.get("sensor_available") or {}
+        for reason in reasons - METRIC_RESTART_REASONS:
+            if reason.endswith("_unavailable"):
+                sensor_name = reason[:-len("_unavailable")]
+                if not bool(sensor_available.get(sensor_name, False)):
+                    return False
+        return all(bool(value) for value in sensor_available.values()) if sensor_available else True
+
+    def recovery_override_active(self, source: str) -> bool:
+        until = getattr(self, "recovery_override_until", {}).get(source, 0.0)
+        if time.monotonic() > until:
+            return False
+        data = self.sources.get(source)
+        if data is None or data.latest_msg is None or data.latest_T is None:
+            return False
+        return self.metric_restart_recovery_status(source, data.health)
+
     def health_cb(self, source: str, msg: String) -> None:
         try:
             status = json.loads(msg.data)
@@ -410,7 +506,34 @@ class LocalizationFusion:
             rospy.logwarn_throttle(2.0, "[Fusion] invalid %s health JSON: %s", source, exc)
             return
         with self.lock:
-            self.sources[source].update_health(status, time.monotonic())
+            data = self.sources[source]
+            was_healthy = bool(data.health.get("healthy", False))
+            data.update_health(status, time.monotonic())
+            is_healthy = bool(data.health.get("healthy", False))
+            if not hasattr(self, "force_reanchor"):
+                self.force_reanchor = {}
+            if not hasattr(self, "recovery_override_until"):
+                self.recovery_override_until = {}
+            if not hasattr(self, "sensor_outage_active"):
+                self.sensor_outage_active = {}
+            reasons_now = set(status.get("reasons", []))
+            if any(reason.endswith("_unavailable") for reason in reasons_now):
+                self.sensor_outage_active[source] = True
+            if self.metric_restart_recovery_status(source, status):
+                if not self.recovery_override_active(source):
+                    self.force_reanchor[source] = True
+                self.recovery_override_until[source] = (
+                    time.monotonic() + getattr(self, "lidar_recovery_override", 8.0)
+                )
+                # This outage episode has now been consumed as a legitimate
+                # reentry trigger; a later bare discontinuity with no fresh
+                # sensor loss must not be treated as another restart.
+                self.sensor_outage_active[source] = False
+                return
+            if not is_healthy:
+                self.force_reanchor[source] = True
+            elif not was_healthy and is_healthy:
+                self.force_reanchor[source] = True
 
     def odom_cb(self, source: str, msg: Odometry) -> None:
         try:
@@ -616,13 +739,17 @@ class LocalizationFusion:
         return (disagreement["position_m"] <= max_pos and
                 disagreement["orientation_rad"] <= max_ang and scale_ok)
 
-    def primary_recovery_allowed(self) -> Tuple[bool, str]:
+    def primary_recovery_allowed(self, active_source: Optional[str] = None) -> Tuple[bool, str]:
         recovery_consistent = self.consistency_ok(recovery=True)
         if recovery_consistent:
             return True, "primary_recovered_and_consistent"
         if not self.require_recovery_consistency:
             return True, "primary_recovered_continuity_aligned"
-        if not self.recovery_disagreement.get("valid"):
+        # The example fail-safe path requires fresh FAST/ORB overlap before
+        # returning from ORB after a LiDAR/IMU outage. For metric-to-metric
+        # camera recovery (LVI-SAM -> FAST-LIVO2), there is no ORB similarity
+        # to validate, so the continuity transform is the safety mechanism.
+        if active_source not in (None, ORB) and not self.recovery_disagreement.get("valid"):
             return True, "primary_recovered_without_recovery_overlap"
         return False, ""
 
@@ -683,7 +810,7 @@ class LocalizationFusion:
 
         elif active == tertiary:
             if dwell_ok and self.source_usable(metric, now, self.primary_recovery):
-                recovery_allowed, reason = self.primary_recovery_allowed()
+                recovery_allowed, reason = self.primary_recovery_allowed(active)
                 if recovery_allowed:
                     self.switch_to(metric, reason)
                     return
@@ -700,7 +827,7 @@ class LocalizationFusion:
         else:  # active == ORB
             if dwell_ok:
                 if self.source_usable(metric, now, self.primary_recovery):
-                    recovery_allowed, reason = self.primary_recovery_allowed()
+                    recovery_allowed, reason = self.primary_recovery_allowed(active)
                     if recovery_allowed:
                         self.switch_to(metric, reason)
                         return
@@ -733,7 +860,7 @@ class LocalizationFusion:
             self.state = self.source_label(metric)
         else:  # active == ORB
             if dwell_ok and self.source_usable(metric, now, self.primary_recovery):
-                recovery_allowed, reason = self.primary_recovery_allowed()
+                recovery_allowed, reason = self.primary_recovery_allowed(active)
                 if recovery_allowed:
                     self.switch_to(metric, reason)
                     return
@@ -839,7 +966,7 @@ class LocalizationFusion:
             self.synchronized_pairs = collections.deque(self.recovery_pairs, maxlen=self.alignment_window)
             self.reset_recovery_alignment()
         native_metric_pose = self.metric_source_pose(new_source, data.latest_T)
-        if before is None or new_source == self.metric_source:
+        if before is None:
             self.source_to_output[new_source] = np.eye(4)
             after = native_metric_pose
         else:
@@ -867,6 +994,14 @@ class LocalizationFusion:
             return None
         if self.last_output_source_stamp[self.active_source] is not None and data.latest_stamp <= self.last_output_source_stamp[self.active_source]:
             return None
+        if (getattr(self, "force_reanchor", {}).get(self.active_source, False) and
+                bool(data.health.get("healthy", False))):
+            # Only fold a pending reanchor into the live output once this
+            # source is actually reporting healthy again -- reanchoring while
+            # it is still unhealthy would bake a corrupted/jumping pose
+            # straight into the fused output instead of letting the normal
+            # failure_hold_sec failover reject it.
+            self.align_source_for_reentry(self.active_source, "health_recovery_active")
         T_target = self.source_to_output[self.active_source] @ self.metric_source_pose(
             self.active_source, data.latest_T
         )
@@ -883,6 +1018,197 @@ class LocalizationFusion:
                 self.switch_anchor_T = None
                 self.switch_start_wall = None
         return data.latest_msg, T_out
+
+    def transformed_source_pose(self, source: str) -> Optional[Tuple[Odometry, np.ndarray]]:
+        data = self.sources.get(source)
+        if data is None or data.latest_msg is None or data.latest_T is None:
+            return None
+        if getattr(self, "force_reanchor", {}).get(source, False):
+            self.align_source_for_reentry(source, "health_recovery")
+        return data.latest_msg, self.source_to_output[source] @ self.metric_source_pose(source, data.latest_T)
+
+    def source_fusion_ready(self, source: str) -> bool:
+        data = self.sources.get(source)
+        if data is None or data.latest_msg is None or data.latest_T is None:
+            return False
+        if not bool(data.health.get("healthy", False)):
+            return False
+        if source == ORB:
+            return self.orb_metric_scale is not None and self.cross_fast_from_orb is not None
+        return True
+
+    def weighted_source_order(self) -> list:
+        sources = list(getattr(self, "weighted_sources", []))
+        if not sources:
+            sources = [self.metric_source]
+            if self.enable_tertiary:
+                sources.append(self.tertiary_source)
+            sources.append(ORB)
+        return [source for source in sources if source in self.sources]
+
+    def source_output_consistent(self, source: str) -> bool:
+        if getattr(self, "force_reanchor", {}).get(source, False):
+            self.align_source_for_reentry(source, "health_recovery")
+            return True
+        if self.last_output_T is None or self.fusion_weights.get(source, 0.0) <= 1.0e-4:
+            return True
+        pose = self.transformed_source_pose(source)
+        if pose is None:
+            return False
+        delta = invert_transform(self.last_output_T) @ pose[1]
+        position_delta = float(np.linalg.norm(delta[:3, 3]))
+        rotation_delta = rotation_angle(delta[:3, :3])
+        if position_delta <= self.max_disagreement_m and rotation_delta <= self.max_disagreement_rad:
+            return True
+        if source == ORB:
+            self.align_source_for_reentry(source, "orb_loop_closure_reanchor")
+            return True
+        return False
+
+    def align_source_for_reentry(self, source: str, reason: str = "weighted_fusion_reentry") -> None:
+        if self.last_output_T is None:
+            if source not in self.source_to_output:
+                self.source_to_output[source] = np.eye(4)
+            if not hasattr(self, "force_reanchor"):
+                self.force_reanchor = {}
+            self.force_reanchor[source] = False
+            return
+        data = self.sources.get(source)
+        if data is None or data.latest_T is None:
+            return
+        native_metric_pose = self.metric_source_pose(source, data.latest_T)
+        self.source_to_output[source] = self.last_output_T @ invert_transform(native_metric_pose)
+        if not hasattr(self, "force_reanchor"):
+            self.force_reanchor = {}
+        self.force_reanchor[source] = False
+        if hasattr(self, "aligned_source_paths") and source in self.aligned_source_paths:
+            self.aligned_source_paths[source] = Path()
+            self.aligned_source_paths[source].header.frame_id = self.map_frame
+            self.last_aligned_source_stamp[source] = None
+        self.publish_event("source_reanchored", source, source, reason, 0.0)
+
+    def weighted_targets(self, now: float) -> Dict[str, float]:
+        metric_ready = self.source_fusion_ready(self.metric_source) and self.source_output_consistent(self.metric_source)
+        tertiary_ready = (
+            self.enable_tertiary and
+            self.source_fusion_ready(self.tertiary_source) and
+            self.source_output_consistent(self.tertiary_source)
+        )
+        orb_ready = self.source_fusion_ready(ORB) and self.source_output_consistent(ORB)
+        targets = {source: 0.0 for source in self.weighted_source_order()}
+        if metric_ready:
+            targets[self.metric_source] = self.metric_nominal_weight
+            if orb_ready and self.disagreement.get("valid") and self.consistency_ok():
+                targets[ORB] = self.orb_nominal_weight
+        elif tertiary_ready:
+            targets[self.tertiary_source] = self.lvisam_recovery_weight
+        elif orb_ready:
+            targets[ORB] = self.orb_backup_weight
+        total = sum(targets.values())
+        if total > 1.0e-9:
+            targets = {name: value / total for name, value in targets.items()}
+        return targets
+
+    def update_fusion_weights(self, targets: Dict[str, float], now: float) -> None:
+        if self.last_weight_update_wall is None:
+            dt = 0.0
+        else:
+            dt = max(0.0, now - self.last_weight_update_wall)
+        self.last_weight_update_wall = now
+        for source, target in targets.items():
+            current = self.fusion_weights.get(source, 0.0)
+            if current <= 1.0e-6 and target > 1.0e-6:
+                self.align_source_for_reentry(source)
+            if dt <= 0.0:
+                step = 1.0
+            else:
+                tau = self.weight_rise_time if target > current else self.weight_fall_time
+                step = 1.0 if tau <= 1.0e-6 else clamp(dt / tau, 0.0, 1.0)
+            self.fusion_weights[source] = current + (target - current) * step
+        target_total = sum(max(0.0, value) for value in targets.values())
+        total = sum(max(0.0, value) for value in self.fusion_weights.values())
+        if target_total > 1.0e-9 and total > 1.0e-9:
+            for source in list(self.fusion_weights):
+                self.fusion_weights[source] = max(0.0, self.fusion_weights[source]) / total
+        self.target_fusion_weights = dict(targets)
+
+    def weighted_fused_pose(self, now: float) -> Optional[Tuple[Odometry, np.ndarray]]:
+        if not self.weighted_fusion_enabled or self.mode != "fusion1":
+            return None
+        targets = self.weighted_targets(now)
+        self.update_fusion_weights(targets, now)
+        candidates = []
+        for source in self.weighted_source_order():
+            weight = self.fusion_weights.get(source, 0.0)
+            if (weight <= 1.0e-4 or not self.source_fusion_ready(source) or
+                    not self.source_output_consistent(source)):
+                continue
+            pose = self.transformed_source_pose(source)
+            if pose is None:
+                continue
+            candidates.append((source, weight, pose[0], pose[1]))
+        if not candidates:
+            self.weighted_active_label = FAILED
+            self.weighted_state = "WAITING_FOR_LOCALIZATION"
+            return None
+        candidates.sort(key=lambda item: item[1], reverse=True)
+        dominant_source, dominant_weight, _dominant_msg, fused = candidates[0]
+        total_weight = dominant_weight
+        for _, other_weight, _, other_T in candidates[1:]:
+            alpha = clamp(other_weight / (total_weight + other_weight), 0.0, 1.0)
+            fused = interpolate_transform(fused, other_T, alpha)
+            total_weight += other_weight
+        msg = max((item[2] for item in candidates), key=lambda item: item.header.stamp.to_sec())
+        stamp = max(item[2].header.stamp.to_sec() for item in candidates)
+        if self.weighted_last_stamp is not None and stamp <= self.weighted_last_stamp:
+            return None
+        self.weighted_last_stamp = stamp
+        self.last_blend_alpha = self.fusion_weights.get(ORB, 0.0)
+        self.weighted_active_label = "weighted"
+        self.weighted_state = self.weighted_state_label()
+        return msg, fused
+
+    def weighted_state_label(self) -> str:
+        metric_w = self.fusion_weights.get(self.metric_source, 0.0)
+        tertiary_w = self.fusion_weights.get(self.tertiary_source, 0.0) if self.enable_tertiary else 0.0
+        orb_w = self.fusion_weights.get(ORB, 0.0)
+        if metric_w > 0.05 and orb_w > 0.05:
+            return "FUSED_FAST_LIVO2_ORB_SLAM3"
+        if tertiary_w > 0.05 and orb_w > 0.05:
+            return "FUSED_LVISAM_ORB_SLAM3_RECOVERY"
+        if tertiary_w > metric_w and tertiary_w >= orb_w:
+            return "FUSED_LVISAM_RECOVERY"
+        if orb_w > metric_w and orb_w > tertiary_w:
+            return "FUSED_ORB_SLAM3_BACKUP"
+        if metric_w > 0.0:
+            return "FUSED_FAST_LIVO2_PRIMARY"
+        return "WAITING_FOR_LOCALIZATION"
+
+    def publish_aligned_source_paths(self) -> None:
+        if not hasattr(self, "aligned_source_path_pubs"):
+            return
+        for source in self.weighted_source_order():
+            data = self.sources.get(source)
+            if data is None or data.latest_msg is None or data.latest_T is None or data.latest_stamp is None:
+                continue
+            if self.last_aligned_source_stamp.get(source) is not None and data.latest_stamp <= self.last_aligned_source_stamp[source]:
+                continue
+            transformed = self.transformed_source_pose(source)
+            if transformed is None:
+                continue
+            pose = PoseStamped()
+            pose.header.stamp = data.latest_msg.header.stamp
+            pose.header.frame_id = self.map_frame
+            pose.pose = matrix_to_pose(transformed[1])
+            path = self.aligned_source_paths[source]
+            path.header.stamp = pose.header.stamp
+            path.poses.append(pose)
+            if len(path.poses) > self.max_path_poses:
+                path.poses = path.poses[-self.max_path_poses:]
+            self.last_aligned_source_stamp[source] = data.latest_stamp
+            pub = self.aligned_source_path_pubs.get(source)
+            if pub is not None:
+                pub.publish(path)
 
     def compute_twist(self, T: np.ndarray, stamp: float) -> Twist:
         out = Twist()
@@ -958,15 +1284,19 @@ class LocalizationFusion:
             except Exception as exc:
                 rospy.logwarn_throttle(2.0, "[Fusion] cannot publish map->odom: %s", exc)
 
-    def publish_output(self, source_msg: Odometry, T: np.ndarray) -> None:
+    def publish_output(self, source_msg: Odometry, T: np.ndarray,
+                       output_source: Optional[str] = None,
+                       output_state: Optional[str] = None) -> None:
+        output_source = output_source or self.active_source
+        output_state = output_state or self.state
         stamp_value = source_msg.header.stamp.to_sec()
         if self.last_output_stamp is not None and stamp_value <= self.last_output_stamp:
             return
         if self.last_output_stamp is not None and stamp_value - self.last_output_stamp > self.max_output_gap:
-            self.publish_event("output_gap", self.active_source, self.active_source,
+            self.publish_event("output_gap", output_source, output_source,
                                f"gap_sec={stamp_value - self.last_output_stamp:.3f}", 0.0)
         pose = matrix_to_pose(T)
-        if self.pending_switch_event is not None and self.last_output_T is not None:
+        if output_source != "weighted" and self.pending_switch_event is not None and self.last_output_T is not None:
             delta = invert_transform(self.last_output_T) @ T
             actual_jump = float(np.linalg.norm(T[:3, 3] - self.last_output_T[:3, 3]))
             actual_angle = math.degrees(rotation_angle(delta[:3, :3]))
@@ -1014,16 +1344,19 @@ class LocalizationFusion:
         self.last_output_T = T.copy()
         self.last_output_stamp = stamp_value
         self.last_output_wall = time.monotonic()
-        self.last_output_source_stamp[self.active_source] = stamp_value
-        self.write_fused_csv_row(stamp_value, pose)
+        self.last_output_source_stamp[output_source] = stamp_value
+        self.write_fused_csv_row(stamp_value, pose, output_source, output_state)
 
-    def write_fused_csv_row(self, stamp_value: float, pose) -> None:
+    def write_fused_csv_row(self, stamp_value: float, pose,
+                            output_source: Optional[str] = None,
+                            output_state: Optional[str] = None) -> None:
         if self.fused_csv_writer is None:
             return
         self.fused_csv_writer.writerow([
             stamp_value, pose.position.x, pose.position.y, pose.position.z,
             pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w,
-            self.active_source, self.state, round(self.last_blend_alpha, 4), self.switch_count,
+            output_source or self.active_source, output_state or self.state,
+            round(self.last_blend_alpha, 4), self.switch_count,
             *self.health_snapshot_row(),
         ])
         self.fused_csv_handle.flush()
@@ -1064,14 +1397,27 @@ class LocalizationFusion:
         self.last_metric_output_stamp = stamp_value
 
     def status_payload(self) -> dict:
+        weighted_mode = self.weighted_fusion_enabled and self.mode == "fusion1"
+        weighted_valid = (
+            weighted_mode and
+            sum(self.fusion_weights.values()) > 1.0e-4 and
+            self.weighted_active_label == "weighted"
+        )
+        status_state = self.weighted_state if weighted_valid else self.state
+        status_active = "weighted" if weighted_mode else self.active_source
         return {
             "stamp": rospy.Time.now().to_sec(),
-            "state": self.state,
-            "valid": self.active_source != FAILED and bool(self.sources[self.active_source].health.get("healthy", False)),
-            "active_source": self.active_source,
+            "state": status_state,
+            "valid": weighted_valid if weighted_mode else (
+                self.active_source != FAILED and bool(self.sources[self.active_source].health.get("healthy", False))
+            ),
+            "active_source": status_active,
             "mode": self.mode,
             "primary_source": self.primary,
             "metric_source": self.metric_source,
+            "fusion_strategy": "weighted" if self.weighted_fusion_enabled else "switch",
+            "fusion_weights": {name: round(value, 4) for name, value in self.fusion_weights.items()},
+            "target_fusion_weights": {name: round(value, 4) for name, value in self.target_fusion_weights.items()},
             "orb_alignment_source": self.orb_alignment_source,
             "tertiary_source": self.tertiary_source if self.enable_tertiary else None,
             "switch_count": self.switch_count,
@@ -1111,27 +1457,52 @@ class LocalizationFusion:
         with self.lock:
             now = time.monotonic()
             self.evaluate_state_machine(now)
-            active = self.transformed_active_pose(now)
-            if active is not None and bool(self.sources[self.active_source].health.get("healthy", False)):
-                self.publish_output(active[0], active[1])
-            elif (self.active_source != FAILED and self.last_output_T is not None and
-                  bool(self.sources[self.active_source].health.get("healthy", False))):
-                self.publish_tf_for_pose(self.last_output_T, rospy.Time.now())
+            if self.state in (
+                "WAITING_FOR_BAG_CLOCK",
+                "WAITING_FOR_LOCALIZATION_START_DELAY",
+                "WAITING_FOR_LOCALIZATION",
+            ):
+                self.publish_aligned_source_paths()
+                if self.stop_navigation_on_failure:
+                    self.nav_ok_pub.publish(Bool(data=False))
+                else:
+                    self.nav_ok_pub.publish(Bool(data=True))
+                self.active_pub.publish(String(data=self.active_source))
+                self.status_pub.publish(String(data=json.dumps(self.status_payload(), sort_keys=True)))
+                return
+            weighted_mode = self.weighted_fusion_enabled and self.mode == "fusion1"
+            weighted = self.weighted_fused_pose(now) if weighted_mode else None
+            if weighted_mode:
+                if weighted is not None:
+                    self.publish_output(weighted[0], weighted[1], "weighted", self.weighted_state)
+                elif self.last_output_T is not None:
+                    self.publish_tf_for_pose(self.last_output_T, rospy.Time.now())
+            else:
+                active = self.transformed_active_pose(now)
+                if active is not None and bool(self.sources[self.active_source].health.get("healthy", False)):
+                    self.publish_output(active[0], active[1])
+                elif (self.active_source != FAILED and self.last_output_T is not None and
+                      bool(self.sources[self.active_source].health.get("healthy", False))):
+                    self.publish_tf_for_pose(self.last_output_T, rospy.Time.now())
             metric_data = self.sources[self.metric_source]
             if (metric_data.latest_msg is not None and metric_data.latest_T is not None and
                     bool(metric_data.health.get("healthy", False))):
                 self.publish_metric_output(metric_data.latest_msg, metric_data.latest_T)
+            self.publish_aligned_source_paths()
             degraded = self.state.endswith("DEGRADED_DISAGREEMENT")
+            weighted_valid = weighted_mode and self.weighted_active_label == "weighted"
             navigation_ok = (
-                self.active_source != FAILED and
-                bool(self.sources[self.active_source].health.get("healthy", False)) and
+                (weighted_valid if weighted_mode else (
+                    self.active_source != FAILED and
+                    bool(self.sources[self.active_source].health.get("healthy", False))
+                )) and
                 not degraded
             )
             if self.stop_navigation_on_failure:
                 self.nav_ok_pub.publish(Bool(data=navigation_ok))
             else:
                 self.nav_ok_pub.publish(Bool(data=True))
-            self.active_pub.publish(String(data=self.active_source))
+            self.active_pub.publish(String(data="weighted" if weighted_mode else self.active_source))
             self.status_pub.publish(String(data=json.dumps(self.status_payload(), sort_keys=True)))
 
 

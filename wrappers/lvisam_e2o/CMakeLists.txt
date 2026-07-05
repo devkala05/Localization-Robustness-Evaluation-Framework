@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(lvisam_e2o)
-find_package(catkin REQUIRED COMPONENTS nav_msgs rospy)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs nav_msgs rospy)
 catkin_package()
 catkin_install_python(PROGRAMS scripts/odometry_alias_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

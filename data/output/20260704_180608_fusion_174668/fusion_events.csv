@@ -1,5 +1,0 @@
-ros_time,wall_time,event,from_source,to_source,reason,pose_jump_m,orientation_jump_deg
-0.0,1783168572.981301,startup,none,none,fusion_node_started,0.0,0.0
-1723528213.2130423,1783168585.2366707,bag_clock_started,none,none,waiting_for_localization_start_delay,0.0,0.0
-1723528221.2181761,1783168593.242608,switch,none,fast_livo2,initial_healthy_source,0.0,0.0
-1723528375.8202817,1783168747.847666,alignment_invalidated,orbslam3,orbslam3,"orb_unhealthy:delayed_pose_timestamp,pose_rate_too_low,stale_pose,tracking_lost",0.0,0.0

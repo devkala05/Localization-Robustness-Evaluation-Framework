@@ -81,19 +81,42 @@ def main() -> None:
     pose.orientation.w = 1.0
     assert module.pose_values_finite(pose)
     assert module.quaternion_valid(pose)
-    base = module.OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
+    body_pose = module.optical_pose_to_body_axes(pose, 0.0)
+    assert module.np.allclose(
+        [body_pose.position.x, body_pose.position.y, body_pose.position.z],
+        [2.52590165, -1.52390068, 2.30164016],
+    )
+    assert module.np.allclose(
+        [body_pose.orientation.x, body_pose.orientation.y, body_pose.orientation.z, body_pose.orientation.w],
+        [0.0, 0.0, 0.0, 1.0],
+    )
+    base = module.GENERIC_OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
     assert module.np.allclose(base[:3], [5.0, 0.0, 0.0])
-    rotated = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
-    assert module.np.allclose(rotated[:3], [-5.0, 0.0, 0.0])
-    transform = module.OPTICAL_TO_BODY.copy()
-    transform[:3, 3] = [6.0, 2.0, 0.0]
-    pivot = module.np.array([5.0, 2.0, 0.0])
-    about_start = module.apply_yaw_about_pivot(transform, 180.0, pivot)
-    assert module.np.allclose(about_start[:3, 3], [4.0, 2.0, 0.0])
-    right = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([2.0, 0.0, 0.0, 1.0])
-    assert module.np.allclose(right[:3], [0.0, 2.0, 0.0])
-    down = module.yaw_rotation(180.0) @ module.OPTICAL_TO_BODY @ module.np.array([0.0, 3.0, 0.0, 1.0])
+    pose_forward = Pose()
+    pose_forward.position.x = 0.0
+    pose_forward.position.y = 0.0
+    pose_forward.position.z = 5.0
+    pose_forward.orientation.x = 0.0
+    pose_forward.orientation.y = 0.0
+    pose_forward.orientation.z = 0.0
+    pose_forward.orientation.w = 1.0
+    calibrated_forward = module.optical_pose_to_body_axes(pose_forward, 0.0)
+    assert module.np.allclose(
+        [calibrated_forward.position.x, calibrated_forward.position.y, calibrated_forward.position.z],
+        [4.88447515, -0.9160968, 0.5501535],
+    )
+    rotated = module.yaw_rotation(0.0) @ module.GENERIC_OPTICAL_TO_BODY @ module.np.array([0.0, 0.0, 5.0, 1.0])
+    assert module.np.allclose(rotated[:3], [5.0, 0.0, 0.0])
+    right = module.yaw_rotation(0.0) @ module.GENERIC_OPTICAL_TO_BODY @ module.np.array([2.0, 0.0, 0.0, 1.0])
+    assert module.np.allclose(right[:3], [0.0, -2.0, 0.0])
+    down = module.yaw_rotation(0.0) @ module.GENERIC_OPTICAL_TO_BODY @ module.np.array([0.0, 3.0, 0.0, 1.0])
     assert module.np.allclose(down[:3], [0.0, 0.0, -3.0])
+    last = module.np.eye(4)
+    last[:3, 3] = [4.0, -1.0, 0.2]
+    jumped = module.np.eye(4)
+    jumped[:3, 3] = [-12.0, 5.0, 0.2]
+    correction = module.continuity_correction(last, jumped)
+    assert module.np.allclose(correction @ jumped, last)
 
     pose.orientation.w = 0.0
     assert not module.quaternion_valid(pose)

@@ -10,18 +10,19 @@ health:
   # Max allowed DEVIATION from the learned clock offset before a sensor is
   # marked unhealthy.  Absolute lag is not checked — a constant hardware clock
   # offset (common in multi-sensor bags) is normal and ignored.
-  sensor_timestamp_lag_sec: 2.0
+  sensor_timestamp_lag_sec: 5.0
+  sensor_recovery_grace_sec: 5.0
   process_check_enabled: true
   sensors:
     lidar:
       topic: /livox/lidar
-      timeout_sec: 1.0
+      timeout_sec: 3.0
     imu:
       topic: /livox/imu
-      timeout_sec: 0.5
+      timeout_sec: 2.0
     camera:
       topic: /camera/right/image_raw
-      timeout_sec: 1.0
+      timeout_sec: 3.0
   fast_livo2:
     odom_topic: /fast_livo2/odometry
     pose_timeout_sec: 5.0
@@ -32,6 +33,8 @@ health:
     max_velocity_mps: 35.0
     max_angular_velocity_deg_s: 300.0
     max_acceleration_mps2: 20.0
+    max_kinematic_gap_sec: 1.0
+    kinematic_grace_sec: 1.0
     max_timestamp_lag_sec: 2.0
     process_patterns:
     - laserMapping
@@ -39,6 +42,7 @@ health:
     required_sensors:
     - lidar
     - imu
+    - camera
     tracking_required: false
   orbslam3:
     odom_topic: /orbslam3/camera_odometry
@@ -51,6 +55,8 @@ health:
     max_velocity_mps: 35.0
     max_angular_velocity_deg_s: 300.0
     max_acceleration_mps2: 20.0
+    max_kinematic_gap_sec: 1.0
+    kinematic_grace_sec: 1.0
     max_timestamp_lag_sec: 2.0
     process_patterns:
     - orbslam3_rgbd
@@ -74,6 +80,8 @@ health:
     max_velocity_mps: 35.0
     max_angular_velocity_deg_s: 300.0
     max_acceleration_mps2: 20.0
+    max_kinematic_gap_sec: 1.0
+    kinematic_grace_sec: 1.0
     max_timestamp_lag_sec: 2.0
     process_patterns:
     - lvi_sam_mapOptmization
@@ -84,9 +92,9 @@ health:
 fusion:
   primary_source: fast_livo2
   metric_source: fast_livo2
-  # Keep fusion1 on FAST-LIVO2 + ORB-SLAM3. LVI-SAM can be launched for
-  # comparison, but it is not trusted as a fallback in this profile.
-  tertiary_source: ""
+  # FAST-LIVO2 stays the normal primary. LVI-SAM is used as the LiDAR/IMU
+  # recovery bridge when FAST-LIVO2 comes back discontinuous after a dropout.
+  tertiary_source: lvisam
   monitor_sources: []
   map_frame: map
   odom_frame: odom
@@ -104,6 +112,18 @@ fusion:
   primary_recovery_sec: 5.0
   minimum_source_dwell_sec: 3.0
   blend_duration_sec: 1.0
+  # Use the fail-safe supervisor from the example tree: one active healthy
+  # source at a time, fresh overlap after faults, and continuity-aligned
+  # switches. Weighted fusion is kept in code for experiments but disabled
+  # here because it can keep pulling a recovered bad native frame into output.
+  weighted_fusion_enabled: false
+  weight_rise_time_sec: 6.0
+  weight_fall_time_sec: 1.0
+  lidar_recovery_override_sec: 8.0
+  metric_nominal_weight: 0.9
+  lvisam_recovery_weight: 1.0
+  orb_nominal_weight: 0.1
+  orb_backup_weight: 1.0
   max_disagreement_m: 4.0
   max_disagreement_deg: 35.0
   recovery_disagreement_m: 2.0

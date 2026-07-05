@@ -1,0 +1,229 @@
+{
+  "fusion_timeline": {
+    "applied_switches": [
+      {
+        "event": "switch_applied",
+        "from_source": "fast_livo2",
+        "orientation_jump_deg": 0.0,
+        "pose_jump_m": 0.0,
+        "reason": "fast_livo2_unhealthy_sensor_fallback:lidar_unavailable",
+        "ros_time": 1723528251.9511259,
+        "to_source": "orbslam3",
+        "wall_time": 1783261881.2149553
+      }
+    ],
+    "estimator_healthy_fraction": {
+      "fast_livo2": 0.12119248217757615,
+      "lvisam": 0.11989630589760207,
+      "orbslam3": 0.9980557355800389
+    },
+    "max_switch_orientation_jump_deg": 0.0,
+    "max_switch_pose_jump_m": 0.0,
+    "navigation_ok_fraction": 0.9481887110362258,
+    "sensor_availability_fraction": {
+      "camera": 1.0,
+      "imu": 1.0,
+      "lidar": 0.12443292287751134
+    },
+    "source_duration_sec": {
+      "fast_livo2": 30.728207111358643,
+      "none": 8.020145654678345,
+      "orbslam3": 269.6975049972534
+    },
+    "switch_count": 2,
+    "switches": [
+      {
+        "event": "switch",
+        "from_source": "none",
+        "orientation_jump_deg": 0.0,
+        "pose_jump_m": 0.0,
+        "reason": "initial_healthy_source",
+        "ros_time": 1723528221.2228599,
+        "to_source": "fast_livo2",
+        "wall_time": 1783261850.483639
+      },
+      {
+        "event": "switch",
+        "from_source": "fast_livo2",
+        "orientation_jump_deg": 0.0,
+        "pose_jump_m": 1.2852839585937751e-14,
+        "reason": "fast_livo2_unhealthy_sensor_fallback:lidar_unavailable",
+        "ros_time": 1723528251.9511259,
+        "to_source": "orbslam3",
+        "wall_time": 1783261881.211447
+      }
+    ]
+  },
+  "metrics": {
+    "fast_livo2": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 169,
+      "ate_m": {
+        "max": 0.3679366651671281,
+        "mean": 0.18558919843791422,
+        "median": 0.18467427054115748,
+        "p95": 0.29352852530113094,
+        "rmse": 0.2009073211105417
+      },
+      "rpe_rotation_deg": {
+        "count": 164,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.44030143156808416,
+        "rmse": 0.69984852995265
+      },
+      "rpe_translation_m": {
+        "count": 164,
+        "delta_sec": 1.0,
+        "mean": 0.113078297859804,
+        "rmse": 0.14945754046378432
+      },
+      "valid": true
+    },
+    "fused": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 1320,
+      "ate_m": {
+        "max": 11.672169491246434,
+        "mean": 3.632340260635725,
+        "median": 3.0457805732865078,
+        "p95": 8.269364579480156,
+        "rmse": 4.23807838570541
+      },
+      "rpe_rotation_deg": {
+        "count": 1315,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.5941986913722842,
+        "rmse": 1.6466137776103107
+      },
+      "rpe_translation_m": {
+        "count": 1315,
+        "delta_sec": 1.0,
+        "mean": 0.3538194336738767,
+        "rmse": 0.5695068141173629
+      },
+      "valid": true
+    },
+    "fused_continuous": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 1320,
+      "ate_m": {
+        "max": 11.672169491246434,
+        "mean": 3.632340260635725,
+        "median": 3.0457805732865078,
+        "p95": 8.269364579480156,
+        "rmse": 4.23807838570541
+      },
+      "rpe_rotation_deg": {
+        "count": 1315,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.5941986913722842,
+        "rmse": 1.6466137776103107
+      },
+      "rpe_translation_m": {
+        "count": 1315,
+        "delta_sec": 1.0,
+        "mean": 0.3538194336738767,
+        "rmse": 0.5695068141173629
+      },
+      "valid": true
+    },
+    "fused_metric": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 134,
+      "ate_m": {
+        "max": 0.34896305528529986,
+        "mean": 0.1454844827567029,
+        "median": 0.13038313948688757,
+        "p95": 0.2988704325783522,
+        "rmse": 0.16149980393895777
+      },
+      "rpe_rotation_deg": {
+        "count": 129,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.5420034922043203,
+        "rmse": 0.7873140267278143
+      },
+      "rpe_translation_m": {
+        "count": 129,
+        "delta_sec": 1.0,
+        "mean": 0.13620189685853415,
+        "rmse": 0.16674673253465067
+      },
+      "valid": true
+    },
+    "lvisam": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 174,
+      "ate_m": {
+        "max": 1.5888218580782548e-14,
+        "mean": 8.374333735772243e-15,
+        "median": 9.162163478256516e-15,
+        "p95": 1.4649896587576702e-14,
+        "rmse": 9.596174740016666e-15
+      },
+      "rpe_rotation_deg": {
+        "count": 169,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.0,
+        "rmse": 0.0
+      },
+      "rpe_translation_m": {
+        "count": 169,
+        "delta_sec": 1.0,
+        "mean": 1.3328045586369155e-15,
+        "rmse": 2.903875120247038e-15
+      },
+      "valid": true
+    },
+    "orbslam3": {
+      "alignment": "se3",
+      "alignment_scale": 1.0,
+      "association_max_dt_sec": 0.1,
+      "associations": 600,
+      "ate_m": {
+        "max": 3.259534826906427,
+        "mean": 1.285689181616383,
+        "median": 1.1762226854501217,
+        "p95": 2.601115972382093,
+        "rmse": 1.4400760133577448
+      },
+      "rpe_rotation_deg": {
+        "count": 599,
+        "delta_sec": 1.0,
+        "evaluated": true,
+        "mean": 0.6372695983359019,
+        "rmse": 0.8736388094657134
+      },
+      "rpe_translation_m": {
+        "count": 599,
+        "delta_sec": 1.0,
+        "mean": 0.2335282154120113,
+        "rmse": 0.2970740759470684
+      },
+      "valid": true
+    }
+  },
+  "reference": {
+    "limitations": [
+      "Selected reference is not survey-grade ground truth unless externally verified."
+    ],
+    "notes": "",
+    "path": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/data/e2o/ground_truth/ref.csv",
+    "source_method": "unknown"
+  }
+}
