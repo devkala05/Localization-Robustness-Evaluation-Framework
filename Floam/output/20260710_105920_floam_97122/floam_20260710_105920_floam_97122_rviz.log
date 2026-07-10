@@ -1,0 +1,21 @@
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+libGL error: MESA-LOADER: failed to retrieve device information
+[intel_init_bufmgr:1027] Error initializing buffer manager.
+libGL error: failed to create dri screen
+libGL error: failed to load driver: i915
+libGL error: MESA-LOADER: failed to retrieve device information
+[intel_init_bufmgr:1027] Error initializing buffer manager.
+libGL error: failed to create dri screen
+libGL error: failed to load driver: i915
+[33m[WARN] [1783661404.446440120, 1723528213.949507828]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661404.446493890, 1723528213.949507828]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m
+[33m[WARN] [1783661519.913535711, 1723528271.683095147]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661519.913576887, 1723528271.683095147]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m
+[33m[WARN] [1783661608.825592587, 1723528316.140942216]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661608.825614672, 1723528316.140942216]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m
+[33m[WARN] [1783661813.914771987, 1723528418.682482179]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661813.914838425, 1723528418.682482179]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m
+[33m[WARN] [1783661833.594631011, 1723528428.522770966]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661833.594664371, 1723528428.522770966]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m
+[33m[WARN] [1783661984.721106073, 1723528504.087751803]: position shape_scale contains NaN: Vector3(-nan, -nan, 0.001)[0m
+[33m[WARN] [1783661984.721144230, 1723528504.087751803]: orientation shape_scale contains NaN: Vector3(-nan, 1, 0.001)[0m

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>floam_e2o</name>
+  <version>1.0.0</version>
+  <description>E2O launch and output adapter for ALIVE FLOAM.</description>
+  <maintainer email="kitnawatayush@gmail.com">Ayush Kitnawat</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>rospy</depend>
+</package>

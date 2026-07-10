@@ -1,0 +1,96 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <arg name="config_path" default="$(find floam_e2o)/config/floam_e2o.yaml"/>
+  <arg name="lidar_topic" default="/lidar103/velodyne_points"/>
+  <arg name="map_file" default="/workspace/maps/full_campus.pcd"/>
+  <arg name="output_topic" default="/floam/odometry"/>
+  <arg name="path_topic" default="/floam/path"/>
+  <arg name="pose_topic" default="/pose"/>
+  <arg name="output_dir" default="/data/output/current_floam_run"/>
+  <arg name="record" default="true"/>
+  <arg name="publish_tf" default="true"/>
+  <arg name="lidar_frame" default="velodyne"/>
+  <arg name="lidar_x" default="0.0"/>
+  <arg name="lidar_y" default="0.0"/>
+  <arg name="lidar_z" default="0.0"/>
+  <arg name="lidar_yaw" default="0.174533"/>
+  <arg name="lidar_pitch" default="0.0"/>
+  <arg name="lidar_roll" default="0.0"/>
+  <arg name="relocalization" default="true"/>
+  <arg name="auto_initialpose" default="false"/>
+  <arg name="initial_x" default="0.0"/>
+  <arg name="initial_y" default="0.0"/>
+  <arg name="initial_z" default="0.0"/>
+  <arg name="initial_roll" default="0.0"/>
+  <arg name="initial_pitch" default="0.0"/>
+  <arg name="initial_yaw" default="0.0"/>
+  <arg name="initial_z_search_min" default="0.0"/>
+  <arg name="initial_z_search_max" default="15.0"/>
+  <arg name="initial_z_offset" default="1.5"/>
+  <arg name="initial_z_fallback" default="0.0"/>
+  <arg name="node_start_delay" default="5.0"/>
+
+  <rosparam command="load" file="$(arg config_path)"/>
+  <param name="lidarTopic" value="$(arg lidar_topic)"/>
+  <param name="lidarPoseTopic" value="$(arg pose_topic)"/>
+  <param name="mapFileName" type="str" value="$(arg map_file)"/>
+  <param name="relocalization" type="bool" value="$(arg relocalization)"/>
+  <param name="initial_z_search_min" type="double" value="$(arg initial_z_search_min)"/>
+  <param name="initial_z_search_max" type="double" value="$(arg initial_z_search_max)"/>
+  <param name="initial_z_offset" type="double" value="$(arg initial_z_offset)"/>
+  <param name="initial_z_fallback" type="double" value="$(arg initial_z_fallback)"/>
+
+  <node pkg="tf" type="static_transform_publisher"
+        name="floam_base_to_lidar_static_tf"
+        args="$(arg lidar_x) $(arg lidar_y) $(arg lidar_z) $(arg lidar_yaw) $(arg lidar_pitch) $(arg lidar_roll) base_link $(arg lidar_frame) 100"/>
+
+  <node pkg="floam" type="floam_odom_estimation_node"
+        name="floam_odom_estimation_node" output="screen" required="true"
+        launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@'">
+    <rosparam command="load" file="$(find floam)/resources/floam_odometry_params.yaml"/>
+  </node>
+
+  <node pkg="floam" type="floam_laser_processing_node"
+        name="floam_laser_processing_node" output="screen" required="true"
+        launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@'">
+    <rosparam command="load" file="$(find floam)/resources/lanelet_params.yaml"/>
+  </node>
+
+  <node if="$(arg auto_initialpose)" name="floam_initial_pose_publisher"
+        pkg="floam_e2o" type="initial_pose_publisher.py" output="screen">
+    <param name="x" value="$(arg initial_x)"/>
+    <param name="y" value="$(arg initial_y)"/>
+    <param name="z" value="$(arg initial_z)"/>
+    <param name="roll" value="$(arg initial_roll)"/>
+    <param name="pitch" value="$(arg initial_pitch)"/>
+    <param name="yaw" value="$(arg initial_yaw)"/>
+    <param name="frame_id" value="map"/>
+    <param name="publish_delay_sec" value="3.0"/>
+    <param name="repeat_count" value="5"/>
+  </node>
+
+  <node name="floam_odometry_alias" pkg="floam_e2o"
+        type="odometry_alias_node.py" output="screen" required="true">
+    <param name="input_topic" value="/odom"/>
+    <param name="output_topic" value="$(arg output_topic)"/>
+  </node>
+
+  <node name="floam_odometry_path" pkg="floam_e2o"
+        type="odometry_path_node.py" output="screen">
+    <param name="input_topic" value="$(arg output_topic)"/>
+    <param name="output_topic" value="$(arg path_topic)"/>
+  </node>
+
+  <node if="$(arg publish_tf)" name="floam_odometry_tf" pkg="floam_e2o"
+        type="odometry_tf_broadcaster.py" output="screen">
+    <param name="input_topic" value="$(arg output_topic)"/>
+  </node>
+
+  <node if="$(arg record)" name="floam_trajectory_recorder" pkg="floam_e2o"
+        type="trajectory_recorder.py" output="screen">
+    <param name="topic" value="$(arg output_topic)"/>
+    <param name="output_dir" value="$(arg output_dir)"/>
+    <param name="name" value="floam"/>
+  </node>
+</launch>

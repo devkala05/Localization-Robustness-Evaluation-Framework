@@ -1,0 +1,9 @@
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+libGL error: MESA-LOADER: failed to retrieve device information
+[intel_init_bufmgr:1027] Error initializing buffer manager.
+libGL error: failed to create dri screen
+libGL error: failed to load driver: i915
+libGL error: MESA-LOADER: failed to retrieve device information
+[intel_init_bufmgr:1027] Error initializing buffer manager.
+libGL error: failed to create dri screen
+libGL error: failed to load driver: i915

@@ -1,0 +1,43 @@
+# FLOAM parameters for E2O-style localization against an existing PCD map.
+# The launch file loads these on the global parameter namespace because the
+# ALIVE FLOAM nodes read with nh.getParam("/param_name", ...).
+
+lidarTopic: /lidar103/velodyne_points
+lidarPoseTopic: /pose
+mapFileName: /workspace/maps/full_campus.pcd
+
+relocalization: true
+gps_initialization: false
+useImuYaw: false
+use_actual_utm_no_offset: false
+
+scan_line: 16
+scan_period: 0.10
+vertical_angle: 1.0
+map_resolution: 0.35
+max_dis: 300.0
+min_dis: 0.5
+
+ndt_transform_epsilon: 0.01
+ndt_step_size: 0.1
+ndt_resolution: 0.1
+
+top_yaw: 0.261799
+
+# RViz /initialpose gives x, y, and yaw. FLOAM resolves z from nearby map
+# points; these bounds keep that lookup broad enough for full-campus maps and
+# prevent the original code's bad 10000m fallback.
+initial_z_search_min: 0.0
+initial_z_search_max: 15.0
+initial_z_offset: 1.5
+initial_z_fallback: 0.0
+
+# Used only by floam_e2o/initial_pose_publisher.py when auto_initialpose=true.
+initial_pose:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  roll: 0.0
+  pitch: 0.0
+  yaw: 0.0
+  frame_id: map
