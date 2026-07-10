@@ -1,0 +1,25 @@
+{
+  "source": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/floam/Floam/output/20260711_010300_floam_354964/floam_trajectory.csv",
+  "reference": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/lvisam.csv",
+  "output": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/final_floam_aligned_lvisam.csv",
+  "matched_rows": 2997,
+  "max_association_dt_s": 0.15,
+  "se2_yaw_deg": 2.9542188808651137,
+  "position_mode": "se3",
+  "position_rotation_rpy_deg": [
+    -8.433413924235113,
+    -7.2023150539957665,
+    3.8643609794842138
+  ],
+  "quaternion_extra_yaw_offset_deg": 9.823811775995436,
+  "orientation_yaw_mode": "match_reference",
+  "position_translation_m": [
+    417.1930257447332,
+    -382.78445716038766,
+    63.82182617071271
+  ],
+  "z_mode": "rigid_se3",
+  "z_scale": 1.0,
+  "z_offset_m": 0.0,
+  "xy_rmse_m": 0.23084092152986152
+}

@@ -1,0 +1,74 @@
+{
+  "generated_utc": "2026-07-10T20:36:24.502013+00:00",
+  "input": {
+    "csv_a": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/final_floam_aligned_lvisam.csv",
+    "csv_b": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/rtabmap.csv",
+    "name_a": "FLOAM",
+    "name_b": "RTABMAP",
+    "align": "se2",
+    "interpretation": "Errors are B - A. These are absolute accuracy metrics only if FLOAM is ground truth."
+  },
+  "matching": {
+    "a_samples": 3020,
+    "b_samples": 1192,
+    "matched_samples": 969,
+    "max_time_diff_threshold_s": 0.1,
+    "mean_abs_time_difference_s": 0.03992957867089932,
+    "max_abs_time_difference_s": 0.09999704360961914
+  },
+  "metrics": {
+    "x_error_m": {
+      "mean_signed": 0.6929355208700623,
+      "mae": 1.4309781702831594,
+      "rmse": 1.8071490877690626,
+      "median_abs": 1.1726862200896946,
+      "p95_abs": 3.727115868290396,
+      "max_abs": 4.554198473822964
+    },
+    "y_error_m": {
+      "mean_signed": 1.3276333528513833,
+      "mae": 1.948809578527797,
+      "rmse": 2.340831981630277,
+      "median_abs": 1.726759269118233,
+      "p95_abs": 4.210260753729401,
+      "max_abs": 4.822089020047191
+    },
+    "z_error_m": {
+      "mean_signed": -3.171554836704202,
+      "mae": 3.6207812706840357,
+      "rmse": 4.888426901745773,
+      "median_abs": 2.962126891634839,
+      "p95_abs": 10.17514286247135,
+      "max_abs": 11.754170775758594
+    },
+    "position_2d_error_m": {
+      "mean_signed": 2.616382277278054,
+      "mae": 2.616382277278054,
+      "rmse": 2.95724232886784,
+      "median_abs": 2.7723760792104577,
+      "p95_abs": 4.601801175807861,
+      "max_abs": 4.9690904338318385
+    },
+    "position_3d_error_m": {
+      "mean_signed": 4.982044212768661,
+      "mae": 4.982044212768661,
+      "rmse": 5.713317754629044,
+      "median_abs": 4.393142672978951,
+      "p95_abs": 10.35120343493868,
+      "max_abs": 11.796545805612649
+    },
+    "yaw_error_deg": {
+      "mean_signed": -2.6584991005225422,
+      "mae": 2.66834263227659,
+      "rmse": 2.8736150386583352,
+      "median_abs": 2.8091244640637774,
+      "p95_abs": 4.256963923176448,
+      "max_abs": 5.688107650540424
+    }
+  },
+  "outputs": {
+    "per_sample_errors_csv": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/floam_vs_rtabmap_eval/per_sample_errors.csv",
+    "summary_json": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/floam_vs_rtabmap_eval/summary.json",
+    "summary_txt": "/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/floam_vs_rtabmap_eval/summary.txt"
+  }
+}

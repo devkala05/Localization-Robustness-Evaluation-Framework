@@ -1,0 +1,21 @@
+TRAJECTORY COMPARISON SUMMARY
+==================================================
+A: FLOAM (/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/final_floam_aligned_lvisam.csv)
+B: LVISAM (/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/lvisam.csv)
+Alignment applied to B: none
+Matched samples: 1402
+A samples: 3020
+B samples: 1421
+Time difference |mean| / max: 0.001416 / 0.099731 s
+
+POSITION DISAGREEMENT (B - A)
+--------------------------------------------------
+X error: MAE=0.1184 m, RMSE=0.1409 m, P95=0.2745 m, MAX=0.4072 m
+Y error: MAE=0.1389 m, RMSE=0.1724 m, P95=0.3010 m, MAX=0.4408 m
+Z error: MAE=0.2584 m, RMSE=0.2933 m, P95=0.4557 m, MAX=0.5169 m
+2D position error: MAE=0.2049 m, RMSE=0.2227 m, P95=0.3365 m, MAX=0.4998 m
+3D position error: MAE=0.3454 m, RMSE=0.3682 m, P95=0.5194 m, MAX=0.5826 m
+Yaw error: MAE=0.3274 deg, RMSE=0.4456 deg, P95=0.7974 deg, MAX=2.1228 deg
+
+NOTE
+These values compare CSV B against CSV A. They are absolute accuracy metrics only when CSV A is ground truth.
