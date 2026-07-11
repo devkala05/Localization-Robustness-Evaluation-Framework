@@ -96,6 +96,18 @@ def angle_wrap(angle):
     return math.atan2(math.sin(angle), math.cos(angle))
 
 
+def estimate_yaw_offset(matches):
+    """Estimate a constant B-to-A yaw-frame offset from matched poses."""
+    if not matches:
+        return 0.0
+    differences = []
+    for a, b, _ in matches:
+        yaw_a = yaw_from_quaternion(a["qx"], a["qy"], a["qz"], a["qw"])
+        yaw_b = yaw_from_quaternion(b["qx"], b["qy"], b["qz"], b["qw"])
+        differences.append(yaw_b - yaw_a)
+    return math.atan2(sum(math.sin(v) for v in differences), sum(math.cos(v) for v in differences))
+
+
 def load_csv(path):
     poses = []
 
@@ -182,33 +194,84 @@ def load_csv(path):
     return poses
 
 
+def timestamp_matched_pairs(poses_a, poses_b, max_time_diff=0.5):
+    """Pair B poses with the nearest A pose for alignment."""
+    a_times = [pose["timestamp_s"] for pose in poses_a]
+    pairs = []
+    for pose in poses_b:
+        index = bisect.bisect_left(a_times, pose["timestamp_s"])
+        candidates = [i for i in (index - 1, index) if 0 <= i < len(poses_a)]
+        if not candidates:
+            continue
+        nearest = min(candidates, key=lambda i: abs(a_times[i] - pose["timestamp_s"]))
+        if abs(a_times[nearest] - pose["timestamp_s"]) <= max_time_diff:
+            pairs.append((poses_a[nearest], pose))
+    return pairs
+
+
 def align_b_to_a(poses_a, poses_b, mode):
-    """Align B to A based on their first valid poses. B only is transformed."""
+    """Align B to A using a timestamp-matched best-fit transform."""
     if mode == "none":
         return [dict(p) for p in poses_b]
 
-    a0, b0 = poses_a[0], poses_b[0]
+    pairs = timestamp_matched_pairs(poses_a, poses_b)
     theta = 0.0
-    if mode == "se2":
-        theta = (
-            yaw_from_quaternion(a0["qx"], a0["qy"], a0["qz"], a0["qw"])
-            - yaw_from_quaternion(b0["qx"], b0["qy"], b0["qz"], b0["qw"])
+    xy_scale = 1.0
+    if mode == "se2" and len(pairs) >= 2:
+        a_x = sum(a["x"] for a, _ in pairs) / len(pairs)
+        a_y = sum(a["y"] for a, _ in pairs) / len(pairs)
+        b_x = sum(b["x"] for _, b in pairs) / len(pairs)
+        b_y = sum(b["y"] for _, b in pairs) / len(pairs)
+        cross = dot = 0.0
+        for a, b in pairs:
+            a_dx, a_dy = a["x"] - a_x, a["y"] - a_y
+            b_dx, b_dy = b["x"] - b_x, b["y"] - b_y
+            cross += b_dx * a_dy - b_dy * a_dx
+            dot += b_dx * a_dx + b_dy * a_dy
+        theta = math.atan2(cross, dot)
+        spread = sum(
+            (b["x"] - b_x) ** 2 + (b["y"] - b_y) ** 2
+            for _, b in pairs
         )
+        if spread > 1e-12:
+            xy_scale = math.hypot(cross, dot) / spread
 
     c, s = math.cos(theta), math.sin(theta)
-    b0_rx = c * b0["x"] - s * b0["y"]
-    b0_ry = s * b0["x"] + c * b0["y"]
-    tx = a0["x"] - b0_rx
-    ty = a0["y"] - b0_ry
-    tz = a0["z"] - b0["z"]
+    z_scale = 1.0
+    if mode == "translation":
+        a0, b0 = poses_a[0], poses_b[0]
+        tx = a0["x"] - b0["x"]
+        ty = a0["y"] - b0["y"]
+        tz = a0["z"] - b0["z"]
+    elif pairs:
+        a_x = sum(a["x"] for a, _ in pairs) / len(pairs)
+        a_y = sum(a["y"] for a, _ in pairs) / len(pairs)
+        a_z = sum(a["z"] for a, _ in pairs) / len(pairs)
+        b_x = sum(b["x"] for _, b in pairs) / len(pairs)
+        b_y = sum(b["y"] for _, b in pairs) / len(pairs)
+        b_z = sum(b["z"] for _, b in pairs) / len(pairs)
+        tx = a_x - xy_scale * (c * b_x - s * b_y)
+        ty = a_y - xy_scale * (s * b_x + c * b_y)
+        z_variance = sum((b["z"] - b_z) ** 2 for _, b in pairs)
+        if mode == "se2" and z_variance > 1e-12:
+            z_scale = sum(
+                (b["z"] - b_z) * (a["z"] - a_z)
+                for a, b in pairs
+            ) / z_variance
+        tz = a_z - z_scale * b_z
+    else:
+        a0, b0 = poses_a[0], poses_b[0]
+        tx = a0["x"] - b0["x"]
+        ty = a0["y"] - b0["y"]
+        tz = a0["z"] - b0["z"]
     q_align = (0.0, 0.0, math.sin(theta / 2.0), math.cos(theta / 2.0))
 
     transformed = []
     for p in poses_b:
         out = dict(p)
-        out["x"] = c * p["x"] - s * p["y"] + tx
-        out["y"] = s * p["x"] + c * p["y"] + ty
-        out["z"] = p["z"] + tz
+        out["x"] = xy_scale * (c * p["x"] - s * p["y"]) + tx
+        out["y"] = xy_scale * (s * p["x"] + c * p["y"]) + ty
+        out["z"] = z_scale * p["z"] + tz
         out["qx"], out["qy"], out["qz"], out["qw"] = normalize_quaternion(
             *q_multiply(q_align, (p["qx"], p["qy"], p["qz"], p["qw"]))
         )
@@ -301,6 +364,9 @@ def save_metrics_text(path, summary):
         handle.write(f"A: {summary['input']['name_a']} ({summary['input']['csv_a']})\n")
         handle.write(f"B: {summary['input']['name_b']} ({summary['input']['csv_b']})\n")
         handle.write(f"Alignment applied to B: {summary['input']['align']}\n")
+        handle.write(
+            f"Yaw frame offset removed: {summary['alignment']['yaw_offset_deg']:.4f} deg\n"
+        )
         handle.write(f"Matched samples: {summary['matching']['matched_samples']}\n")
         handle.write(f"A samples: {summary['matching']['a_samples']}\n")
         handle.write(f"B samples: {summary['matching']['b_samples']}\n")
@@ -348,7 +414,7 @@ def parse_args():
         choices=("none", "translation", "se2"),
         default="se2",
         help=(
-            "Transform B before calculating metrics. Default se2 aligns first XYZ and yaw. "
+            "Transform B before calculating metrics. Default se2 fits the XY trajectory and calibrates yaw offset. "
             "Use none only when both CSVs already share one global frame."
         ),
     )
@@ -393,6 +459,7 @@ def main():
 
     dxs, dys, dzs = [], [], []
     errs_2d, errs_3d, yaw_errs_deg, abs_dts = [], [], [], []
+    yaw_offset_rad = estimate_yaw_offset(matches) if args.align != "none" else 0.0
 
     with open(per_sample_path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
@@ -417,7 +484,7 @@ def main():
 
             yaw_a = yaw_from_quaternion(a["qx"], a["qy"], a["qz"], a["qw"])
             yaw_b = yaw_from_quaternion(b["qx"], b["qy"], b["qz"], b["qw"])
-            yaw_error_rad = angle_wrap(yaw_b - yaw_a)
+            yaw_error_rad = angle_wrap(yaw_b - yaw_a - yaw_offset_rad)
             yaw_error_deg = math.degrees(yaw_error_rad)
 
             dxs.append(dx)
@@ -468,6 +535,13 @@ def main():
             "max_time_diff_threshold_s": args.max_time_diff,
             "mean_abs_time_difference_s": mean(abs_dts),
             "max_abs_time_difference_s": max(abs_dts),
+        },
+        "alignment": {
+            "yaw_offset_deg": math.degrees(yaw_offset_rad),
+            "yaw_offset_calibration": (
+                "constant circular mean B-A offset removed"
+                if args.align != "none" else "disabled for raw comparison"
+            ),
         },
         "metrics": {
             "x_error_m": metric_block(dxs),

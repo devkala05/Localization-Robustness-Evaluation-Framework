@@ -1,0 +1,22 @@
+TRAJECTORY COMPARISON SUMMARY
+==================================================
+A: FLOAM (/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/final_floam_aligned_lvisam.csv)
+B: ORBSLAM3 (/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/comparisons_scripts/orbslam3_optimized_trajectory.csv)
+Alignment applied to B: se2
+Yaw frame offset removed: -0.3943 deg
+Matched samples: 707
+A samples: 3020
+B samples: 708
+Time difference |mean| / max: 0.051261 / 0.099927 s
+
+POSITION DISAGREEMENT (B - A)
+--------------------------------------------------
+X error: MAE=0.8349 m, RMSE=1.0247 m, P95=2.0982 m, MAX=2.5327 m
+Y error: MAE=0.4523 m, RMSE=0.5447 m, P95=1.0013 m, MAX=1.3018 m
+Z error: MAE=0.5524 m, RMSE=0.6536 m, P95=1.0788 m, MAX=1.1461 m
+2D position error: MAE=1.0094 m, RMSE=1.1605 m, P95=2.2341 m, MAX=2.6830 m
+3D position error: MAE=1.2357 m, RMSE=1.3319 m, P95=2.2342 m, MAX=2.6832 m
+Yaw error: MAE=1.2308 deg, RMSE=1.7194 deg, P95=3.6333 deg, MAX=4.7054 deg
+
+NOTE
+These values compare CSV B against CSV A. They are absolute accuracy metrics only when CSV A is ground truth.

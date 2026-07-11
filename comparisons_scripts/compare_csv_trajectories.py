@@ -26,10 +26,11 @@ CSV format:
 Alignment:
   --align none         show original coordinates
   --align translation  place every trajectory after A at A's first XYZ
-  --align se2          place every trajectory after A at A's first XYZ + yaw
+  --align se2          best-fit timestamp-matched 2D rotation/translation
 """
 
 import argparse
+import bisect
 import csv
 import math
 import os
@@ -107,7 +108,7 @@ def q_multiply(a, b):
     bx, by, bz, bw = b
     return (
         aw * bx + ax * bw + ay * bz - az * by,
-        aw * by - ax * bz + ay * bw - az * bx,
+        aw * by - ax * bz + ay * bw + az * bx,
         aw * bz + ax * by - ay * bx + az * bw,
         aw * bw - ax * bx - ay * by - az * bz,
     )
@@ -194,33 +195,83 @@ def load_csv(path, stride):
     return poses
 
 
+def timestamp_matched_pairs(reference_poses, poses):
+    """Pair each pose with the nearest reference pose by timestamp."""
+    reference_times = [pose["timestamp_s"] for pose in reference_poses]
+    pairs = []
+    for pose in poses:
+        index = bisect.bisect_left(reference_times, pose["timestamp_s"])
+        candidates = [i for i in (index - 1, index) if 0 <= i < len(reference_poses)]
+        if candidates:
+            nearest = min(candidates, key=lambda i: abs(reference_times[i] - pose["timestamp_s"]))
+            if abs(reference_times[nearest] - pose["timestamp_s"]) <= 0.5:
+                pairs.append((reference_poses[nearest], pose))
+    return pairs
+
+
 def align_to_reference(reference_poses, poses, mode):
-    """Transform one trajectory so its first pose matches reference's first pose."""
+    """Transform one trajectory into the reference trajectory's coordinate frame."""
     if mode == "none":
         return [dict(p) for p in poses]
 
-    ref0, p0 = reference_poses[0], poses[0]
     theta = 0.0
-    if mode == "se2":
-        theta = (
-            yaw_from_quaternion(ref0["qx"], ref0["qy"], ref0["qz"], ref0["qw"])
-            - yaw_from_quaternion(p0["qx"], p0["qy"], p0["qz"], p0["qw"])
+    xy_scale = 1.0
+    pairs = timestamp_matched_pairs(reference_poses, poses)
+    if mode == "se2" and len(pairs) >= 2:
+        ref_x = sum(ref["x"] for ref, _ in pairs) / len(pairs)
+        ref_y = sum(ref["y"] for ref, _ in pairs) / len(pairs)
+        pose_x = sum(pose["x"] for _, pose in pairs) / len(pairs)
+        pose_y = sum(pose["y"] for _, pose in pairs) / len(pairs)
+        cross = dot = 0.0
+        for ref, pose in pairs:
+            ref_dx, ref_dy = ref["x"] - ref_x, ref["y"] - ref_y
+            pose_dx, pose_dy = pose["x"] - pose_x, pose["y"] - pose_y
+            cross += pose_dx * ref_dy - pose_dy * ref_dx
+            dot += pose_dx * ref_dx + pose_dy * ref_dy
+        theta = math.atan2(cross, dot)
+        spread = sum(
+            (pose["x"] - pose_x) ** 2 + (pose["y"] - pose_y) ** 2
+            for _, pose in pairs
         )
+        if spread > 1e-12:
+            xy_scale = math.hypot(cross, dot) / spread
 
     c, s = math.cos(theta), math.sin(theta)
-    p0_rx = c * p0["x"] - s * p0["y"]
-    p0_ry = s * p0["x"] + c * p0["y"]
-    tx = ref0["x"] - p0_rx
-    ty = ref0["y"] - p0_ry
-    tz = ref0["z"] - p0["z"]
+    z_scale = 1.0
+    if mode == "translation":
+        ref0, p0 = reference_poses[0], poses[0]
+        tx = ref0["x"] - p0["x"]
+        ty = ref0["y"] - p0["y"]
+        tz = ref0["z"] - p0["z"]
+    elif pairs:
+        ref_x = sum(ref["x"] for ref, _ in pairs) / len(pairs)
+        ref_y = sum(ref["y"] for ref, _ in pairs) / len(pairs)
+        ref_z = sum(ref["z"] for ref, _ in pairs) / len(pairs)
+        pose_x = sum(pose["x"] for _, pose in pairs) / len(pairs)
+        pose_y = sum(pose["y"] for _, pose in pairs) / len(pairs)
+        pose_z = sum(pose["z"] for _, pose in pairs) / len(pairs)
+        tx = ref_x - xy_scale * (c * pose_x - s * pose_y)
+        ty = ref_y - xy_scale * (s * pose_x + c * pose_y)
+        z_variance = sum((pose["z"] - pose_z) ** 2 for _, pose in pairs)
+        if mode == "se2" and z_variance > 1e-12:
+            z_scale = sum(
+                (pose["z"] - pose_z) * (ref["z"] - ref_z)
+                for ref, pose in pairs
+            ) / z_variance
+        tz = ref_z - z_scale * pose_z
+    else:
+        ref0, p0 = reference_poses[0], poses[0]
+        tx = ref0["x"] - p0["x"]
+        ty = ref0["y"] - p0["y"]
+        tz = ref0["z"] - p0["z"]
     q_align = (0.0, 0.0, math.sin(theta / 2.0), math.cos(theta / 2.0))
 
     result = []
     for p in poses:
         out = dict(p)
-        out["x"] = c * p["x"] - s * p["y"] + tx
-        out["y"] = s * p["x"] + c * p["y"] + ty
-        out["z"] = p["z"] + tz
+        out["x"] = xy_scale * (c * p["x"] - s * p["y"]) + tx
+        out["y"] = xy_scale * (s * p["x"] + c * p["y"]) + ty
+        out["z"] = z_scale * p["z"] + tz
         out["qx"], out["qy"], out["qz"], out["qw"] = normalize_quaternion(
             *q_multiply(q_align, (p["qx"], p["qy"], p["qz"], p["qw"]))
         )
@@ -363,8 +414,8 @@ def parse_args(argv):
         choices=("none", "translation", "se2"),
         default="none",
         help=(
-            "Align every trajectory after A to A's first pose: "
-            "none=raw coordinates; translation=initial XYZ; se2=initial XYZ+yaw."
+            "Align every trajectory after A to A: "
+            "none=raw coordinates; translation=initial XYZ; se2=best-fit 2D transform."
         ),
     )
     parser.add_argument("--frame", default="map")
