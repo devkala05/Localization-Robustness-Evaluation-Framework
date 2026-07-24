@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish only the static E2O sensor transforms required by the two estimators."""
+"""Publish dataset-supplied static sensor transforms."""
 import math
 
 import numpy as np
@@ -34,7 +34,8 @@ def matrix_to_quaternion(matrix):
 
 def main():
     rospy.init_node("e2o_static_tf_publisher")
-    transforms = rospy.get_param("/e2o/static_transforms", [])
+    config_namespace = str(rospy.get_param("~config_namespace", "/e2o")).rstrip("/")
+    transforms = rospy.get_param(f"{config_namespace}/static_transforms", [])
     messages = []
     for item in transforms:
         msg = TransformStamped()
@@ -50,7 +51,8 @@ def main():
         messages.append(msg)
     broadcaster = tf2_ros.StaticTransformBroadcaster()
     broadcaster.sendTransform(messages)
-    rospy.loginfo("[E2OStaticTF] published %d sensor transforms", len(messages))
+    rospy.loginfo("[DatasetStaticTF] published %d sensor transforms from %s",
+                  len(messages), config_namespace)
     rospy.spin()
 
 

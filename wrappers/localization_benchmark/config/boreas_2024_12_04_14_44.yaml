@@ -1,0 +1,79 @@
+adapter:
+  source_camera_type: image
+  orb_mode: rgbd
+  topics:
+    lidar: /dataset/lidar
+    imu: /dataset/imu
+    camera: /dataset/camera
+    depth: ""
+  outputs:
+    lidar: /livox/lidar
+    imu: /livox/imu
+    camera: /camera/right/image_raw
+    orb_camera: /camera/rgb/image_raw
+    orb_depth: /camera/depth_registered/image_raw
+    camera_info: /camera/right/camera_info
+    lvisam_lidar: /lvisam/points_raw
+    lvisam_imu: /lvisam/imu_raw
+    lvisam_camera: /lvisam/camera/image_raw
+    lvisam_camera_info: /lvisam/camera/camera_info
+    raw_lidar: /benchmark/points_raw
+    raw_imu: /benchmark/imu_raw
+    raw_camera: /benchmark/camera/image_raw
+    raw_camera_info: /benchmark/camera/camera_info
+  frames:
+    lidar: lidar
+    imu: base_link
+    camera_optical: camera
+    depth_optical: unused_depth
+  lidar:
+    point_time_field: time
+    point_time_input_unit: seconds_relative_to_scan_midpoint
+    point_time_scale: 1000000.0
+    auto_detect_time_units: true
+    normalize_negative_point_time: true
+    require_ring: true
+  camera:
+    timestamp_mode: preserve
+    fast_max_rate_hz: 10.0
+    width: 2448
+    height: 2048
+    distortion_model: plumb_bob
+    # Boreas distributes already-rectified PNGs; use the supplied P_camera
+    # projection and do not apply camera0_intrinsics.yaml a second time.
+    K: [1475.616589, 0.0, 1211.035277,
+        0.0, 1475.379187, 1022.872005,
+        0.0, 0.0, 1.0]
+    D: [0.0, 0.0, 0.0, 0.0, 0.0]
+  # Isolated half-resolution ORB feed; other estimators retain native pixels.
+  orb_rgbd:
+    width: 1224
+    height: 1024
+    max_rate_hz: 10.0
+    project_lidar_depth: true
+    depth_min_m: 1.0
+    depth_max_m: 100.0
+    depth_splat_px: 2
+    # Match each camera to returns acquired within a 20 ms scan-time slice,
+    # instead of treating the whole 103.5 ms spinning scan as simultaneous.
+    depth_time_slice_sec: 0.02
+    # camera <- lidar, derived from the published static calibrations.
+    lidar_to_camera: [0.731882999763, -0.681430000233, -0.000336000182, 0.074889999791,
+                      -0.000167000706, 0.000312999807, -0.999999999331, -0.224246999779,
+                      0.681430000020, 0.731882999611, 0.000114999585, -0.489577000438,
+                      0.0, 0.0, 0.0, 1.0]
+static_transforms:
+  - parent: base_link
+    child: lidar
+    translation: [-0.000396915, 0.000071663, -0.279999699]
+    rotation: [0.728264316, -0.685294210, -0.001417554,
+               -0.685295070, -0.728264816, 0.000255938,
+               -0.001208116, 0.000785312, -0.999998924]
+    source: inverse(T_applanix_dmu) * T_applanix_lidar
+  - parent: base_link
+    child: camera
+    translation: [-0.077635296, -0.489184591, -0.055849794]
+    rotation: [0.999985098, 0.001080950, -0.005294156,
+               -0.005294444, -0.000369157, -0.999985645,
+               -0.001083823, 0.999999247, -0.000363770]
+    source: inverse(T_applanix_dmu) * T_applanix_lidar * inverse(T_camera_lidar)

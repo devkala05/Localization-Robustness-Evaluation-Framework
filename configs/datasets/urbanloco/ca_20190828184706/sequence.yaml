@@ -1,0 +1,44 @@
+dataset: urbanloco
+sequence: ca_20190828184706
+display_name: CA-20190828184706_blur_align-002
+format: ros1_bag
+source:
+  filename: CA-20190828184706_blur_align-002.bag
+  expected_bytes: 14079033456
+  duration_sec: 248.743266583
+  start_timestamp_sec: 1567043229.026127
+  end_timestamp_sec: 1567043477.769394
+topics:
+  lidar:
+    name: /rslidar_points
+    type: sensor_msgs/PointCloud2
+    count: 2439
+    frame_id: rslidar
+  imu:
+    name: /imu_raw
+    type: sensor_msgs/Imu
+    count: 24865
+    frame_id: imu
+  camera:
+    name: /camera_array/cam0/image_raw/compressed
+    type: sensor_msgs/CompressedImage
+    count: 2487
+    frame_id: camera0
+  ground_truth:
+    name: /novatel_data/inspvax
+    type: novatel_msgs/INSPVAX
+    count: 4648
+calibration:
+  source: calibration/calibration_CA.txt
+  lidar_model: RS-LiDAR-32
+  camera_model: pinhole
+  camera_index: 0
+  body_frame: imu
+  lidar_frame: rslidar
+  camera_frame: camera0
+  ground_truth_frame: span_cpt
+ground_truth:
+  source: NovAtel SPAN-CPT RTK GNSS/INS
+  output_frame: urbanloco_enu
+  orientation_available: true
+  estimator_derived: false

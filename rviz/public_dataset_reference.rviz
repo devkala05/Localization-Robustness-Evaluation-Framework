@@ -1,0 +1,76 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 32; 32; 32
+    Fixed Frame: reference
+    Frame Rate: 30
+  Displays:
+    - Class: rviz/Grid
+      Name: Ground grid
+      Enabled: true
+      Cell Size: 5
+    - Class: rviz/Path
+      Name: Legitimate ground truth
+      Enabled: true
+      Topic: /reference/path
+      Color: 0; 255; 0
+      Line Width: 0.15
+    - Class: rviz/Path
+      Name: Estimated trajectory
+      Enabled: true
+      Topic: /estimate/path
+      Color: 255; 80; 30
+      Line Width: 0.12
+    - Class: rviz/Path
+      Name: FAST-LIO2 live trajectory
+      Enabled: true
+      Topic: /debug_paths/fastlio2
+      Color: 255; 80; 30
+    - Class: rviz/Path
+      Name: FAST-LIVO2 live trajectory
+      Enabled: true
+      Topic: /debug_paths/fastlivo2
+      Color: 255; 80; 30
+    - Class: rviz/Path
+      Name: ORB-SLAM3 live trajectory
+      Enabled: true
+      Topic: /debug_paths/orbslam3
+      Color: 255; 80; 30
+    - Class: rviz/Path
+      Name: RTAB-Map live trajectory
+      Enabled: true
+      Topic: /debug_paths/rtabmap
+      Color: 255; 80; 30
+    - Class: rviz/Path
+      Name: LVI-SAM live trajectory
+      Enabled: true
+      Topic: /debug_paths/lvisam
+      Color: 255; 80; 30
+    - Class: rviz/PointCloud2
+      Name: Accumulated lidar (unofficial)
+      Enabled: true
+      Topic: /reference/accumulated_lidar_unofficial
+      Size (m): 0.08
+      Style: Points
+    - Class: rviz/TF
+      Name: Dataset TF
+      Enabled: true
+    - Class: rviz/Odometry
+      Name: Reference vehicle pose
+      Enabled: true
+      Topic: /reference/odometry
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 80
+      Pitch: 0.7
+      Yaw: 0.7
+Window Geometry:
+  Width: 1400
+  Height: 900

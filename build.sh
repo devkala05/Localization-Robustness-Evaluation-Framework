@@ -16,6 +16,8 @@ Targets:
   fast_livo2   Build fastlivo2-e2o:latest.
   orbslam3     Build orbslam3-e2o:latest.
   lvisam       Build lvisam-e2o:latest.
+  fastlio2     Build fastlio2-benchmark:latest.
+  rtabmap      Build rtabmap-benchmark:latest.
 
 Examples:
   ./build.sh all
@@ -43,21 +45,38 @@ build_image() {
 case "$TARGET" in
   all)
     build_image fusion docker/fusion/Dockerfile e2o-localization-fusion:latest
+    build_image fastlio2 docker/fastlio2/Dockerfile fastlio2-benchmark:latest
     build_image fast_livo2 docker/fastlivo2/Dockerfile fastlivo2-e2o:latest
     build_image orbslam3 docker/orbslam3/Dockerfile orbslam3-e2o:latest
     build_image lvisam docker/lvisam/Dockerfile lvisam-e2o:latest
+    build_image rtabmap docker/rtabmap/Dockerfile rtabmap-benchmark:latest
     ;;
   fusion)
     build_image fusion docker/fusion/Dockerfile e2o-localization-fusion:latest
     ;;
   fast_livo2)
+    if ! docker image inspect fastlio2-benchmark:latest >/dev/null 2>&1; then
+      build_image fastlio2 docker/fastlio2/Dockerfile fastlio2-benchmark:latest
+    fi
     build_image fast_livo2 docker/fastlivo2/Dockerfile fastlivo2-e2o:latest
     ;;
   orbslam3)
+    if ! docker image inspect fastlio2-benchmark:latest >/dev/null 2>&1; then
+      build_image fastlio2 docker/fastlio2/Dockerfile fastlio2-benchmark:latest
+    fi
     build_image orbslam3 docker/orbslam3/Dockerfile orbslam3-e2o:latest
     ;;
   lvisam)
+    if ! docker image inspect fastlio2-benchmark:latest >/dev/null 2>&1; then
+      build_image fastlio2 docker/fastlio2/Dockerfile fastlio2-benchmark:latest
+    fi
     build_image lvisam docker/lvisam/Dockerfile lvisam-e2o:latest
+    ;;
+  fastlio2)
+    build_image fastlio2 docker/fastlio2/Dockerfile fastlio2-benchmark:latest
+    ;;
+  rtabmap)
+    build_image rtabmap docker/rtabmap/Dockerfile rtabmap-benchmark:latest
     ;;
   *)
     usage >&2

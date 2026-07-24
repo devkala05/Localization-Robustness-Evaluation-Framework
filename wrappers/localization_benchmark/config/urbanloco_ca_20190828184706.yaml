@@ -1,0 +1,81 @@
+adapter:
+  source_camera_type: compressed_image
+  orb_mode: rgbd
+  topics:
+    lidar: /rslidar_points
+    imu: /imu_raw
+    camera: /camera_array/cam0/image_raw/compressed
+    depth: ""
+  outputs:
+    lidar: /livox/lidar
+    imu: /livox/imu
+    camera: /camera/right/image_raw
+    orb_camera: /camera/rgb/image_raw
+    orb_depth: /camera/depth_registered/image_raw
+    camera_info: /camera/right/camera_info
+    lvisam_lidar: /lvisam/points_raw
+    lvisam_imu: /lvisam/imu_raw
+    lvisam_camera: /lvisam/camera/image_raw
+    lvisam_camera_info: /lvisam/camera/camera_info
+    raw_lidar: /benchmark/points_raw
+    raw_imu: /benchmark/imu_raw
+    raw_camera: /benchmark/camera/image_raw
+    raw_camera_info: /benchmark/camera/camera_info
+  frames:
+    lidar: rslidar
+    imu: base_link
+    camera_optical: camera0
+    depth_optical: unused_depth
+  lidar:
+    point_time_field: time
+    point_time_input_unit: seconds
+    point_time_scale: 1000000.0
+    auto_detect_time_units: true
+    require_ring: true
+    synthesize_organized_fields: true
+    organized_scan_lines: 32
+    organized_scan_rate_hz: 10.0
+  camera:
+    # The compressed camera messages have zero header stamps; under rosbag
+    # playback rospy.Time.now() is the original bag record time from /clock.
+    timestamp_mode: callback
+    fast_max_rate_hz: 10.0
+    width: 2048
+    height: 1536
+    distortion_model: plumb_bob
+    K: [1857.4752797615988, 0.0, 1039.692658811044,
+        0.0, 1869.2155909761746, 739.3362262994145,
+        0.0, 0.0, 1.0]
+    D: [-0.3045165206163752, 0.03889449274915732,
+        0.0010517466490567872, -0.0005509544941133897,
+        0.17054732639063463]
+  # Isolated half-resolution ORB feed; other estimators retain native pixels.
+  orb_rgbd:
+    width: 1024
+    height: 768
+    max_rate_hz: 10.0
+    project_lidar_depth: true
+    depth_min_m: 1.0
+    depth_max_m: 80.0
+    depth_splat_px: 2
+    depth_time_slice_sec: 0.04
+    # camera <- lidar, derived from the published static calibrations.
+    lidar_to_camera: [-0.004732473538, -0.999905181098, 0.012931806149, -0.019005937665,
+                      0.012489446189, -0.012990043830, -0.999837623117, -0.338465369080,
+                      0.999910804465, -0.004570193447, 0.012549737800, -0.180874466896,
+                      0.0, 0.0, 0.0, 1.0]
+static_transforms:
+  - parent: base_link
+    child: rslidar
+    translation: [0.0, 0.0, -0.0762]
+    rotation: [0.0, 1.0, 0.0,
+               -1.0, 0.0, 0.0,
+               0.0, 0.0, 1.0]
+    source: inverse(calibration_CA IMU extrinsic-to-LiDAR)
+  - parent: base_link
+    child: camera0
+    translation: [-0.024227447, -0.184995634, -0.412094702]
+    rotation: [-0.999905182, -0.012990044, -0.004570194,
+               0.004732473, -0.012489447, -0.999910805,
+               0.012931806, -0.999837623, 0.012549737]
+    source: inverse(T_lidar_imu) * T_lidar_camera0

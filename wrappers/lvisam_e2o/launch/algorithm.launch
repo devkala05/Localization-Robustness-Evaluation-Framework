@@ -10,6 +10,7 @@
   <arg name="anchor_pose_topic" default="/fused_localization/pose"/>
   <arg name="anchor_wait_sec" default="2.0"/>
   <arg name="anchor_max_age_sec" default="2.0"/>
+  <arg name="sensor_to_body" default="[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]"/>
 
   <rosparam command="load" file="$(arg lidar_config)"/>
   <param name="vins_config_file" type="string" value="$(arg camera_config)"/>
@@ -59,5 +60,6 @@
     <param name="anchor_pose_topic" value="$(arg anchor_pose_topic)"/>
     <param name="anchor_wait_sec" value="$(arg anchor_wait_sec)"/>
     <param name="anchor_max_age_sec" value="$(arg anchor_max_age_sec)"/>
+    <rosparam param="sensor_to_body" subst_value="true">$(arg sensor_to_body)</rosparam>
   </node>
 </launch>

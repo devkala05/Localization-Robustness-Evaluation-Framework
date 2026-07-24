@@ -1,0 +1,12 @@
+<launch>
+  <arg name="algorithm"/>
+  <arg name="topic"/>
+  <arg name="output_dir"/>
+  <arg name="standalone" default="true"/>
+  <node pkg="e2o_localization_fusion" type="multi_trajectory_recorder.py"
+        name="benchmark_trajectory_recorder" output="screen" required="true">
+    <param name="output_dir" value="$(arg output_dir)"/>
+    <param name="standalone" value="$(arg standalone)"/>
+    <rosparam param="topics" subst_value="true">{$(arg algorithm): $(arg topic)}</rosparam>
+  </node>
+</launch>

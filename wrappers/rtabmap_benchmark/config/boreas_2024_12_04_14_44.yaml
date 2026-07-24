@@ -1,0 +1,21 @@
+frame_id: base_link
+odom_frame_id: rtabmap_odom
+publish_tf: false
+wait_imu_to_init: true
+# Boreas scans span about 103.5 ms. Disabling native deskewing smears roughly
+# one metre of vehicle motion into each scan at route speed.
+deskewing: true
+deskewing_slerp: true
+approx_sync: true
+queue_size: 300
+scan_cloud_max_points: 100000
+Icp/PointToPlane: "true"
+Icp/PointToPlaneK: "20"
+Icp/Iterations: "50"
+Icp/VoxelSize: "0.25"
+Icp/MaxCorrespondenceDistance: "5.0"
+# Boreas reaches about 27 m/s (2.8 m per nominal 10 Hz scan) and occasional
+# skipped clouds legitimately double that displacement. Keep finite gates,
+# but size them for the complete route rather than only its slow opening.
+Icp/MaxTranslation: "10.0"
+Odom/GuessMotion: "true"

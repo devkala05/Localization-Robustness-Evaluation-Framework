@@ -8,6 +8,7 @@
         output="screen" required="true" args="$(arg vocabulary) $(arg camera_config)">
     <env name="ORB_SLAM3_EXECUTABLE" value="$(arg executable)"/>
     <remap from="/camera/rgb/image_raw" to="/camera/rgb/image_raw"/>
+    <remap from="/camera/image_raw" to="/camera/rgb/image_raw"/>
     <remap from="/camera/depth_registered/image_raw" to="/camera/depth_registered/image_raw"/>
     <remap from="/imu" to="/livox/imu"/>
     <remap from="/tf" to="/native/orbslam3/tf"/>

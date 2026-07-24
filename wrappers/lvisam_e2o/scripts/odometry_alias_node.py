@@ -104,6 +104,12 @@ class OdometryAliasNode:
         # for odometry, this node waits for fusion's pose. Past this deadline we
         # give up and publish in the native frame regardless.
         self.anchor_giveup_sec = float(rospy.get_param("~anchor_giveup_sec", 6.0))
+        sensor_to_body = rospy.get_param(
+            "~sensor_to_body", [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+        )
+        self.sensor_to_body = np.asarray(sensor_to_body, dtype=float).reshape(4, 4)
+        if not np.all(np.isfinite(self.sensor_to_body)):
+            raise rospy.ROSInitException("~sensor_to_body must be a finite 4x4 transform")
         self.start_wall = time.monotonic()
         self.latest_anchor_T = None
         self.latest_anchor_wall = 0.0
@@ -153,7 +159,7 @@ class OdometryAliasNode:
 
     def rebased_message(self, msg):
         try:
-            native_T = pose_to_matrix(msg.pose.pose)
+            native_T = pose_to_matrix(msg.pose.pose) @ self.sensor_to_body
         except Exception as exc:
             rospy.logwarn_throttle(2.0, "[LVISAM OdomAlias] dropping invalid native pose: %s", exc)
             return None

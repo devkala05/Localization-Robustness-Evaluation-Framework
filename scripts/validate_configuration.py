@@ -191,5 +191,23 @@ if "mapping" in fast:
 required_publish = {"dense_map_en", "pub_effect_point_en", "pub_plane_en", "pub_scan_num", "blind_rgb_points"}
 if not required_publish.issubset(fast.get("publish", {})):
     raise AssertionError("FAST-LIVO2 publish parameters do not match pinned upstream names")
+
+# Public LVI-SAM runs opt into the calibrated VINS-to-lidar conversion added by
+# the native compatibility patch. E2O intentionally stays on the legacy default.
+if "use_calibrated_vins_lidar_transform" in lvisam_camera_text:
+    raise AssertionError("E2O must not opt into the public-dataset LVI-SAM conversion")
+for sequence in ("boreas_2024_12_04_14_44", "urbanloco_ca_20190828184706"):
+    public = yaml.safe_load((ROOT / f"wrappers/localization_benchmark/config/{sequence}.yaml").read_text())
+    public_camera = (ROOT / f"wrappers/lvisam_e2o/config/params_camera_{sequence}.yaml").read_text()
+    if int(opencv_value(public_camera, "use_calibrated_vins_lidar_transform")) != 1:
+        raise AssertionError(f"{sequence} must enable calibrated LVI-SAM VINS/lidar conversion")
+    lidar_tf = next(item for item in public["static_transforms"]
+                    if item["child"] in ("lidar", "rslidar"))
+    expected = transform(lidar_tf)
+    actual = np.eye(4)
+    actual[:3, :3] = opencv_matrix(public_camera, "vins_lidar_rotation")
+    actual[:3, 3] = opencv_matrix(public_camera, "vins_lidar_translation").reshape(3)
+    if not np.allclose(actual, expected, atol=1e-7):
+        raise AssertionError(f"{sequence} calibrated VINS/lidar transform disagrees with static TF")
 print("configuration cross-checks passed")
 sys.exit(0)

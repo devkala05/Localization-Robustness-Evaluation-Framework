@@ -1,0 +1,41 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="config"/>
+  <arg name="config_namespace" default="benchmark"/>
+  <arg name="source_lidar_topic" default="/dataset/lidar"/>
+  <arg name="source_imu_topic" default="/dataset/imu"/>
+  <arg name="source_camera_topic" default="/dataset/camera"/>
+  <arg name="source_depth_topic" default=""/>
+  <arg name="publish_static_tf" default="true"/>
+  <arg name="enable_lidar" default="true"/>
+  <arg name="enable_imu" default="true"/>
+  <arg name="enable_camera" default="true"/>
+  <arg name="enable_fastlivo" default="true"/>
+  <arg name="enable_orb" default="true"/>
+  <arg name="enable_lvisam" default="true"/>
+  <arg name="enable_raw" default="true"/>
+  <arg name="orb_mode" default="rgbd"/>
+
+  <rosparam command="load" file="$(arg config)" ns="$(arg config_namespace)"/>
+  <node name="dataset_sensor_adapter" pkg="localization_benchmark"
+        type="e2o_sensor_adapter.py" output="screen" required="true">
+    <param name="config_namespace" value="/$(arg config_namespace)"/>
+    <param name="source_lidar_topic" value="$(arg source_lidar_topic)"/>
+    <param name="source_imu_topic" value="$(arg source_imu_topic)"/>
+    <param name="source_camera_topic" value="$(arg source_camera_topic)"/>
+    <param name="source_depth_topic" value="$(arg source_depth_topic)"/>
+    <param name="enable_lidar" value="$(arg enable_lidar)"/>
+    <param name="enable_imu" value="$(arg enable_imu)"/>
+    <param name="enable_camera" value="$(arg enable_camera)"/>
+    <param name="enable_fastlivo" value="$(arg enable_fastlivo)"/>
+    <param name="enable_orb" value="$(arg enable_orb)"/>
+    <param name="enable_lvisam" value="$(arg enable_lvisam)"/>
+    <param name="enable_raw" value="$(arg enable_raw)"/>
+    <param name="orb_mode" value="$(arg orb_mode)"/>
+  </node>
+  <node if="$(arg publish_static_tf)" name="dataset_static_tf_publisher"
+        pkg="localization_benchmark" type="e2o_static_tf_publisher.py"
+        output="screen" required="true">
+    <param name="config_namespace" value="/$(arg config_namespace)"/>
+  </node>
+</launch>

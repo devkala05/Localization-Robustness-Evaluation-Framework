@@ -1,11 +1,8 @@
-FROM ros:noetic-ros-base-focal
+FROM osrf/ros:noetic-desktop-full
 LABEL description="E2O sensor adapter, fusion supervisor, evaluation, diagnostics and RViz"
 ENV DEBIAN_FRONTEND=noninteractive ROS_DISTRO=noetic CATKIN_WS=/root/catkin_ws
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-catkin-tools python3-rosdep python3-pip python3-numpy python3-scipy python3-matplotlib \
-    ros-noetic-rosbag ros-noetic-cv-bridge ros-noetic-image-transport \
-    ros-noetic-pcl-ros ros-noetic-pcl-conversions ros-noetic-tf2-ros \
-    ros-noetic-tf2-tools ros-noetic-rviz ros-noetic-rqt-graph ros-noetic-diagnostic-msgs \
+    python3-catkin-tools python3-rosdep python3-pip python3-scipy \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --no-cache-dir pyyaml numpy scipy transforms3d rospkg catkin-pkg
 RUN mkdir -p ${CATKIN_WS}/src

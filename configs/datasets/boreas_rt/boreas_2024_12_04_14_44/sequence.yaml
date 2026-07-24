@@ -1,0 +1,47 @@
+dataset: boreas_rt
+sequence: boreas_2024_12_04_14_44
+display_name: boreas-2024-12-04-14-44
+format: boreas_files
+source:
+  selected_stream_bytes: 13179516822
+  duration_sec: 169.35
+  s3_prefix: s3://boreas/boreas-2024-12-04-14-44
+sensors:
+  lidar:
+    directory: lidar
+    model: Velodyne Alpha Prime
+    count: 1627
+    rate_hz: 10
+    point_fields: [x, y, z, intensity, ring, timestamp]
+    frame_id: lidar
+  camera:
+    directory: camera
+    model: FLIR Blackfly S BFS-U3-51S5C
+    count: 1694
+    rate_hz: 10
+    format: png
+    frame_id: camera
+  imu:
+    file: imu/dmu_imu_infilled.csv
+    model: Silicon Sensing DMU41
+    rate_hz: 200
+    timestamp_unit: nanoseconds
+    frame_id: dmu
+  ground_truth:
+    file: applanix/gps_post_process.csv
+    model: Applanix POS LV 220
+    rate_hz: 200
+    frame_id: applanix
+calibration:
+  directory: calib
+  lidar_to_applanix: T_applanix_lidar.txt
+  dmu_to_applanix: T_applanix_dmu.txt
+  lidar_to_camera: T_camera_lidar.txt
+  camera_intrinsics: camera0_intrinsics.yaml
+ground_truth:
+  source: post-processed Applanix POSPac GNSS/INS/wheel solution
+  output_frame: boreas_enu_local
+  orientation_available: true
+  estimator_derived: false
+  note: Positions are translated by the first pose for numerical stability; no rotation or manual offset is applied.
+

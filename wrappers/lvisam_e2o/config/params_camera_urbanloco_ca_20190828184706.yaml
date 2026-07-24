@@ -1,0 +1,70 @@
+%YAML:1.0
+project_name: lvi_sam
+imu_topic: /lvisam/imu_raw
+image_topic: /lvisam/camera/image_raw
+point_cloud_topic: lvi_sam/lidar/deskew/cloud_deskewed
+use_lidar: 1
+lidar_skip: 3
+align_camera_lidar_estimation: 1
+use_calibrated_vins_lidar_transform: 1
+vins_lidar_rotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [0.0, 1.0, 0.0,
+          -1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0]
+vins_lidar_translation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [0.0, 0.0, -0.0762]
+lidar_to_cam_tx: -0.019005938
+lidar_to_cam_ty: -0.338465369
+lidar_to_cam_tz: -0.180874467
+lidar_to_cam_rx: -0.34923913
+lidar_to_cam_ry: -1.55743994
+lidar_to_cam_rz: 1.93299732
+model_type: PINHOLE
+camera_name: urbanloco_camera0
+image_width: 2048
+image_height: 1536
+distortion_parameters: {k1: -0.3045165206, k2: 0.0388944927, p1: 0.0010517466, p2: -0.0005509545}
+projection_parameters: {fx: 1857.4752798, fy: 1869.2155910, cx: 1039.6926588, cy: 739.3362263}
+acc_n: 0.1
+gyr_n: 0.01
+acc_w: 0.0001
+gyr_w: 0.0001
+g_norm: 9.805
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [-0.999905182, -0.012990044, -0.004570194, 0.004732473, -0.012489447, -0.999910805, 0.012931806, -0.999837623, 0.012549737]
+extrinsicTranslation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [-0.024227447, -0.184995634, -0.412094702]
+max_cnt: 180
+min_dist: 20
+freq: 10
+F_threshold: 1.0
+show_track: 1
+equalize: 1
+fisheye: 0
+max_solver_time: 0.04
+max_num_iterations: 10
+keyframe_parallax: 10.0
+estimate_td: 0
+td: 0.0
+rolling_shutter: 0
+rolling_shutter_tr: 0
+loop_closure: 1
+skip_time: 0.0
+skip_dist: 0.0
+debug_image: 0
+match_image_scale: 0.5
+vocabulary_file: /config/brief_k10L6.bin
+brief_pattern_file: /config/brief_pattern.yml

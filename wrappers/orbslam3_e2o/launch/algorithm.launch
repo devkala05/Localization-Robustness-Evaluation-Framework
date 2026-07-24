@@ -18,6 +18,8 @@
   <arg name="reanchor_on_loop_closure" default="true"/>
   <arg name="max_reanchor_step_m" default="80.0"/>
   <arg name="max_reanchor_rotation_deg" default="90.0"/>
+  <arg name="optical_to_body_rotation" default="[-0.18256836, 0.11110754, 0.97689503, -0.98306216, -0.00440978, -0.18321936, -0.01604916, -0.99379861, 0.11003070]"/>
+  <arg name="optical_to_body_translation" default="[0.0,0.0,0.0]"/>
 
   <include file="$(find orbslam3_e2o)/launch/native.launch">
     <arg name="camera_config" value="$(arg camera_config)"/>
@@ -30,11 +32,8 @@
     <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="body_frame_id" value="$(arg body_frame_id)"/>
     <param name="body_yaw_offset_deg" value="$(arg body_yaw_offset_deg)"/>
-    <rosparam param="optical_to_body_rotation">
-      [-0.18256836, 0.11110754, 0.97689503,
-       -0.98306216, -0.00440978, -0.18321936,
-       -0.01604916, -0.99379861, 0.11003070]
-    </rosparam>
+    <rosparam param="optical_to_body_rotation" subst_value="true">$(arg optical_to_body_rotation)</rosparam>
+    <rosparam param="optical_to_body_translation" subst_value="true">$(arg optical_to_body_translation)</rosparam>
     <param name="output_odom_topic" value="$(arg output_odom_topic)"/>
     <param name="output_path_topic" value="$(arg output_path_topic)"/>
     <param name="optimized_path_topic" value="$(arg optimized_path_topic)"/>

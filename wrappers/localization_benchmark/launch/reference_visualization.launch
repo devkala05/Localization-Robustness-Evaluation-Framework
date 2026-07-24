@@ -1,0 +1,12 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="ground_truth_csv"/>
+  <arg name="estimate_csv" default=""/>
+  <arg name="base_to_lidar" default="[0,0,0,1,0,0,0,1,0,0,0,1]"/>
+  <node pkg="localization_benchmark" type="reference_visualizer.py"
+        name="reference_visualizer" output="screen" required="true">
+    <param name="ground_truth_csv" value="$(arg ground_truth_csv)"/>
+    <param name="estimate_csv" value="$(arg estimate_csv)"/>
+    <rosparam param="base_to_lidar" subst_value="true">$(arg base_to_lidar)</rosparam>
+  </node>
+</launch>

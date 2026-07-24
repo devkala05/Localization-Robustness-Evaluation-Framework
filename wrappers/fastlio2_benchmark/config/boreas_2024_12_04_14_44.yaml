@@ -1,0 +1,18 @@
+common:
+  lid_topic: /benchmark/points_raw
+  imu_topic: /benchmark/imu_raw
+  time_sync_en: false
+  time_offset_lidar_to_imu: 0.0
+preprocess: {lidar_type: 2, scan_line: 128, scan_rate: 10, timestamp_unit: 0, blind: 2.0}
+mapping:
+  acc_cov: 0.1
+  gyr_cov: 0.1
+  b_acc_cov: 0.0001
+  b_gyr_cov: 0.0001
+  fov_degree: 360
+  det_range: 150.0
+  extrinsic_est_en: false
+  extrinsic_T: [-0.000396915, 0.000071663, -0.279999699]
+  extrinsic_R: [0.728264316, -0.685294210, -0.001417554, -0.685295070, -0.728264816, 0.000255938, -0.001208116, 0.000785312, -0.999998924]
+publish: {path_en: true, scan_publish_en: true, dense_publish_en: false, scan_bodyframe_pub_en: true}
+pcd_save: {pcd_save_en: false, interval: -1}

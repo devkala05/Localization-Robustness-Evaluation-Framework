@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rtabmap_benchmark</name><version>0.1.0</version>
+  <description>Native RTAB-Map LiDAR odometry and graph-SLAM benchmark integration.</description>
+  <maintainer email="benchmark@example.com">benchmark</maintainer><license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rtabmap_odom</exec_depend>
+  <exec_depend>rtabmap_slam</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+</package>

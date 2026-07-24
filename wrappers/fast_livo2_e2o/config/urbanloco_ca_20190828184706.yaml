@@ -1,0 +1,19 @@
+common: {lid_topic: /livox/lidar, imu_topic: /livox/imu, img_topic: /camera/right/image_raw, time_sync_en: false, img_en: 1, lidar_en: 1, ros_driver_bug_fix: false}
+preprocess: {lidar_type: 2, scan_line: 32, blind: 1.0, point_filter_num: 4, filter_size_surf: 0.2, feature_extract_enabled: false}
+imu: {imu_en: true, imu_int_frame: 30, gravity_est_en: true, ba_bg_est_en: true, acc_cov: 0.1, gyr_cov: 0.01, b_acc_cov: 0.0001, b_gyr_cov: 0.0001}
+extrin_calib:
+  extrinsic_T: [0.0, 0.0, -0.0762]
+  extrinsic_R: [0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+  Rcl: [-0.004732473, -0.999905182, 0.012931806, 0.012489447, -0.012990044, -0.999837623, 0.999910805, -0.004570194, 0.012549737]
+  Pcl: [-0.019005938, -0.338465369, -0.180874467]
+time_offset: {imu_time_offset: 0.0, img_time_offset: 0.0, lidar_time_offset: 0.0, exposure_time_init: 0.0}
+vio: {max_iterations: 5, outlier_threshold: 100, img_point_cov: 1000, patch_size: 8, patch_pyrimid_level: 4, normal_en: true, raycast_en: false, inverse_composition_en: false, exposure_estimate_en: true, inv_expo_cov: 0.1}
+lio: {max_iterations: 5, dept_err: 0.02, beam_err: 0.05, min_eigen_value: 0.005, voxel_size: 0.75, max_layer: 2, max_points_num: 50, layer_init_num: [5, 5, 5, 5, 5]}
+local_map: {map_sliding_en: true, half_map_size: 100, sliding_thresh: 8}
+camera: {img_topic: /camera/right/image_raw, fx: 1857.4752798, fy: 1869.2155910, cx: 1039.6926588, cy: 739.3362263, distortion_model: plumb_bob, distortion_coeffs: [-0.3045165206, 0.0388944927, 0.0010517466, -0.0005509545, 0.1705473264], image_width: 2048, image_height: 1536}
+laserMapping: {cam_model: Pinhole, cam_width: 2048, cam_height: 1536, scale: 1.0, cam_fx: 1857.4752798, cam_fy: 1869.2155910, cam_cx: 1039.6926588, cam_cy: 739.3362263, cam_d0: -0.3045165206, cam_d1: 0.0388944927, cam_d2: 0.0010517466, cam_d3: -0.0005509545}
+publish: {dense_map_en: false, pub_effect_point_en: false, pub_plane_en: false, pub_scan_num: 1, blind_rgb_points: 0.0}
+uav: {imu_rate_odom: false, gravity_align_en: false}
+evo: {seq_name: urbanloco_ca_20190828184706, pose_output_en: false}
+pcd_save: {pcd_save_en: false, type: 0, colmap_output_en: false, filter_size_pcd: 0.2, interval: -1, pcd_path: /data/output/fast_livo2_map.pcd}
+image_save: {img_save_en: false, interval: 1}

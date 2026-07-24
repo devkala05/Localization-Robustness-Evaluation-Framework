@@ -8,7 +8,7 @@ robot_id: "e2o_one_full_loop"
 lvi_sam:
   pointCloudTopic: "/lvisam/points_raw"
   imuTopic: "/lvisam/imu_raw"
-  odomTopic: "/lvi_sam/lidar/odometry/imu"
+  odomTopic: "/odometry/imu"
   gpsTopic: ""
 
   useImuHeadingInitialization: false
@@ -31,6 +31,7 @@ lvi_sam:
   imuAccBiasN: 0.0001175177
   imuGyrBiasN: 0.00009135538
   imuGravity: 9.80511
+  velocityFailureThreshold: 30.0
 
   # The supplied calibration file provides lidar103-to-camera transforms but no
   # independent IMU-to-lidar transform. Keep body/lidar103 coincident here and

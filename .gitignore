@@ -103,6 +103,8 @@ trajectory*.txt
 # Dataset / Bags / Outputs
 # =========================
 *.bag
+*.bag.part
+*.aria2
 *.mcap
 /data/e2o/raw/
 /data/output/
@@ -184,3 +186,5 @@ credentials/
 /data/results/**
 /data/**/*.bag
 /data/**/*.mcap
+/data/datasets/**
+!/data/datasets/**/.gitkeep

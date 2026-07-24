@@ -18,6 +18,7 @@ class MultiTrajectoryRecorder:
         self.output_dir = rospy.get_param("~output_dir", "/data/output/current_run")
         self.visual_path_frame = rospy.get_param("~visual_path_frame", "map")
         self.max_path_poses = int(rospy.get_param("~max_path_poses", 100000))
+        self.standalone = bool(rospy.get_param("~standalone", False))
         os.makedirs(self.output_dir, exist_ok=True)
         topics = rospy.get_param("~topics", {
             "fast_livo2": "/fast_livo2/odometry",
@@ -28,7 +29,7 @@ class MultiTrajectoryRecorder:
             "fused_continuous": "/fused_localization/continuous_odometry",
             "fused_metric": "/fused_localization/metric_odometry",
         })
-        path_topics = rospy.get_param("~path_topics", {
+        path_topics = {} if self.standalone else rospy.get_param("~path_topics", {
             "orbslam3": "/orbslam3/camera_path",
             "orbslam3_optimized": "/orbslam3/optimized_camera_path",
         })
@@ -44,7 +45,7 @@ class MultiTrajectoryRecorder:
             path.header.frame_id = self.visual_path_frame
             self.paths[name] = path
         self.path_names = set()
-        self.final_aliases = rospy.get_param("~final_aliases", {
+        self.final_aliases = {} if self.standalone else rospy.get_param("~final_aliases", {
             "orbslam3_optimized": "orbslam3",
         })
         for name, topic in path_topics.items():

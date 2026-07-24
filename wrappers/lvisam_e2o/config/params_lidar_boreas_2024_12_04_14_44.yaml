@@ -1,0 +1,62 @@
+PROJECT_NAME: lvi_sam
+robot_id: boreas_2024_12_04_14_44
+lvi_sam:
+  pointCloudTopic: /lvisam/points_raw
+  imuTopic: /lvisam/imu_raw
+  odomTopic: /odometry/imu
+  gpsTopic: ""
+  useImuHeadingInitialization: false
+  useGpsElevation: false
+  gpsCovThreshold: 2.0
+  poseCovThreshold: 25.0
+  savePCD: false
+  savePCDDirectory: /data/output/lvisam_pcd/
+  N_SCAN: 128
+  Horizon_SCAN: 1800
+  timeField: time
+  # Retain the native 128-ring geometry. At highway-speed deceleration the
+  # former 64-ring reduction lost longitudinal constraints and the IMU guess
+  # then diverged; 0.1x timestamp-preserving replay provides the compute budget.
+  downsampleRate: 1
+  imuAccNoise: 0.1
+  imuGyrNoise: 0.01
+  imuAccBiasN: 0.0001
+  imuGyrBiasN: 0.0001
+  imuGravity: 9.805
+  # Boreas reaches highway speed near upstream's fixed 30 m/s failure guard.
+  velocityFailureThreshold: 60.0
+  extrinsicTrans: [0.0, 0.0, -0.28]
+  extrinsicRot: [0.728264544, -0.685295257, -0.001207749, -0.685295313, -0.728265958, 0.000785053, -0.001418000, 0.000256000, -0.999999000]
+  extrinsicRPY: [0.728264316, -0.685294210, -0.001417554, -0.685295070, -0.728264816, 0.000255938, -0.001208116, 0.000785312, -0.999998924]
+  edgeThreshold: 1.0
+  surfThreshold: 0.1
+  edgeFeatureMinValidNum: 10
+  surfFeatureMinValidNum: 100
+  odometrySurfLeafSize: 0.5
+  mappingCornerLeafSize: 0.25
+  mappingSurfLeafSize: 0.5
+  # This route descends and climbs by about 31 m; the former ±10 m absolute
+  # map-Z clamp forced a false plateau and dominated full-route ATE.
+  z_tollerance: 100.0
+  rotation_tollerance: 1.4
+  numberOfCores: 8
+  # The native 9.65 Hz stream has a 0.104 s period.  Process every scan;
+  # 0.15 s skipped alternate frames and made road-speed registration fail.
+  mappingProcessInterval: 0.05
+  surroundingkeyframeAddingDistThreshold: 1.0
+  surroundingkeyframeAddingAngleThreshold: 0.2
+  surroundingKeyframeDensity: 2.0
+  surroundingKeyframeSearchRadius: 75.0
+  # This is a single-pass odometry benchmark, not a revisitation/localization
+  # task. The first loop-search opportunity is at 30 s and produced a false
+  # global correction on this sequence; retain the native local LIO estimate.
+  loopClosureEnableFlag: false
+  loopClosureFrequency: 1.0
+  surroundingKeyframeSize: 25
+  historyKeyframeSearchRadius: 20.0
+  historyKeyframeSearchTimeDiff: 30.0
+  historyKeyframeSearchNum: 25
+  historyKeyframeFitnessScore: 0.3
+  globalMapVisualizationSearchRadius: 1000.0
+  globalMapVisualizationPoseDensity: 10.0
+  globalMapVisualizationLeafSize: 1.0

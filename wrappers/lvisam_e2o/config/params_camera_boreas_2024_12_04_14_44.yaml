@@ -1,0 +1,70 @@
+%YAML:1.0
+project_name: lvi_sam
+imu_topic: /lvisam/imu_raw
+image_topic: /lvisam/camera/image_raw
+point_cloud_topic: lvi_sam/lidar/deskew/cloud_deskewed
+use_lidar: 1
+lidar_skip: 3
+align_camera_lidar_estimation: 1
+use_calibrated_vins_lidar_transform: 1
+vins_lidar_rotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [0.728264316, -0.685294210, -0.001417554,
+          -0.685295070, -0.728264816, 0.000255938,
+          -0.001208116, 0.000785312, -0.999998924]
+vins_lidar_translation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [-0.000396915, 0.000071663, -0.279999699]
+lidar_to_cam_tx: 0.074890
+lidar_to_cam_ty: -0.224247
+lidar_to_cam_tz: -0.489577
+lidar_to_cam_rx: 1.57063901
+lidar_to_cam_ry: -0.749714938
+lidar_to_cam_rz: -0.000228553
+model_type: PINHOLE
+camera_name: boreas_rectified_camera
+image_width: 2448
+image_height: 2048
+distortion_parameters: {k1: 0.0, k2: 0.0, p1: 0.0, p2: 0.0}
+projection_parameters: {fx: 1475.616589, fy: 1475.379187, cx: 1211.035277, cy: 1022.872005}
+acc_n: 0.1
+gyr_n: 0.01
+acc_w: 0.0001
+gyr_w: 0.0001
+g_norm: 9.805
+estimate_extrinsic: 0
+extrinsicRotation: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [0.999985098, 0.001080950, -0.005294156, -0.005294444, -0.000369157, -0.999985645, -0.001083823, 0.999999247, -0.000363770]
+extrinsicTranslation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [-0.077635296, -0.489184591, -0.055849794]
+max_cnt: 180
+min_dist: 20
+freq: 10
+F_threshold: 1.0
+show_track: 1
+equalize: 0
+fisheye: 0
+max_solver_time: 0.04
+max_num_iterations: 10
+keyframe_parallax: 10.0
+estimate_td: 0
+td: 0.0
+rolling_shutter: 0
+rolling_shutter_tr: 0
+loop_closure: 1
+skip_time: 0.0
+skip_dist: 0.0
+debug_image: 0
+match_image_scale: 0.5
+vocabulary_file: /config/brief_k10L6.bin
+brief_pattern_file: /config/brief_pattern.yml

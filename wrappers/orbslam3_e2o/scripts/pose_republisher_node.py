@@ -125,10 +125,12 @@ def optical_pose_to_body_axes(
     pose: Pose,
     yaw_offset_deg: float = 0.0,
     optical_to_body_rotation: np.ndarray = E2O_OPTICAL_TO_BODY_ROTATION,
+    optical_to_body_translation: np.ndarray = np.zeros(3),
 ) -> Pose:
     camera_transform = pose_to_matrix(pose)
     return matrix_to_pose(remap_optical_world_to_car_pose(
         camera_transform, optical_to_body_rotation, yaw_offset_deg,
+        optical_to_body_translation,
     ))
 
 
@@ -136,6 +138,7 @@ def remap_optical_world_to_car_pose(
     camera_transform: np.ndarray,
     optical_to_body_rotation: np.ndarray,
     yaw_offset_deg: float = 0.0,
+    optical_to_body_translation: np.ndarray = np.zeros(3),
 ) -> np.ndarray:
     """Convert ORB optical/world axes to ROS car axes without tilting base_link.
 
@@ -147,10 +150,10 @@ def remap_optical_world_to_car_pose(
     publish as an identity car-body pose.
     """
     axis_rotation = yaw_rotation(yaw_offset_deg)[:3, :3] @ np.asarray(optical_to_body_rotation, dtype=float).reshape(3, 3)
-    out = np.eye(4)
-    out[:3, 3] = axis_rotation @ camera_transform[:3, 3]
-    out[:3, :3] = axis_rotation @ camera_transform[:3, :3] @ np.asarray(optical_to_body_rotation, dtype=float).reshape(3, 3).T
-    return out
+    body_camera = np.eye(4)
+    body_camera[:3, :3] = axis_rotation
+    body_camera[:3, 3] = np.asarray(optical_to_body_translation, dtype=float).reshape(3)
+    return body_camera @ camera_transform @ invert_transform(body_camera)
 
 
 def valid_rotation(matrix: np.ndarray) -> bool:
@@ -207,6 +210,11 @@ class PoseRepublisher:
         self.optical_to_body_rotation = np.asarray(optical_to_body, dtype=float).reshape(3, 3)
         if not valid_rotation(self.optical_to_body_rotation):
             raise rospy.ROSInitException("~optical_to_body_rotation must be a proper finite 3x3 rotation")
+        self.optical_to_body_translation = np.asarray(
+            rospy.get_param("~optical_to_body_translation", [0.0, 0.0, 0.0]), dtype=float
+        ).reshape(3)
+        if not np.all(np.isfinite(self.optical_to_body_translation)):
+            raise rospy.ROSInitException("~optical_to_body_translation must contain three finite values")
         self.tracking_timeout = float(rospy.get_param("~tracking_timeout_sec", 2.0))
         self.max_path_poses = int(rospy.get_param("~max_path_poses", 50000))
         self.path_publish_period = float(rospy.get_param("~path_publish_period_sec", 0.5))
@@ -279,7 +287,8 @@ class PoseRepublisher:
                 raw_odom.pose.covariance[index] = value
 
             body_transform = remap_optical_world_to_car_pose(
-                pose_to_matrix(msg.pose), self.optical_to_body_rotation, self.body_yaw_offset_deg
+                pose_to_matrix(msg.pose), self.optical_to_body_rotation, self.body_yaw_offset_deg,
+                self.optical_to_body_translation,
             )
             corrected_body_transform = self.world_correction @ body_transform
             unstable_reason = self.unstable_body_pose(corrected_body_transform, stamp)
@@ -396,7 +405,8 @@ class PoseRepublisher:
             if not pose_values_finite(source.pose) or not quaternion_valid(source.pose):
                 continue
             body_transforms.append(self.world_correction @ remap_optical_world_to_car_pose(
-                pose_to_matrix(source.pose), self.optical_to_body_rotation, self.body_yaw_offset_deg
+                pose_to_matrix(source.pose), self.optical_to_body_rotation, self.body_yaw_offset_deg,
+                self.optical_to_body_translation,
             ))
             source_poses.append(source)
         if not body_transforms:

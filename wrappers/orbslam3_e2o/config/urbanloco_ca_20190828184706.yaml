@@ -1,0 +1,73 @@
+%YAML:1.0
+Camera.type: "PinHole"
+Camera1.fx: 928.7376399
+Camera1.fy: 934.6077955
+Camera1.cx: 519.8463294
+Camera1.cy: 369.6681132
+Camera1.k1: -0.3045165206
+Camera1.k2: 0.0388944927
+Camera1.p1: 0.0010517466
+Camera1.p2: -0.0005509545
+Camera1.k3: 0.1705473264
+Camera.fx: 928.7376399
+Camera.fy: 934.6077955
+Camera.cx: 519.8463294
+Camera.cy: 369.6681132
+Camera.k1: -0.3045165206
+Camera.k2: 0.0388944927
+Camera.p1: 0.0010517466
+Camera.p2: -0.0005509545
+Camera.k3: 0.1705473264
+Camera.width: 1024
+Camera.height: 768
+Camera.fps: 10
+Camera.RGB: 0
+Camera.bf: 40.0
+DepthMapFactor: 1.0
+RGBD.DepthMapFactor: 1.0
+# ORB converts this dimensionless multiplier to metres as bf*ThDepth/fx.
+# With bf=40 px*m, these values give a physically intended 40 m close range.
+ThDepth: 928.7376399
+Stereo.ThDepth: 928.7376399
+ORBextractor.nFeatures: 2500
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 12
+ORBextractor.minThFAST: 5
+Tbc: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [-0.999905182, -0.012990044, -0.004570194, -0.024227447,
+           0.004732473, -0.012489447, -0.999910805, -0.184995634,
+           0.012931806, -0.999837623, 0.012549737, -0.412094702,
+           0.0, 0.0, 0.0, 1.0]
+IMU.T_b_c1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [-0.999905182, -0.012990044, -0.004570194, -0.024227447,
+           0.004732473, -0.012489447, -0.999910805, -0.184995634,
+           0.012931806, -0.999837623, 0.012549737, -0.412094702,
+           0.0, 0.0, 0.0, 1.0]
+IMU.Frequency: 100
+IMU.NoiseGyro: 0.01
+IMU.NoiseAcc: 0.1
+IMU.GyroWalk: 0.0001
+IMU.AccWalk: 0.0001
+IMU.g: 9.805
+# Vehicle motion is predominantly planar, so ORB-SLAM3's default excitation
+# test repeatedly discards otherwise valid visual maps. Fast initialization
+# still estimates scale/gravity from the IMU; it only skips that reset gate.
+IMU.fastInit: 1
+InsertKFsWhenLost: 1
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
