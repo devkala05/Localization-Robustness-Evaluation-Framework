@@ -1,0 +1,33 @@
+dataset: boreas_rt
+sequence: boreas_2025_07_18_15_30_farm
+display_name: boreas-2025-07-18-15-30
+route: Farm
+format: boreas_files
+source:
+  storage_scope: representative_route_window_with_continuous_initialization
+  window_start_timestamp_s: 1752867150.0
+  duration_sec: 100.0
+  evaluation_start_offset_s: 40.0
+  evaluation_duration_sec: 60.0
+  orb_pre_roll_start_timestamp_s: 1752867150.0
+  orb_pre_roll_seconds: 40.0
+  fastlivo_pre_roll_start_timestamp_s: 1752867070.0
+  fastlivo_pre_roll_seconds: 120.0
+  full_sequence_start_timestamp_s: 1752867068.2658076
+  full_sequence_duration_sec: 881.28
+  s3_prefix: s3://boreas/boreas-2025-07-18-15-30
+  selection_reason: scored unpaved crop-road interval with nearby vegetation; common 40-second warm-up plus a declared low-speed 120-second FAST-LIVO2 initialization prefix
+sensors:
+  lidar: {directory: lidar, model: Velodyne Alpha Prime, rate_hz: 10, frame_id: lidar}
+  camera: {directory: camera, model: FLIR Blackfly S BFS-U3-51S5C, rate_hz: 10, format: png, frame_id: camera}
+  imu: {file: imu/dmu_imu_infilled.csv, model: Silicon Sensing DMU41, rate_hz: 200, timestamp_unit: nanoseconds, frame_id: dmu}
+  ground_truth: {file: applanix/gps_post_process.csv, model: Applanix POS LV 220, rate_hz: 200, frame_id: applanix}
+calibration:
+  directory: calib
+  profile: boreas_rt_shared_rig_2024_2025
+  verified_identical_to: boreas-2024-12-04-14-44
+ground_truth:
+  source: post-processed Applanix POSPac GNSS/INS/wheel solution
+  output_frame: boreas_enu_local
+  orientation_available: true
+  estimator_derived: false

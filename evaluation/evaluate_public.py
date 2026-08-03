@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import shutil
@@ -39,7 +40,8 @@ def assess_quality(result, max_ate_fraction=DEFAULT_MAX_ATE_FRACTION,
     RMSE is bounded by 2% of associated reference distance, with a 1 m floor,
     and peak ATE has an absolute 15 m ceiling. The normalized bound makes routes
     comparable while the peak bound prevents long routes from hiding local
-    failures. Only pure monocular mode may use Sim(3) and fit one global scale.
+    failures. A declared Sim(3) evaluation may fit one global scale, but that
+    transform remains an evaluation artifact and is never estimator input.
     """
     reasons = []
     completion = result.get("completion", {})
@@ -128,6 +130,21 @@ def completion(run_dir: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def file_identity(path: Path):
+    """Return immutable provenance for an evaluation input artifact."""
+    resolved = path.resolve()
+    digest = hashlib.sha256()
+    with resolved.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    stat = resolved.stat()
+    return {
+        "path": str(resolved),
+        "sha256": digest.hexdigest(),
+        "size_bytes": stat.st_size,
+    }
+
+
 def crop_trajectory(data, start_time, duration):
     """Return a timestamp-windowed trajectory without modifying source data."""
     stamps = np.asarray(data["stamp"])
@@ -167,8 +184,18 @@ def main() -> int:
     run_dir = args.run_dir.resolve()
     report_dir = run_dir / "evaluation"
     report_dir.mkdir(parents=True, exist_ok=True)
-    gt = load_trajectory(args.gt.resolve())
-    est = load_trajectory(args.trajectory.resolve())
+    # A rerun must never leave a successful-looking plot from an older input.
+    for artifact in ("aligned_trajectory.csv", "error_over_time.png",
+                     "trajectory_comparison.png", "final_trajectory.csv",
+                     "native_trajectory.csv", "ground_truth.csv",
+                     "metrics.json", "report.md"):
+        (report_dir / artifact).unlink(missing_ok=True)
+    reference_path = args.gt.resolve()
+    trajectory_path = args.trajectory.resolve()
+    reference_identity = file_identity(reference_path)
+    trajectory_identity = file_identity(trajectory_path)
+    gt = load_trajectory(reference_path)
+    est = load_trajectory(trajectory_path)
     if args.eval_start_offset < 0.0 or args.eval_duration < 0.0:
         parser.error("evaluation start offset and duration must be non-negative")
     sequence_start = (float(args.sequence_start_time) if args.sequence_start_time is not None
@@ -231,7 +258,10 @@ def main() -> int:
             "p95": float(np.percentile(yaw_abs, 95)), "max": float(np.max(yaw_abs)),
         }
 
-    shutil.copyfile(args.gt.resolve(), report_dir / "ground_truth.csv")
+    shutil.copyfile(reference_path, report_dir / "ground_truth.csv")
+    # Preserve the estimator's untouched native output separately. Alignment
+    # is an evaluation-only operation and is never fed back to the estimator.
+    shutil.copyfile(trajectory_path, report_dir / "native_trajectory.csv")
     with (report_dir / "aligned_trajectory.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(["timestamp_s", "gt_timestamp_s", "x_m", "y_m", "z_m",
@@ -242,6 +272,11 @@ def main() -> int:
         for n, (gidx, eidx) in enumerate(aligned_pairs):
             writer.writerow([est["stamp"][eidx], gt["stamp"][gidx], *aligned_positions[n],
                              *aligned_quaternions[n], errors[n], yaw_errors[n]])
+    # The final trajectory is exactly the aligned/scaled series used by the
+    # plots. Keeping this distinct from native_trajectory.csv avoids presenting
+    # an old or unscaled estimator snapshot as the plotted result.
+    shutil.copyfile(report_dir / "aligned_trajectory.csv",
+                    report_dir / "final_trajectory.csv")
 
     if len(errors):
         relative_time = est["stamp"][ei] - est["stamp"][ei][0]
@@ -255,8 +290,27 @@ def main() -> int:
         plt.axis("equal"); plt.grid(True); plt.legend(); plt.tight_layout()
         plt.savefig(report_dir / "trajectory_comparison.png", dpi=160); plt.close()
 
-    payload = {"reference": str(args.gt.resolve()), "trajectory": str(args.trajectory.resolve()),
-               "metrics": result}
+    native_identity = file_identity(report_dir / "native_trajectory.csv")
+    aligned_identity = file_identity(report_dir / "aligned_trajectory.csv")
+    plotted_identity = file_identity(report_dir / "final_trajectory.csv")
+    payload = {
+        "reference": reference_identity,
+        "trajectory": trajectory_identity,
+        "native_trajectory_snapshot": {
+            **native_identity,
+            "identical_to_trajectory": (
+                native_identity["sha256"] == trajectory_identity["sha256"]
+            ),
+        },
+        "plotted_trajectory_snapshot": {
+            **plotted_identity,
+            "alignment_applied": args.alignment,
+            "identical_to_aligned_trajectory": (
+                plotted_identity["sha256"] == aligned_identity["sha256"]
+            ),
+        },
+        "metrics": result,
+    }
     (report_dir / "metrics.json").write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     quality = assess_quality(
         result, args.max_ate_fraction, args.min_ate_limit_m, args.max_ate_m,

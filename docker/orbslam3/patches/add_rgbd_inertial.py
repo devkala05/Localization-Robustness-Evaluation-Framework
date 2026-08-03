@@ -5,10 +5,11 @@ Creates Examples_old/ROS/ORB_SLAM3/src/ros_rgbd_inertial.cc and appends the
 RGBD_Inertial target to the rosbuild CMakeLists.  Everything else in the native
 build is unchanged.
 
-Design: producer-consumer threading.  ROS callbacks enqueue frames and return
-immediately; a dedicated processing thread calls TrackRGBD().  When the processor
-falls behind (e.g. during loop-closure), old frames are dropped so the system
-always works on the most recent data — matching real-time on-car behaviour.
+Design: producer-consumer threading. ROS callbacks enqueue frames and return
+immediately; a dedicated processing thread calls TrackRGBD(). Every synchronized
+frame is retained. Dropping frames during local mapping made the next visual
+update span too much vehicle motion and caused genuine tracking loss on Boreas.
+The benchmark playback rate is selected so this lossless queue stays bounded.
 """
 import os
 from pathlib import Path
@@ -31,9 +32,9 @@ else:
  *
  * ROS subscriber callbacks (IMU + synced RGB-D) NEVER call TrackRGBD() directly.
  * They only enqueue data and return immediately.  A separate thread drains the
- * frame queue, collects IMU measurements, and calls TrackRGBD().  When the
- * processor falls behind, old frames are dropped so the system always works on
- * the most recent data — matching real-time on-car behaviour.
+ * frame queue, waits until the IMU buffer brackets the image timestamp,
+ * collects IMU measurements, and calls TrackRGBD(). Every synchronized input
+ * frame is processed in timestamp order.
  *
  * Derived from ros_rgbd.cc (message_filters sync) and ros_mono_inertial.cc
  * (IMU buffering pattern).  Tracking, optimisation, and loop-closure are untouched.
@@ -46,6 +47,7 @@ else:
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <cstdlib>
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
@@ -104,16 +106,34 @@ static geometry_msgs::PoseStamped poseFromTcw(const Sophus::SE3f& Tcw,
 class ImuGrabber
 {
 public:
+    ImuGrabber() : mRunning(true) {}
+
     void GrabImu(const sensor_msgs::ImuConstPtr& msg)
     {
-        std::lock_guard<std::mutex> lock(mBufMutex);
-        imuBuf.push(msg);
+        {
+            std::lock_guard<std::mutex> lock(mBufMutex);
+            if (!mRunning) return;
+            imuBuf.push(msg);
+        }
+        mBufCv.notify_all();
     }
 
-    // Drain all IMU samples with t <= tImg into vImuMeas.
-    void DrainUpTo(double tImg, vector<ORB_SLAM3::IMU::Point>& vImuMeas)
+    // Match the native mono-inertial frontend: do not process an image until
+    // the IMU buffer reaches its timestamp. Draining a merely-current buffer
+    // can omit measurements still queued in another ROS callback.
+    bool WaitAndDrainUpTo(double tImg,
+                          vector<ORB_SLAM3::IMU::Point>& vImuMeas)
     {
-        std::lock_guard<std::mutex> lock(mBufMutex);
+        std::unique_lock<std::mutex> lock(mBufMutex);
+        mBufCv.wait(lock, [this, tImg] {
+            return !mRunning ||
+                   (!imuBuf.empty() &&
+                    imuBuf.back()->header.stamp.toSec() >= tImg);
+        });
+        if (imuBuf.empty() ||
+            imuBuf.back()->header.stamp.toSec() < tImg)
+            return false;
+
         while (!imuBuf.empty() &&
                imuBuf.front()->header.stamp.toSec() <= tImg)
         {
@@ -128,10 +148,22 @@ public:
             vImuMeas.emplace_back(acc, gyr, t);
             imuBuf.pop();
         }
+        return true;
+    }
+
+    void Stop()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mBufMutex);
+            mRunning = false;
+        }
+        mBufCv.notify_all();
     }
 
     queue<sensor_msgs::ImuConstPtr> imuBuf;
     std::mutex mBufMutex;
+    std::condition_variable mBufCv;
+    bool mRunning;
 };
 
 // ── Frame pair ────────────────────────────────────────────────────────────────
@@ -153,14 +185,12 @@ public:
         keyframe_path_pub = nh.advertise<nav_msgs::Path>("/orb_slam3/keyframe_path", 2, true);
     }
 
-    // ROS callback: enqueue only the newest frame and return immediately.
-    // If the processor is behind, stale frames are discarded — the system always
-    // works on the most recent available data.
+    // ROS callback: enqueue without blocking the tracking thread. Public
+    // offline evaluation must not silently discard measurements.
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,
                   const sensor_msgs::ImageConstPtr& msgD)
     {
         std::lock_guard<std::mutex> lock(mBufMutex);
-        while (!mFrameBuf.empty()) mFrameBuf.pop();   // drop backlog
         mFrameBuf.push({msgRGB, msgD});
         mBufCv.notify_one();
     }
@@ -194,7 +224,8 @@ public:
             const double tImg = frame.rgb->header.stamp.toSec();
 
             vector<ORB_SLAM3::IMU::Point> vImuMeas;
-            mpImuGb->DrainUpTo(tImg, vImuMeas);
+            if (!mpImuGb->WaitAndDrainUpTo(tImg, vImuMeas))
+                continue;
 
             cv_bridge::CvImageConstPtr cv_rgb, cv_depth;
             try { cv_rgb   = cv_bridge::toCvShare(frame.rgb); }
@@ -304,10 +335,14 @@ int main(int argc, char** argv)
     ros::spin();
 
     igb.Stop();
+    imugb.Stop();
     processingThread.join();
 
     SLAM.Shutdown();
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    const char* trajectory_env = std::getenv("ORB_SLAM3_TRAJECTORY_FILE");
+    const std::string trajectory_file =
+        trajectory_env ? trajectory_env : "CameraTrajectory.txt";
+    SLAM.SaveTrajectoryTUM(trajectory_file);
     ros::shutdown();
     return 0;
 }

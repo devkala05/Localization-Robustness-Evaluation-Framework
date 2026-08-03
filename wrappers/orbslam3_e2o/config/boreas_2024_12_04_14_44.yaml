@@ -1,39 +1,49 @@
 %YAML:1.0
 Camera.type: "PinHole"
-Camera1.fx: 737.8082945
-Camera1.fy: 737.6895935
-Camera1.cx: 605.5176385
-Camera1.cy: 511.4360025
+Camera1.fx: 1475.616589
+Camera1.fy: 1475.379187
+Camera1.cx: 1211.035277
+Camera1.cy: 1022.872005
 Camera1.k1: 0.0
 Camera1.k2: 0.0
 Camera1.p1: 0.0
 Camera1.p2: 0.0
 Camera1.k3: 0.0
-Camera.fx: 737.8082945
-Camera.fy: 737.6895935
-Camera.cx: 605.5176385
-Camera.cy: 511.4360025
+Camera.fx: 1475.616589
+Camera.fy: 1475.379187
+Camera.cx: 1211.035277
+Camera.cy: 1022.872005
 Camera.k1: 0.0
 Camera.k2: 0.0
 Camera.p1: 0.0
 Camera.p2: 0.0
 Camera.k3: 0.0
-Camera.width: 1224
-Camera.height: 1024
+Camera.width: 2448
+Camera.height: 2048
 Camera.fps: 10
 Camera.RGB: 0
-Camera.bf: 40.0
+# ORB uses bf not only to synthesize the RGB-D right coordinate, but also to
+# weight depth/disparity constraints.  The former 80 px value represents only
+# a 5.4 cm virtual baseline and lets the solution become nearly monocular on
+# Boreas's low-parallax farm road. A conservative 0.65 m virtual LiDAR baseline
+# gives measured projected depth appropriate leverage without changing depth.
+Camera.bf: 959.15078285
 DepthMapFactor: 1.0
 RGBD.DepthMapFactor: 1.0
 # ORB converts this dimensionless multiplier to metres as bf*ThDepth/fx.
-# With bf=40 px*m, these values give a physically intended 40 m close range.
-ThDepth: 737.8082945
-Stereo.ThDepth: 737.8082945
-ORBextractor.nFeatures: 2500
+# Retain measured projected depths through 100 m for stable high-speed metric
+# tracking. The reproducible native build separately disables only the dense-
+# RGB-D close-point keyframe trigger for plain RGBD.
+ThDepth: 153.84615385
+Stereo.ThDepth: 153.84615385
+# Preserve roughly the upstream ORB-SLAM3 VGA feature density on the native
+# 2448x2048 Boreas image. Lower budgets tracked the full route but left a
+# repeatable high-speed distortion around t=80 s.
+ORBextractor.nFeatures: 15000
 ORBextractor.scaleFactor: 1.2
 ORBextractor.nLevels: 8
-ORBextractor.iniThFAST: 12
-ORBextractor.minThFAST: 5
+ORBextractor.iniThFAST: 7
+ORBextractor.minThFAST: 2
 Tbc: !!opencv-matrix
    rows: 4
    cols: 4
@@ -51,10 +61,15 @@ IMU.T_b_c1: !!opencv-matrix
           -0.001083823, 0.999999247, -0.000363770, -0.055849794,
            0.0, 0.0, 0.0, 1.0]
 IMU.Frequency: 200
-IMU.NoiseGyro: 0.01
-IMU.NoiseAcc: 0.1
-IMU.GyroWalk: 0.0001
-IMU.AccWalk: 0.0001
+# The independent DMU is stationary for the first two sequence seconds.
+# Its measured per-sample standard deviations are at most 0.00177 rad/s and
+# 0.176 m/s^2. ORB multiplies these continuous noise densities by sqrt(200),
+# so the values below conservatively cover that sensor-only measurement
+# without downweighting preintegration by the former two orders of magnitude.
+IMU.NoiseGyro: 0.0002
+IMU.NoiseAcc: 0.02
+IMU.GyroWalk: 0.00001
+IMU.AccWalk: 0.001
 IMU.g: 9.805
 IMU.fastInit: 0
 InsertKFsWhenLost: 1

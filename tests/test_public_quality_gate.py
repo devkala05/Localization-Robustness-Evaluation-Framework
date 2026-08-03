@@ -1,3 +1,6 @@
+import csv
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -7,7 +10,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "evaluation"))
 
-from evaluate_public import assess_quality, crop_trajectory, travelled_distance  # noqa: E402
+from evaluate_public import assess_quality, crop_trajectory, main, travelled_distance  # noqa: E402
 
 
 def result(ate_rmse, reference_distance=1000.0, associations=100, alignment="se3",
@@ -70,3 +73,56 @@ def test_crop_trajectory_excludes_warmup_prefix():
     cropped = crop_trajectory(data, start_time=11.0, duration=1.0)
     assert cropped["stamp"].tolist() == [11.0, 12.0]
     assert cropped["position"].shape == (2, 3)
+
+
+def test_final_trajectory_is_exact_series_used_by_plot(tmp_path, monkeypatch):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    gt_path = tmp_path / "ground_truth.csv"
+    native_path = run_dir / "orbslam3_trajectory.csv"
+
+    def write(path, scale):
+        with path.open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(
+                ["timestamp_s", "x_m", "y_m", "z_m", "qx", "qy", "qz", "qw"]
+            )
+            for index in range(30):
+                writer.writerow(
+                    [1000.0 + index * 0.1, scale * index,
+                     scale * index * index / 50.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+                )
+
+    write(gt_path, 1.0)
+    write(native_path, 2.0)
+    (run_dir / "execution_status.json").write_text(
+        json.dumps({"status": "completed"}), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "evaluate_public.py",
+            "--run-dir", str(run_dir),
+            "--gt", str(gt_path),
+            "--trajectory", str(native_path),
+            "--algorithm", "orbslam3",
+            "--alignment", "sim3",
+            "--alignment-reason", "pure monocular scale is unobservable",
+        ],
+    )
+
+    assert main() == 0
+    evaluation = run_dir / "evaluation"
+    native = evaluation / "native_trajectory.csv"
+    aligned = evaluation / "aligned_trajectory.csv"
+    final = evaluation / "final_trajectory.csv"
+    assert native.read_bytes() == native_path.read_bytes()
+    assert final.read_bytes() == aligned.read_bytes()
+    assert final.read_bytes() != native.read_bytes()
+    metrics = json.loads((evaluation / "metrics.json").read_text(encoding="utf-8"))
+    final_hash = hashlib.sha256(final.read_bytes()).hexdigest()
+    assert metrics["plotted_trajectory_snapshot"]["sha256"] == final_hash
+    assert metrics["plotted_trajectory_snapshot"][
+        "identical_to_aligned_trajectory"
+    ]

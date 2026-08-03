@@ -47,6 +47,7 @@ class BoreasPlayer:
         self.root = Path(rospy.get_param("~sequence_root")).resolve()
         self.rate = float(rospy.get_param("~rate", 1.0))
         self.start_offset = max(0.0, float(rospy.get_param("~start_offset", 0.0)))
+        self.absolute_start_time = float(rospy.get_param("~absolute_start_time", 0.0))
         self.duration = float(rospy.get_param("~duration", 0.0))
         self.enabled = {
             "lidar": bool(rospy.get_param("~enable_lidar", True)),
@@ -203,7 +204,14 @@ class BoreasPlayer:
         if len(heap) != len(sources):
             raise rospy.ROSException("one or more Boreas streams are empty")
         raw_start = min(item[0] for item in heap)
-        play_start = raw_start + self.start_offset
+        # A route-window directory can intentionally contain only camera and
+        # LiDAR files from the selected interval while retaining the complete
+        # upstream IMU CSV.  Anchoring playback to an absolute acquisition
+        # timestamp makes the selected window independent of which sensor
+        # subset an algorithm enables.  Older/full-sequence invocations keep
+        # the original relative-offset behavior when this argument is zero.
+        play_start = (self.absolute_start_time if self.absolute_start_time > 0.0
+                      else raw_start + self.start_offset)
         play_end = play_start + self.duration if self.duration > 0.0 else math.inf
         wall_start = None
         first_stamp = None

@@ -3,6 +3,7 @@
   <arg name="sequence_root"/>
   <arg name="rate" default="1.0"/>
   <arg name="start_offset" default="0.0"/>
+  <arg name="absolute_start_time" default="0.0"/>
   <arg name="duration" default="0.0"/>
   <arg name="enable_lidar" default="true"/>
   <arg name="enable_imu" default="true"/>
@@ -12,6 +13,7 @@
     <param name="sequence_root" value="$(arg sequence_root)"/>
     <param name="rate" value="$(arg rate)"/>
     <param name="start_offset" value="$(arg start_offset)"/>
+    <param name="absolute_start_time" value="$(arg absolute_start_time)"/>
     <param name="duration" value="$(arg duration)"/>
     <param name="enable_lidar" value="$(arg enable_lidar)"/>
     <param name="enable_imu" value="$(arg enable_imu)"/>

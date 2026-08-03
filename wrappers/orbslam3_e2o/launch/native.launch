@@ -4,9 +4,17 @@
   <arg name="vocabulary" default="$(arg orb_slam3_root)/Vocabulary/ORBvoc.txt"/>
   <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
   <arg name="executable" default="$(optenv ORB_SLAM3_EXECUTABLE RGBD)"/>
+  <arg name="mask_top_fraction" default="0.0"/>
+  <arg name="mask_bottom_fraction" default="0.0"/>
+  <!-- The pinned native RGB-D example uses a public NodeHandle, so publish
+       these preprocessing parameters in the public namespace as well. -->
+  <param name="mask_top_fraction" value="$(arg mask_top_fraction)"/>
+  <param name="mask_bottom_fraction" value="$(arg mask_bottom_fraction)"/>
   <node name="orbslam3_rgbd" pkg="orbslam3_e2o" type="run_orbslam3_native.py"
         output="screen" required="true" args="$(arg vocabulary) $(arg camera_config)">
     <env name="ORB_SLAM3_EXECUTABLE" value="$(arg executable)"/>
+    <param name="mask_top_fraction" value="$(arg mask_top_fraction)"/>
+    <param name="mask_bottom_fraction" value="$(arg mask_bottom_fraction)"/>
     <remap from="/camera/rgb/image_raw" to="/camera/rgb/image_raw"/>
     <remap from="/camera/image_raw" to="/camera/rgb/image_raw"/>
     <remap from="/camera/depth_registered/image_raw" to="/camera/depth_registered/image_raw"/>

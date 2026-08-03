@@ -73,11 +73,15 @@ Runtime bag controls:
 
 ## Public datasets
 
-The selected downloads total 25.39 GiB and do not require extraction or a generated Boreas bag. The downloader checks for at least 32 GiB free, resumes partial transfers, verifies exact byte totals, and writes SHA-256 manifests.
+Public data is streamed directly from ROS bags or native Boreas files; no generated Boreas bag is required. Downloaders resume into existing sequence directories. The route-window downloader retains fixed scored intervals plus only the earlier continuous camera/LiDAR frames needed for native estimator initialization.
 
 ```bash
 # Download both selected sequences, official calibration, IMU and ground truth.
 ./scripts/datasets/download_public_datasets.sh
+
+# Resume the Boreas Farm, Forest, and Urban scored windows and their common
+# 40-second continuous sensor warm-up.
+./scripts/datasets/download_boreas_route_windows.sh all
 
 # Optional: fetch the first 120 synchronized Boreas camera/lidar frames plus
 # the complete independent IMU stream for short integration tests. The full
@@ -113,11 +117,11 @@ pipelines; they do not change sensor timestamps. Remove `--duration 30` only
 after a pair passes short validation. Results are written to
 `results/<dataset>/<sequence>/<algorithm>/<run_id>/`, including the raw
 trajectory, copied configuration, execution status, logs, aligned trajectory,
-machine-readable metrics, report, and plots. Public modes are metric and use
-SE(3); Sim(3) is reserved for a genuinely scale-unobservable mode and requires
-a recorded reason. ORB-SLAM3 defaults to the pure-monocular fallback and
-records Sim(3); pass `--orb-mode mono-inertial` to request metric visual-
-inertial operation. LVI-SAM defaults to its stable lidar-inertial pipeline;
+machine-readable metrics, report, and plots. Public modes are metric and
+normally use SE(3); Sim(3) requires a recorded gauge/scale reason. Boreas
+ORB-SLAM3 defaults to native RGB-D tracking using the camera plus calibrated,
+causally deskewed LiDAR-projected depth. Pure mono and inertial variants remain
+explicit ablations. LVI-SAM defaults to its stable lidar-inertial pipeline;
 pass `--lvisam-mode visual-lidar-inertial` to start the VINS nodes as well.
 
 Leak-free parameter work uses explicit temporal phases and offsets. Tuning and
@@ -136,6 +140,17 @@ validation runs are excluded from the default result summary; only frozen
 Validation and holdout replay the sensor prefix from sequence start for
 stateful estimator warm-up, but evaluation crops that prefix and scores only
 the requested offset/duration.
+
+The three Boreas route manifests declare a common 40-second ORB warm-up.
+Farm also declares a 120-second FAST-LIVO2 low-speed initialization prefix.
+`--pre-roll` replays these sensor prefixes without moving the absolute scored
+timestamps, and the route-matrix runner supplies them automatically:
+
+```bash
+./scripts/run_boreas_route_matrix.sh
+python3 tools/generate_boreas_route_report.py
+python3 tools/generate_repository_implementation_pdf.py
+```
 
 Generate a full-production comparison table directly from accuracy-accepted
 artifacts. Holdout slices never replace a rejected full route in this table.

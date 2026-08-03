@@ -8,12 +8,31 @@ deskewing: true
 deskewing_slerp: true
 approx_sync: true
 queue_size: 300
-scan_cloud_max_points: 100000
+# Bound preprocessing so consecutive 10 Hz scans are all consumed. Higher
+# caps increased angular drift in the dense enclosed section.
+scan_cloud_max_points: 60000
 Icp/PointToPlane: "true"
 Icp/PointToPlaneK: "20"
-Icp/Iterations: "50"
-Icp/VoxelSize: "0.25"
-Icp/MaxCorrespondenceDistance: "5.0"
+Icp/Strategy: "1"
+Icp/Iterations: "40"
+Icp/VoxelSize: "0.20"
+# Boreas changes elevation by about 31 m. Solve the native road-vehicle
+# x/y/z/yaw model instead of flattening the trajectory to z=0.
+Icp/Force4DoF: "true"
+# Frame-to-frame odometry uses its constant-motion estimate as the ICP guess.
+# Keep refinement local to that prediction: the former 10 m correspondence
+# window admitted longitudinally ambiguous matches on the straight highway.
+Icp/MaxCorrespondenceDistance: "1.0"
+Icp/OutlierRatio: "0.85"
+Icp/PMMatcherKnn: "2"
+Icp/PMMatcherIntensity: "true"
+# Register consecutive deskewed scans. Frame-to-map is longitudinally
+# ambiguous in the dense enclosed section of this route.
+Odom/Strategy: "1"
+# K-nearest PM correspondences can report ratios above one, so the ordinary
+# ratio threshold no longer has its usual [0,1] keyframe meaning. Make every
+# accepted scan the next reference and keep each transform local.
+Odom/ScanKeyFrameThr: "0.0"
 # Boreas reaches about 27 m/s (2.8 m per nominal 10 Hz scan) and occasional
 # skipped clouds legitimately double that displacement. Keep finite gates,
 # but size them for the complete route rather than only its slow opening.

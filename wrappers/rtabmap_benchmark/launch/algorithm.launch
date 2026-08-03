@@ -1,8 +1,12 @@
 <launch>
   <arg name="config"/>
   <arg name="database_path" default="/data/output/rtabmap.db"/>
+  <arg name="odom_mode" default="icp"/>
+  <arg name="use_graph" default="true"/>
   <rosparam command="load" file="$(arg config)" ns="rtabmap_icp"/>
-  <node pkg="rtabmap_odom" type="icp_odometry" name="rtabmap_icp" output="screen">
+  <rosparam command="load" file="$(arg config)" ns="rtabmap"/>
+  <node if="$(eval arg('odom_mode') == 'icp')" pkg="rtabmap_odom" type="icp_odometry"
+        name="rtabmap_icp" output="screen">
     <!-- RTAB-Map validates each odometry message against the matching
          odom->base transform.  This is the ICP node's native internal TF;
          the SLAM node below remains the sole owner of map optimization. -->
@@ -11,7 +15,33 @@
     <remap from="imu" to="/benchmark/imu_raw"/>
     <remap from="odom" to="/rtabmap/icp_odometry"/>
   </node>
-  <node pkg="rtabmap_slam" type="rtabmap" name="rtabmap" output="screen"
+  <node if="$(eval arg('odom_mode') == 'rgbdicp')" pkg="rtabmap_odom" type="rgbdicp_odometry"
+        name="rtabmap_icp" output="screen">
+    <param name="publish_tf" value="true"/>
+    <param name="subscribe_scan_cloud" value="true"/>
+    <param name="approx_sync" value="true"/>
+    <param name="queue_size" value="300"/>
+    <param name="Reg/Strategy" value="2"/>
+    <remap from="rgb/image" to="/camera/rgb/image_raw"/>
+    <remap from="depth/image" to="/camera/depth_registered/image_raw"/>
+    <remap from="rgb/camera_info" to="/camera/right/camera_info"/>
+    <remap from="scan_cloud" to="/benchmark/points_raw"/>
+    <remap from="imu" to="/benchmark/imu_raw"/>
+    <remap from="odom" to="/rtabmap/icp_odometry"/>
+  </node>
+  <node if="$(eval arg('odom_mode') == 'rgbd')" pkg="rtabmap_odom"
+        type="rgbd_odometry" name="rtabmap_icp" output="screen">
+    <param name="publish_tf" value="true"/>
+    <param name="approx_sync" value="true"/>
+    <param name="queue_size" value="300"/>
+    <param name="Reg/Strategy" value="0"/>
+    <remap from="rgb/image" to="/camera/rgb/image_raw"/>
+    <remap from="depth/image" to="/camera/depth_registered/image_raw"/>
+    <remap from="rgb/camera_info" to="/camera/right/camera_info"/>
+    <remap from="imu" to="/benchmark/imu_raw"/>
+    <remap from="odom" to="/rtabmap/icp_odometry"/>
+  </node>
+  <node if="$(arg use_graph)" pkg="rtabmap_slam" type="rtabmap" name="rtabmap" output="screen"
         args="--delete_db_on_start">
     <param name="database_path" value="$(arg database_path)"/>
     <param name="frame_id" value="base_link"/>
@@ -33,7 +63,7 @@
     <remap from="odom" to="/rtabmap/icp_odometry"/>
     <remap from="scan_cloud" to="/benchmark/points_raw"/>
   </node>
-  <node pkg="rtabmap_benchmark" type="optimized_pose_node.py"
+  <node if="$(arg use_graph)" pkg="rtabmap_benchmark" type="optimized_pose_node.py"
         name="rtabmap_optimized_pose" output="screen" required="true">
     <param name="input_topic" value="/rtabmap/icp_odometry"/>
     <param name="output_topic" value="/rtabmap/odometry"/>

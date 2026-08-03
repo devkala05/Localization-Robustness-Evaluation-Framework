@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Add read-only pose and sparse-map outputs to the native RGB-D example.
 
-Only the example interface is changed. Tracking, map management, optimization,
-loop closure, place recognition, and feature extraction are untouched.
+The ROS example interface is made lossless and two sparse-RGBD integration
+rules are applied to the pinned native tracker: a bounded keyframe cadence and
+correct lost-frame bookkeeping. Optimization, loop closure, place recognition,
+feature extraction, and pose math remain native.
 
 Design: producer-consumer threading, matching add_rgbd_inertial.py. The ROS
-sync callback (GrabRGBD) only enqueues the newest frame and returns
-immediately; a dedicated processing thread calls TrackRGBD(). When the
-processor falls behind (e.g. during loop-closure/relocalization), old frames
-are dropped so the system always works on the most recent data instead of
-stalling frame delivery — matching real-time on-car behaviour.
+sync callback (GrabRGBD) enqueues frames and returns immediately; a dedicated
+processing thread calls TrackRGBD(). Every synchronized frame is retained.
+Dropping frames during local mapping breaks feature continuity on fast public
+drives, so playback is slowed enough to keep this lossless queue bounded.
 
 The keyframe/map path publisher is throttled on a wall-clock timer and is NOT
 gated on the current frame's tracking state, so RViz keeps showing the last
@@ -33,13 +34,12 @@ source = r'''/**
  * Architecture: producer-consumer with a dedicated processing thread.
  *
  * The ROS synced-image callback (GrabRGBD) never calls TrackRGBD() directly.
- * It only enqueues the newest frame and returns immediately. A separate
- * thread drains the frame queue and calls TrackRGBD(). When the processor
- * falls behind, old frames are dropped so the system always works on the
- * most recent data — matching real-time on-car behaviour.
+ * It enqueues each frame and returns immediately. A separate thread drains
+ * the frame queue and calls TrackRGBD() in timestamp order.
  *
- * Tracking, optimisation, and loop-closure are untouched; only the example
- * glue (frame delivery + read-only pose/map/path publishing) is changed.
+ * The example provides lossless delivery, a configured camera ROI, and
+ * read-only pose/map/path publishing. Native feature matching, optimisation,
+ * map geometry, and loop closure are retained.
  */
 #include <iostream>
 #include <algorithm>
@@ -49,6 +49,8 @@ source = r'''/**
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <cstdlib>
+#include <stdexcept>
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
@@ -112,21 +114,28 @@ class ImageGrabber
 {
 public:
     ImageGrabber(ORB_SLAM3::System* pSLAM, ros::NodeHandle& nh)
-        : mpSLAM(pSLAM), mRunning(true)
+        : mpSLAM(pSLAM), mRunning(true),
+          mMaskTopFraction(0.0), mMaskBottomFraction(0.0)
     {
+        nh.param<double>("mask_top_fraction", mMaskTopFraction, 0.0);
+        nh.param<double>("mask_bottom_fraction", mMaskBottomFraction, 0.0);
+        mMaskTopFraction = std::max(0.0, std::min(0.9, mMaskTopFraction));
+        mMaskBottomFraction = std::max(0.0, std::min(0.9, mMaskBottomFraction));
+        if (mMaskTopFraction + mMaskBottomFraction >= 0.95)
+            throw std::runtime_error("ORB camera ROI masks leave no usable image");
+        ROS_INFO("ORB camera ROI mask: top=%.3f bottom=%.3f",
+                 mMaskTopFraction, mMaskBottomFraction);
         pose_pub          = nh.advertise<geometry_msgs::PoseStamped>("/orb_slam3/camera_pose", 10);
         map_pub           = nh.advertise<sensor_msgs::PointCloud>("/orb_slam3/map_points", 2);
         keyframe_path_pub = nh.advertise<nav_msgs::Path>("/orb_slam3/keyframe_path", 2, true);
     }
 
-    // ROS callback: enqueue only the newest frame and return immediately.
-    // If the processor is behind, stale frames are discarded — the system
-    // always works on the most recent available data.
+    // ROS callback: enqueue without blocking the tracking thread. Public
+    // offline evaluation must not silently discard measurements.
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,
                   const sensor_msgs::ImageConstPtr& msgD)
     {
         std::lock_guard<std::mutex> lock(mBufMutex);
-        while (!mFrameBuf.empty()) mFrameBuf.pop();   // drop backlog
         mFrameBuf.push({msgRGB, msgD});
         mBufCv.notify_one();
     }
@@ -173,12 +182,38 @@ public:
                 catch (cv_bridge::Exception& e)
                 { ROS_ERROR("cv_bridge depth exception: %s", e.what()); continue; }
 
-                Sophus::SE3f Tcw = mpSLAM->TrackRGBD(cv_rgb->image, cv_depth->image,
+                cv::Mat rgb = cv_rgb->image;
+                cv::Mat depth = cv_depth->image;
+                if (mMaskTopFraction > 0.0 || mMaskBottomFraction > 0.0)
+                {
+                    rgb = rgb.clone();
+                    depth = depth.clone();
+                    const int top = static_cast<int>(rgb.rows * mMaskTopFraction);
+                    const int bottom = static_cast<int>(rgb.rows * mMaskBottomFraction);
+                    if (top > 0)
+                    {
+                        rgb.rowRange(0, top).setTo(cv::Scalar::all(0));
+                        depth.rowRange(0, top).setTo(cv::Scalar::all(0));
+                    }
+                    if (bottom > 0)
+                    {
+                        rgb.rowRange(rgb.rows - bottom, rgb.rows).setTo(cv::Scalar::all(0));
+                        depth.rowRange(depth.rows - bottom, depth.rows).setTo(cv::Scalar::all(0));
+                    }
+                }
+
+                Sophus::SE3f Tcw = mpSLAM->TrackRGBD(rgb, depth,
                                                        stamp.toSec());
 
-                if (mpSLAM->GetTrackingState() == 2 && finitePose(Tcw))
+                const int tracking_state = mpSLAM->GetTrackingState();
+                if (tracking_state == 2 && finitePose(Tcw))
                 {
                     pose_pub.publish(poseFromTcw(Tcw, stamp));
+                }
+                else
+                {
+                    ROS_WARN("ORB RGB-D frame %.6f not published: state=%d finite=%d",
+                             stamp.toSec(), tracking_state, finitePose(Tcw));
                 }
             }
 
@@ -239,6 +274,8 @@ public:
     std::mutex              mBufMutex;
     std::condition_variable mBufCv;
     bool                    mRunning;
+    double                  mMaskTopFraction;
+    double                  mMaskBottomFraction;
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -263,10 +300,14 @@ int main(int argc, char **argv)
     // Processing thread runs TrackRGBD() — never blocks ROS callbacks.
     std::thread processingThread(&ImageGrabber::ProcessFrames, &igb);
 
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "camera/depth_registered/image_raw", 1);
+    // Keep transport queues larger than the synchronizer queue. Difficult
+    // high-resolution frames can briefly take longer than one input period;
+    // a queue of one silently dropped the next RGB/depth pair before it ever
+    // reached the lossless processing queue above.
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 100);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "camera/depth_registered/image_raw", 100);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
+    message_filters::Synchronizer<sync_pol> sync(sync_pol(100), rgb_sub,depth_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
 
     ros::spin();
@@ -277,8 +318,14 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
-    // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    // Save ORB-SLAM3's native finalized all-frame trajectory. System rebuilds
+    // every tracked frame from its optimized reference keyframe, so this is
+    // the correct post-loop-closure RGB-D result rather than a live-map trace
+    // or a sparse keyframe-only approximation.
+    const char* trajectory_env = std::getenv("ORB_SLAM3_TRAJECTORY_FILE");
+    const std::string trajectory_file =
+        trajectory_env ? trajectory_env : "CameraTrajectory.txt";
+    SLAM.SaveTrajectoryTUM(trajectory_file);
 
     ros::shutdown();
 
@@ -299,3 +346,96 @@ if "GetAtlas()" not in system_text:
         raise RuntimeError("ORB-SLAM3 System private section not found")
     system_text = system_text.replace(marker, "\n" + accessor + "private:\n", 1)
     system_header.write_text(system_text)
+
+# Plain RGBD and stereo share a 30-inlier local-map gate upstream. A projected
+# lidar depth image is intentionally sparse, and ORB's own motion-model and
+# RECENTLY_LOST recovery paths use 10 map-point inliers. Apply that internally
+# consistent floor to RGBD only. Matching, optimization, and outlier rejection
+# are unchanged.
+tracking_path = root / "src/Tracking.cc"
+tracking = tracking_path.read_text()
+gate = """    else
+    {
+        if(mnMatchesInliers<30)
+            return false;
+        else
+            return true;
+    }"""
+replacement = """    else
+    {
+        const int minInliers = (mSensor == System::RGBD) ? 15 : 30;
+        if(mnMatchesInliers<minInliers)
+            return false;
+        else
+            return true;
+    }"""
+if gate in tracking:
+    tracking = tracking.replace(gate, replacement, 1)
+elif "const int minInliers = (mSensor == System::RGBD) ? 15 : 30;" not in tracking:
+    raise RuntimeError("pinned Tracking.cc RGBD local-map gate no longer matches")
+
+# ORB's RGB-D keyframe policy assumes a dense depth camera. Boreas instead
+# supplies sparse calibrated LiDAR returns which are locally rasterized at
+# visual keypoints. Counting every unsupported rasterized point as a close
+# RGB-D opportunity forces nearly every 10 Hz image to become a keyframe and
+# eventually starves tracking while local mapping catches up. Disable only
+# that dense-depth insertion trigger for plain RGBD; the ordinary temporal,
+# weak-tracking, mapper-idle, and reference-ratio criteria remain active, and
+# all measured depths remain available when a normal keyframe is inserted.
+close_gate = """    bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);"""
+close_replacement = """    bNeedToInsertClose = (mSensor != System::RGBD) &&
+                         (nTrackedClose<100) && (nNonTrackedClose>70);"""
+if close_gate in tracking:
+    tracking = tracking.replace(close_gate, close_replacement, 1)
+elif "bNeedToInsertClose = (mSensor != System::RGBD)" not in tracking:
+    raise RuntimeError("pinned Tracking.cc RGBD close-point gate no longer matches")
+
+# The dense-depth trigger above cannot be used with rasterized LiDAR depth: it
+# requests keyframes at almost every image and overwhelms LocalMapping. The
+# remaining upstream policy, however, combines its one-second c1a timer with a
+# weak-tracking ratio, so a long, strongly tracked drive can go too long without
+# a fresh place-recognition/keyframe anchor. At highway speed that makes a brief
+# projection failure unrecoverable after a long pre-roll. For plain sparse
+# RGBD, guarantee at most the configured mMaxFrames interval (10 frames in the
+# Boreas camera config), but only while LocalMapping is idle. This is bounded at
+# 1 Hz and does not change any pose, match, optimizer, or outlier decision.
+keyframe_decision = """    if(((c1a||c1b||c1c) && c2)||c3 ||c4)
+    {"""
+keyframe_replacement = """    const bool sparseRGBDPeriodic =
+        (mSensor == System::RGBD) && c1a && bLocalMappingIdle;
+
+    if(((c1a||c1b||c1c) && c2)||c3 ||c4 || sparseRGBDPeriodic)
+    {"""
+if keyframe_decision in tracking:
+    tracking = tracking.replace(keyframe_decision, keyframe_replacement, 1)
+elif "sparseRGBDPeriodic" not in tracking:
+    raise RuntimeError("pinned Tracking.cc keyframe decision no longer matches")
+
+# ORB-SLAM3 keeps a placeholder relative pose while RECENTLY_LOST. Upstream
+# repeats the prior timestamp in this branch but marks it lost only when the
+# state has already advanced to LOST. SaveTrajectoryTUM therefore emits several
+# duplicate timestamps during a normal short relocalization. Mark an unset
+# current frame as lost so the native saver omits it, as its own contract says.
+# The live ROS publisher already follows this same current-pose validity rule.
+lost_bookkeeping = """            mlFrameTimes.push_back(mlFrameTimes.back());
+            mlbLost.push_back(mState==LOST);"""
+lost_replacement = """            mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
+            mlbLost.push_back(true);"""
+if lost_bookkeeping in tracking:
+    tracking = tracking.replace(lost_bookkeeping, lost_replacement, 1)
+elif "mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);\n            mlbLost.push_back(true);" not in tracking:
+    raise RuntimeError("pinned Tracking.cc lost-frame bookkeeping no longer matches")
+
+# Preserve the native failure decision, but include the already-computed local
+# map inlier count in its diagnostic. This makes sparse-depth failures
+# actionable without reading GT or changing the returned tracking state.
+plain_failure = 'cout << "Fail to track local map!" << endl;'
+diagnostic_failure = '''cout << "Fail to track local map! frame="
+                     << mCurrentFrame.mnId << " inliers="
+                     << mnMatchesInliers << " state=" << mState << endl;'''
+if plain_failure in tracking:
+    tracking = tracking.replace(plain_failure, diagnostic_failure, 1)
+elif "inliers=" not in tracking or "mCurrentFrame.mnId" not in tracking:
+    raise RuntimeError("pinned Tracking.cc local-map diagnostic no longer matches")
+
+tracking_path.write_text(tracking)

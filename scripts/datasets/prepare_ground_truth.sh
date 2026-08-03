@@ -17,12 +17,17 @@ convert_urban() {
 }
 
 convert_boreas() {
-  local sequence="$ROOT/data/datasets/boreas_rt/boreas-2024-12-04-14-44"
-  [[ -f "$sequence/applanix/gps_post_process.csv" && -f "$sequence/calib/T_applanix_dmu.txt" ]] || {
-    printf 'Boreas-RT inputs are incomplete\n' >&2; return 1;
-  }
-  python3 "$ROOT/tools/convert_public_ground_truth.py" --dataset boreas_rt \
-    --input "$sequence" --output "$sequence/ground_truth.csv"
+  local config display_name sequence converted=0
+  for config in "$ROOT"/configs/datasets/boreas_rt/*/sequence.yaml; do
+    display_name="$(python3 -c 'import sys,yaml; print(yaml.safe_load(open(sys.argv[1]))["display_name"])' "$config")"
+    sequence="$ROOT/data/datasets/boreas_rt/$display_name"
+    [[ -f "$sequence/applanix/gps_post_process.csv" && \
+       -f "$sequence/calib/T_applanix_dmu.txt" ]] || continue
+    python3 "$ROOT/tools/convert_public_ground_truth.py" --dataset boreas_rt \
+      --input "$sequence" --output "$sequence/ground_truth.csv"
+    converted=$((converted + 1))
+  done
+  ((converted > 0)) || { printf 'Boreas-RT inputs are incomplete\n' >&2; return 1; }
 }
 
 case "$DATASET" in

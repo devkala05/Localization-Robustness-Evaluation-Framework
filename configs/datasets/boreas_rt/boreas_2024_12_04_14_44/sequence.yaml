@@ -1,8 +1,11 @@
 dataset: boreas_rt
 sequence: boreas_2024_12_04_14_44
 display_name: boreas-2024-12-04-14-44
+route: Tunnel
 format: boreas_files
 source:
+  storage_scope: complete_sequence
+  window_start_timestamp_s: 1733341473.191912
   selected_stream_bytes: 13179516822
   duration_sec: 169.35
   s3_prefix: s3://boreas/boreas-2024-12-04-14-44
@@ -44,4 +47,3 @@ ground_truth:
   orientation_available: true
   estimator_derived: false
   note: Positions are translated by the first pose for numerical stability; no rotation or manual offset is applied.
-

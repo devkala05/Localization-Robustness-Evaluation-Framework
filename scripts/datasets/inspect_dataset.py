@@ -67,12 +67,28 @@ def inspect_boreas(config: dict, sequence: Path) -> dict:
         span = (stream["end_timestamp_s"] - stream["start_timestamp_s"]
                 if stream["start_timestamp_s"] is not None else 0.0)
         stream["approx_frequency_hz"] = stream["count"] / span if span > 0 else None
+    source = config.get("source", {})
+    declared_start = source.get("window_start_timestamp_s")
+    declared_duration = source.get("duration_sec")
+    declared_window = None
+    if declared_start is not None and declared_duration is not None:
+        declared_window = {
+            "storage_scope": source.get("storage_scope", "unspecified"),
+            "route": config.get("route"),
+            "playback_start_timestamp_s": float(declared_start),
+            "playback_duration_sec": float(declared_duration),
+            "evaluation_start_offset_s": float(source.get("evaluation_start_offset_s", 0.0)),
+            "evaluation_duration_sec": float(
+                source.get("evaluation_duration_sec", declared_duration)
+            ),
+        }
     return {
         "dataset": config["dataset"], "sequence": config["sequence"],
         "path": str(sequence.resolve()), "file_size_bytes": tree_bytes(sequence),
         "file_size": human_bytes(tree_bytes(sequence)),
         "start_timestamp_s": overall_start, "end_timestamp_s": overall_end,
         "duration_sec": overall_end - overall_start if bounds else None,
+        "declared_window": declared_window,
         "available_sensors": sorted(streams), "topics": {
             "/dataset/lidar": "sensor_msgs/PointCloud2",
             "/dataset/imu": "sensor_msgs/Imu", "/dataset/camera": "sensor_msgs/Image"},

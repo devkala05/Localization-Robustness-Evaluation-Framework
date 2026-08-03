@@ -2,6 +2,7 @@
 """Record independent estimator, fused, and health timelines."""
 import csv
 import json
+import math
 import os
 import shutil
 import threading
@@ -38,6 +39,7 @@ class MultiTrajectoryRecorder:
         self.has_data = set()
         self.path_pubs = {}
         self.paths = {}
+        self.last_stamps = {}
         for name, topic in topics.items():
             rospy.Subscriber(topic, Odometry, lambda msg, n=name: self.odom_cb(n, msg), queue_size=500)
             self.path_pubs[name] = rospy.Publisher(f"/debug_paths/{name}", Path, queue_size=2, latch=True)
@@ -75,10 +77,25 @@ class MultiTrajectoryRecorder:
     def odom_cb(self, name: str, msg: Odometry) -> None:
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
+        stamp = msg.header.stamp.to_sec()
+        values = (stamp, p.x, p.y, p.z, q.x, q.y, q.z, q.w)
+        norm = math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
+        if (not all(math.isfinite(value) for value in values)
+                or not 0.9 <= norm <= 1.1):
+            rospy.logwarn_throttle(
+                2.0, "[Recorder] rejected invalid/non-monotonic %s odometry", name
+            )
+            return
         with self.lock:
+            if stamp <= self.last_stamps.get(name, -math.inf):
+                rospy.logwarn_throttle(
+                    2.0, "[Recorder] rejected invalid/non-monotonic %s odometry", name
+                )
+                return
             handle, writer = self.ensure_csv(name)
-            writer.writerow([msg.header.stamp.to_sec(), p.x, p.y, p.z, q.x, q.y, q.z, q.w,
+            writer.writerow([stamp, p.x, p.y, p.z, q.x, q.y, q.z, q.w,
                              msg.header.frame_id, msg.child_frame_id])
+            self.last_stamps[name] = stamp
             self.has_data.add(name)
             handle.flush()
             pose = PoseStamped()

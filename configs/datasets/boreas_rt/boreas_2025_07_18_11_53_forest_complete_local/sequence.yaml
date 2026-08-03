@@ -1,0 +1,29 @@
+dataset: boreas_rt
+sequence: boreas_2025_07_18_11_53_forest_complete_local
+display_name: boreas-2025-07-18-11-53
+route: Forest
+format: boreas_files
+source:
+  storage_scope: complete_locally_downloaded_joint_sensor_interval
+  window_start_timestamp_s: 1752854314.009277
+  duration_sec: 216.900620
+  local_camera_lidar_overlap_start_timestamp_s: 1752854314.009277
+  local_camera_lidar_overlap_end_timestamp_s: 1752854530.909897
+  full_source_sequence_start_timestamp_s: 1752854020.7329333
+  full_source_sequence_duration_sec: 1126.93
+  s3_prefix: s3://boreas/boreas-2025-07-18-11-53
+  selection_reason: complete interval jointly available in the locally downloaded camera and LiDAR streams; no warm-up or scoring crop is excluded
+sensors:
+  lidar: {directory: lidar, model: Velodyne Alpha Prime, rate_hz: 10, frame_id: lidar}
+  camera: {directory: camera, model: FLIR Blackfly S BFS-U3-51S5C, rate_hz: 10, format: png, frame_id: camera}
+  imu: {file: imu/dmu_imu_infilled.csv, model: Silicon Sensing DMU41, rate_hz: 200, timestamp_unit: nanoseconds, frame_id: dmu}
+  ground_truth: {file: applanix/gps_post_process.csv, model: Applanix POS LV 220, rate_hz: 200, frame_id: applanix}
+calibration:
+  directory: calib
+  profile: boreas_rt_shared_rig_2024_2025
+  verified_identical_to: boreas-2024-12-04-14-44
+ground_truth:
+  source: post-processed Applanix POSPac GNSS/INS/wheel solution
+  output_frame: boreas_enu_local
+  orientation_available: true
+  estimator_derived: false

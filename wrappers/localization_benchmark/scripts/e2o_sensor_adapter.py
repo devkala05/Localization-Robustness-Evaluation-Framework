@@ -20,6 +20,7 @@ import numpy as np
 import cv2
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
+from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import CameraInfo, CompressedImage, Image, Imu, PointCloud2, PointField
 
 
@@ -150,6 +151,12 @@ class E2OSensorAdapter:
         self.point_time_scale = float(lidar.get("point_time_scale", 1.0e6))
         self.auto_detect_time_units = bool(lidar.get("auto_detect_time_units", True))
         self.normalize_negative_point_time = bool(lidar.get("normalize_negative_point_time", False))
+        self.normalize_raw_negative_point_time = bool(
+            rospy.get_param(
+                "~normalize_raw_negative_point_time",
+                self.normalize_negative_point_time,
+            )
+        )
         self.require_ring = bool(lidar.get("require_ring", True))
         self.synthesize_organized_fields = bool(lidar.get("synthesize_organized_fields", False))
         self.organized_scan_lines = int(lidar.get("organized_scan_lines", 0))
@@ -186,6 +193,27 @@ class E2OSensorAdapter:
         self.orb_rgbd_width = int(orb_rgbd.get("width", 0))
         self.orb_rgbd_height = int(orb_rgbd.get("height", 0))
         self.orb_rgbd_max_rate = float(orb_rgbd.get("max_rate_hz", 0.0))
+        self.orb_intensity_target_mean = float(
+            orb_rgbd.get("intensity_target_mean", 0.0)
+        )
+        self.orb_intensity_target_std = float(
+            orb_rgbd.get("intensity_target_std", 0.0)
+        )
+        self.orb_max_saturated_fraction = max(
+            0.0, float(orb_rgbd.get("max_saturated_fraction", 0.0))
+        )
+        self.orb_normalize_intensity = (
+            self.orb_intensity_target_mean > 0.0
+            and self.orb_intensity_target_std > 0.0
+        )
+        self.orb_clahe_clip_limit = max(
+            0.0, float(orb_rgbd.get("clahe_clip_limit", 0.0))
+        )
+        self.orb_clahe = (
+            cv2.createCLAHE(clipLimit=self.orb_clahe_clip_limit,
+                            tileGridSize=(8, 8))
+            if self.orb_clahe_clip_limit > 0.0 else None
+        )
         self.orb_project_lidar_depth = bool(
             orb_rgbd.get("project_lidar_depth", False)
         ) and self.orb_mode in ("rgbd", "rgbd-inertial")
@@ -205,11 +233,45 @@ class E2OSensorAdapter:
         self.orb_depth_time_slice_sec = max(
             0.0, float(orb_rgbd.get("depth_time_slice_sec", 0.0))
         )
+        self.orb_depth_merge_window_sec = max(
+            0.0, float(orb_rgbd.get("depth_merge_window_sec", 0.0))
+        )
+        self.orb_depth_pairing_wait_sec = max(
+            self.orb_depth_merge_window_sec,
+            float(orb_rgbd.get(
+                "depth_pairing_wait_sec",
+                self.orb_depth_merge_window_sec,
+            )),
+        )
+        self.orb_depth_sweep_count = max(
+            1, int(orb_rgbd.get("depth_sweep_count", 1))
+        )
+        self.orb_depth_deskew_pose_topic = str(
+            orb_rgbd.get("depth_deskew_pose_topic", "")
+        ).strip()
+        self.orb_depth_deskew_bin_sec = max(
+            1.0e-4, float(orb_rgbd.get("depth_deskew_bin_sec", 0.005))
+        )
+        self.orb_depth_deskew_max_pose_age_sec = max(
+            0.0, float(orb_rgbd.get("depth_deskew_max_pose_age_sec", 0.3))
+        )
+        self.orb_depth_deskew_max_speed_mps = max(
+            0.0, float(orb_rgbd.get("depth_deskew_max_speed_mps", 60.0))
+        )
+        self.orb_depth_deskew_max_angular_speed_rps = max(
+            0.0, float(
+                orb_rgbd.get("depth_deskew_max_angular_speed_rps", 3.0)
+            )
+        )
         self.orb_depth_lock = threading.Lock()
         self.latest_lidar_depth: Optional[np.ndarray] = None
         self.latest_lidar_depth_stamp = rospy.Time(0)
         self.orb_depth_history = collections.deque(maxlen=32)
+        self.orb_sweep_history = collections.deque(maxlen=32)
         self.orb_pending_rgb = collections.deque()
+        self.orb_motion_lock = threading.Lock()
+        self.orb_previous_pose = None
+        self.orb_latest_motion = None
         self.last_orb_camera_stamp: Optional[float] = None
         self.last_orb_depth_stamp: Optional[float] = None
         self.bridge = CvBridge()
@@ -263,6 +325,14 @@ class E2OSensorAdapter:
         if self.enable_camera and self.enable_orb and source_depth_topic:
             rospy.Subscriber(source_depth_topic, Image,
                              lambda msg: self.route("depth", msg), queue_size=20)
+        if (self.enable_orb and self.orb_project_lidar_depth
+                and self.orb_depth_deskew_pose_topic):
+            rospy.Subscriber(
+                self.orb_depth_deskew_pose_topic,
+                PoseStamped,
+                self._update_orb_motion,
+                queue_size=20,
+            )
         rospy.Timer(rospy.Duration(0.01), self.timer_cb)
         rospy.loginfo("[E2OAdapter] raw topics -> lidar=%s imu=%s camera=%s orb_rgb=%s orb_depth=%s",
                       self.lidar_pub.resolved_name, self.imu_pub.resolved_name,
@@ -519,8 +589,12 @@ class E2OSensorAdapter:
         if self.enable_lvisam:
             self.publish_lvisam_lidar(msg)
         if self.enable_raw:
+            # Some estimators (FAST-LIO2) require offsets from scan start,
+            # while RTAB-Map natively supports signed offsets around the
+            # message stamp. Keep this branch selectable instead of silently
+            # changing the timestamp convention for every raw-cloud consumer.
             raw = (self._normalize_lvisam_point_time(msg)
-                   if self.normalize_negative_point_time else copy.deepcopy(msg))
+                   if self.normalize_raw_negative_point_time else copy.deepcopy(msg))
             raw.header.frame_id = self.lidar_frame
             self.raw_lidar_pub.publish(raw)
         if self.enable_fastlivo:
@@ -529,6 +603,129 @@ class E2OSensorAdapter:
             if self.require_ring and self._field(out, "ring") is None:
                 rospy.logerr_throttle(5.0, "[E2OAdapter] lidar ring field missing; FAST-LIVO2 scan-line processing may be invalid")
             self.lidar_pub.publish(out)
+
+    @staticmethod
+    def _quaternion_matrix_xyzw(values) -> np.ndarray:
+        x, y, z, w = np.asarray(values, dtype=float)
+        norm = float(np.linalg.norm([x, y, z, w]))
+        if not math.isfinite(norm) or norm <= 1.0e-12:
+            raise ValueError("invalid quaternion")
+        x, y, z, w = x / norm, y / norm, z / norm, w / norm
+        return np.asarray([
+            [1.0 - 2.0*(y*y + z*z), 2.0*(x*y - z*w), 2.0*(x*z + y*w)],
+            [2.0*(x*y + z*w), 1.0 - 2.0*(x*x + z*z), 2.0*(y*z - x*w)],
+            [2.0*(x*z - y*w), 2.0*(y*z + x*w), 1.0 - 2.0*(x*x + y*y)],
+        ], dtype=float)
+
+    def _update_orb_motion(self, msg: PoseStamped) -> None:
+        """Estimate a causal camera-frame twist from consecutive ORB poses."""
+        stamp = msg.header.stamp.to_sec()
+        position = np.asarray([
+            msg.pose.position.x,
+            msg.pose.position.y,
+            msg.pose.position.z,
+        ], dtype=float)
+        quaternion = np.asarray([
+            msg.pose.orientation.x,
+            msg.pose.orientation.y,
+            msg.pose.orientation.z,
+            msg.pose.orientation.w,
+        ], dtype=float)
+        if not math.isfinite(stamp) or not np.all(np.isfinite(position)):
+            return
+        try:
+            rotation = self._quaternion_matrix_xyzw(quaternion)
+        except ValueError:
+            return
+        with self.orb_motion_lock:
+            previous = self.orb_previous_pose
+            self.orb_previous_pose = (stamp, position, rotation)
+            if previous is None:
+                return
+            previous_stamp, previous_position, previous_rotation = previous
+            dt = stamp - previous_stamp
+            if dt <= 1.0e-3 or dt > 0.5:
+                return
+            linear_world = (position - previous_position) / dt
+            linear_camera = rotation.T @ linear_world
+            camera_from_previous = rotation.T @ previous_rotation
+            angular_camera = cv2.Rodrigues(camera_from_previous)[0].reshape(3) / dt
+            speed = float(np.linalg.norm(linear_camera))
+            angular_speed = float(np.linalg.norm(angular_camera))
+            if (
+                not np.all(np.isfinite(linear_camera))
+                or not np.all(np.isfinite(angular_camera))
+                or speed > self.orb_depth_deskew_max_speed_mps
+                or angular_speed > self.orb_depth_deskew_max_angular_speed_rps
+            ):
+                return
+            self.orb_latest_motion = (
+                stamp,
+                linear_camera.astype(np.float64),
+                angular_camera.astype(np.float64),
+            )
+
+    def _deskew_orb_camera_points(
+            self, xyz_camera: np.ndarray, acquisition_stamps: np.ndarray,
+            camera_stamp: float) -> np.ndarray:
+        """Transform lidar returns to one camera time using prior ORB motion."""
+        with self.orb_motion_lock:
+            motion = self.orb_latest_motion
+        if motion is None:
+            return xyz_camera
+        motion_stamp, linear_camera, angular_camera = motion
+        pose_age = camera_stamp - motion_stamp
+        if (
+            pose_age < 0.0
+            or pose_age > self.orb_depth_deskew_max_pose_age_sec
+        ):
+            return xyz_camera
+        deltas = camera_stamp - acquisition_stamps
+        bins = np.rint(deltas / self.orb_depth_deskew_bin_sec).astype(np.int32)
+        output = xyz_camera.copy()
+        for bin_id in np.unique(bins):
+            selected = bins == bin_id
+            delta = float(bin_id) * self.orb_depth_deskew_bin_sec
+            rotation = cv2.Rodrigues(angular_camera * delta)[0]
+            output[selected] = (
+                output[selected] @ rotation.T
+                - linear_camera.reshape(1, 3) * delta
+            )
+        return output
+
+    def _project_orb_camera_points(
+            self, xyz_camera: np.ndarray, width: int,
+            height: int) -> Tuple[np.ndarray, np.ndarray]:
+        depth = xyz_camera[:, 2]
+        valid = (
+            np.isfinite(depth)
+            & (depth >= self.orb_depth_min_m)
+            & (depth <= self.orb_depth_max_m)
+        )
+        xyz_camera = xyz_camera[valid]
+        depth = depth[valid]
+        if not len(depth):
+            return np.empty((0, 2), dtype=np.int32), np.empty(0, dtype=np.float32)
+        scale_x = width / float(self.camera_width)
+        scale_y = height / float(self.camera_height)
+        camera_matrix = np.asarray(
+            self.camera_k, dtype=np.float64
+        ).reshape(3, 3).copy()
+        camera_matrix[0, :] *= scale_x
+        camera_matrix[1, :] *= scale_y
+        pixels, _ = cv2.projectPoints(
+            xyz_camera.reshape(-1, 1, 3).astype(np.float64),
+            np.zeros(3, dtype=np.float64),
+            np.zeros(3, dtype=np.float64),
+            camera_matrix,
+            np.asarray(self.camera_d, dtype=np.float64),
+        )
+        pixels = np.rint(pixels.reshape(-1, 2)).astype(np.int32)
+        inside = (
+            (pixels[:, 0] >= 0) & (pixels[:, 0] < width)
+            & (pixels[:, 1] >= 0) & (pixels[:, 1] < height)
+        )
+        return pixels[inside], depth[inside].astype(np.float32)
 
     def _update_orb_lidar_depth(self, msg: PointCloud2) -> None:
         """Project calibrated LiDAR returns into ORB-SLAM3's RGB-D image."""
@@ -603,9 +800,38 @@ class E2OSensorAdapter:
         )
         if not inside.any():
             return
+        xyz_camera = xyz_camera[inside]
         pixels = pixels[inside]
         depth = depth[inside].astype(np.float32)
         point_offsets = point_offsets[inside]
+        if (
+            self.orb_depth_time_slice_sec <= 0.0
+            and self.orb_depth_deskew_pose_topic
+        ):
+            scan_stamp = msg.header.stamp.to_sec()
+            # Boreas stamps every LiDAR file at the scan midpoint and stores
+            # signed per-return acquisition offsets around that timestamp.
+            # The median offset depends on which returns survive the camera
+            # frustum/depth filters, so adding it here makes the nominal scan
+            # time drift with scene content and can select the wrong sweep for
+            # an RGB frame.  Keep the documented midpoint as the pairing time;
+            # the individual offsets below are used only for causal deskew.
+            sweep_stamp = scan_stamp
+            acquisition_stamps = scan_stamp + point_offsets
+            with self.orb_depth_lock:
+                self.orb_sweep_history.append((
+                    sweep_stamp,
+                    xyz_camera.copy(),
+                    acquisition_stamps.copy(),
+                ))
+                self.latest_lidar_depth_stamp = rospy.Time.from_sec(sweep_stamp)
+            self._flush_orb_rgbd(sweep_stamp)
+            rospy.loginfo_once(
+                "[E2OAdapter] projecting causal motion-deskewed complete "
+                "LiDAR sweeps into %dx%d ORB RGB-D depth",
+                width, height,
+            )
+            return
         if self.orb_depth_time_slice_sec > 0.0 and time_field is not None:
             slice_ids = np.rint(
                 point_offsets / self.orb_depth_time_slice_sec
@@ -619,10 +845,13 @@ class E2OSensorAdapter:
             depth_image = self._make_orb_depth_image(
                 pixels[selected], depth[selected], width, height
             )
-            slice_stamp = (
-                msg.header.stamp.to_sec()
-                + float(slice_id) * self.orb_depth_time_slice_sec
-            )
+            if self.orb_depth_time_slice_sec > 0.0:
+                slice_stamp = msg.header.stamp.to_sec() + float(
+                    np.median(point_offsets[selected])
+                )
+            else:
+                # A complete Boreas sweep is already stamped at its midpoint.
+                slice_stamp = msg.header.stamp.to_sec()
             slices.append((slice_stamp, depth_image))
         if not slices:
             return
@@ -634,28 +863,51 @@ class E2OSensorAdapter:
         self._flush_orb_rgbd(slices[-1][0])
         rospy.loginfo_once(
             "[E2OAdapter] projecting calibrated LiDAR into %dx%d ORB RGB-D "
-            "depth with %.3f s acquisition-time slices",
+            "depth with %.3f s acquisition-time slices (0 = complete "
+            "camera-visible sweep at its median acquisition time)",
             width, height, self.orb_depth_time_slice_sec,
         )
 
     def _make_orb_depth_image(self, pixels, depth, width, height):
         depth_image = np.full((height, width), np.inf, dtype=np.float32)
-        np.minimum.at(depth_image, (pixels[:, 1], pixels[:, 0]), depth)
-        if self.orb_depth_splat_px > 0:
-            measured = np.isfinite(depth_image)
-            distance, labels = cv2.distanceTransformWithLabels(
-                (~measured).astype(np.uint8),
-                cv2.DIST_L2,
-                cv2.DIST_MASK_PRECISE,
-                labelType=cv2.DIST_LABEL_PIXEL,
-            )
-            label_depth = np.zeros(int(labels.max()) + 1, dtype=np.float32)
-            label_depth[labels[measured]] = depth_image[measured]
-            supported = (
-                distance
-                <= math.sqrt(2.0) * self.orb_depth_splat_px + 1.0e-4
-            )
-            depth_image[supported] = label_depth[labels[supported]]
+        radius = self.orb_depth_splat_px
+        # Local Voronoi rasterization reproduces nearest-measured-pixel
+        # splatting without running a full-frame distance transform for every
+        # acquisition-time slice. Resolve equal-distance collisions by camera
+        # depth, but never let a nearer foreground return overwrite a pixel
+        # whose closest measured support is spatially nearer.
+        best_distance = np.full(width * height, np.iinfo(np.uint16).max,
+                                dtype=np.uint16)
+        flat_depth = depth_image.reshape(-1)
+        offsets_by_distance = collections.defaultdict(list)
+        for dv in range(-radius, radius + 1):
+            for du in range(-radius, radius + 1):
+                offsets_by_distance[du * du + dv * dv].append((du, dv))
+        for distance_squared in sorted(offsets_by_distance):
+            targets = []
+            values = []
+            for du, dv in offsets_by_distance[distance_squared]:
+                shifted_x = pixels[:, 0] + du
+                shifted_y = pixels[:, 1] + dv
+                valid = (
+                    (shifted_x >= 0) & (shifted_x < width)
+                    & (shifted_y >= 0) & (shifted_y < height)
+                )
+                if valid.any():
+                    targets.append(shifted_y[valid] * width + shifted_x[valid])
+                    values.append(depth[valid])
+            if not targets:
+                continue
+            targets = np.concatenate(targets)
+            values = np.concatenate(values)
+            unique_targets = np.unique(targets)
+            nearer = unique_targets[
+                best_distance[unique_targets] > distance_squared
+            ]
+            best_distance[nearer] = distance_squared
+            flat_depth[nearer] = np.inf
+            supported = best_distance[targets] == distance_squared
+            np.minimum.at(flat_depth, targets[supported], values[supported])
         depth_image[~np.isfinite(depth_image)] = 0.0
         return depth_image
 
@@ -848,30 +1100,74 @@ class E2OSensorAdapter:
         return self.resize_orb_image(image, target_size)
 
     def _flush_orb_rgbd(self, latest_lidar_stamp: Optional[float] = None) -> None:
-        """Publish camera frames only after LiDAR scans bracket their time."""
+        """Publish RGB-D after the complete camera-facing lidar sweep arrives."""
         ready = []
         with self.orb_depth_lock:
-            if not self.orb_depth_history:
+            use_raw_sweeps = bool(self.orb_sweep_history)
+            history = (
+                self.orb_sweep_history if use_raw_sweeps
+                else self.orb_depth_history
+            )
+            if not history:
                 return
             if latest_lidar_stamp is None:
-                latest_lidar_stamp = self.orb_depth_history[-1][0]
+                latest_lidar_stamp = history[-1][0]
             while self.orb_pending_rgb:
                 rgb = self.orb_pending_rgb[0]
                 camera_stamp = rgb.header.stamp.to_sec()
-                if camera_stamp > latest_lidar_stamp:
+                # Camera-visible returns span several time slices and may cross
+                # a lidar scan-file boundary. Wait for the forward side of the
+                # merge window instead of publishing a partial frustum.
+                if camera_stamp + self.orb_depth_pairing_wait_sec > latest_lidar_stamp:
                     break
                 self.orb_pending_rgb.popleft()
-                depth_stamp, depth = min(
-                    self.orb_depth_history,
-                    key=lambda item: abs(item[0] - camera_stamp),
+                nearest_items = sorted(
+                    history, key=lambda item: abs(item[0] - camera_stamp)
+                )[:self.orb_depth_sweep_count]
+                nearest = nearest_items[0]
+                if use_raw_sweeps:
+                    depth_stamp = nearest[0]
+                    xyz_camera = np.concatenate(
+                        [item[1] for item in nearest_items], axis=0
+                    )
+                    acquisition_stamps = np.concatenate(
+                        [item[2] for item in nearest_items], axis=0
+                    )
+                    ready.append((
+                        rgb, None, depth_stamp,
+                        xyz_camera.copy(), acquisition_stamps.copy(),
+                    ))
+                else:
+                    depth_stamp, depth = nearest
+                    contributors = [
+                        item_depth
+                        for item_stamp, item_depth in self.orb_depth_history
+                        if abs(item_stamp - camera_stamp)
+                        <= self.orb_depth_merge_window_sec
+                    ]
+                    if contributors:
+                        depth = np.minimum.reduce(contributors)
+                    ready.append((rgb, depth.copy(), depth_stamp, None, None))
+        for rgb, depth, source_stamp, xyz_camera, acquisition_stamps in ready:
+            if depth is None:
+                camera_stamp = rgb.header.stamp.to_sec()
+                xyz_camera = self._deskew_orb_camera_points(
+                    xyz_camera, acquisition_stamps, camera_stamp
                 )
-                ready.append((rgb, depth.copy(), depth_stamp))
-        for rgb, depth, source_stamp in ready:
+                pixels, depth_values = self._project_orb_camera_points(
+                    xyz_camera, rgb.width, rgb.height
+                )
+                if not len(depth_values):
+                    continue
+                depth = self._make_orb_depth_image(
+                    pixels, depth_values, rgb.width, rgb.height
+                )
             depth_msg = self.bridge.cv2_to_imgmsg(depth, encoding="32FC1")
             depth_msg.header = copy.deepcopy(rgb.header)
             depth_msg.header.frame_id = self.camera_frame
             self.orb_depth_pub.publish(depth_msg)
             self.orb_camera_pub.publish(rgb)
+            self.camera_info_pub.publish(self.make_camera_info(rgb))
             rospy.logdebug(
                 "[E2OAdapter] ORB RGB-D LiDAR/camera dt=%.6f s",
                 source_stamp - rgb.header.stamp.to_sec(),
@@ -883,12 +1179,52 @@ class E2OSensorAdapter:
         if target_size is None:
             return image
         target_width, target_height = target_size
-        if int(image.width) == target_width and int(image.height) == target_height:
+        if (int(image.width) == target_width and int(image.height) == target_height
+                and self.orb_clahe is None
+                and not self.orb_normalize_intensity):
             return image
         try:
             cv_image = self.bridge.imgmsg_to_cv2(image, desired_encoding="passthrough")
-            resized = cv2.resize(cv_image, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
-            out = self.bridge.cv2_to_imgmsg(resized, encoding=image.encoding)
+            if int(image.width) == target_width and int(image.height) == target_height:
+                resized = cv_image
+            else:
+                resized = cv2.resize(
+                    cv_image, (target_width, target_height),
+                    interpolation=cv2.INTER_LINEAR
+                )
+            if self.orb_clahe is not None or self.orb_normalize_intensity:
+                if resized.ndim == 3:
+                    resized = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+            if self.orb_max_saturated_fraction > 0.0:
+                saturation_fraction = float(
+                    np.count_nonzero(resized >= 251)
+                ) / float(resized.size)
+                if saturation_fraction > self.orb_max_saturated_fraction:
+                    rospy.logwarn_throttle(
+                        1.0,
+                        "[E2OAdapter] skipping ORB image with %.1f%% saturated pixels",
+                        100.0 * saturation_fraction,
+                    )
+                    return None
+            if self.orb_normalize_intensity:
+                mean, standard_deviation = cv2.meanStdDev(resized)
+                scale = self.orb_intensity_target_std / max(
+                    float(standard_deviation[0, 0]), 1.0
+                )
+                # Bound the linear exposure correction so it cannot amplify
+                # sensor noise or flatten normal frames. Unlike local CLAHE,
+                # this preserves the spatial intensity ordering used by ORB.
+                scale = min(2.0, max(0.5, scale))
+                offset = self.orb_intensity_target_mean - scale * float(mean[0, 0])
+                resized = np.clip(
+                    resized.astype(np.float32) * scale + offset, 0.0, 255.0
+                ).astype(np.uint8)
+            if self.orb_clahe is not None:
+                resized = self.orb_clahe.apply(resized)
+            if self.orb_clahe is not None or self.orb_normalize_intensity:
+                out = self.bridge.cv2_to_imgmsg(resized, encoding="mono8")
+            else:
+                out = self.bridge.cv2_to_imgmsg(resized, encoding=image.encoding)
         except (CvBridgeError, cv2.error) as exc:
             rospy.logerr_throttle(2.0, "[E2OAdapter] failed to resize ORB RGB image: %s", exc)
             return None
@@ -902,10 +1238,17 @@ class E2OSensorAdapter:
         info.height = image.height or self.camera_height
         info.distortion_model = self.camera_model
         info.D = self.camera_d
-        info.K = self.camera_k
+        scale_x = info.width / float(self.camera_width)
+        scale_y = info.height / float(self.camera_height)
+        camera_k = list(self.camera_k)
+        camera_k[0] *= scale_x
+        camera_k[2] *= scale_x
+        camera_k[4] *= scale_y
+        camera_k[5] *= scale_y
+        info.K = camera_k
         info.R = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
-        info.P = [self.camera_k[0], 0.0, self.camera_k[2], 0.0,
-                  0.0, self.camera_k[4], self.camera_k[5], 0.0,
+        info.P = [camera_k[0], 0.0, camera_k[2], 0.0,
+                  0.0, camera_k[4], camera_k[5], 0.0,
                   0.0, 0.0, 1.0, 0.0]
         return info
 

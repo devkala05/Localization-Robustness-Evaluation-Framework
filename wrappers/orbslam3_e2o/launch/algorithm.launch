@@ -10,6 +10,14 @@
   <arg name="live_path_topic" default="/orbslam3/live_camera_path"/>
   <arg name="camera_config" default="$(find orbslam3_e2o)/config/e2o_front_mono_orbslam3.yaml"/>
   <arg name="executable" default="$(optenv ORB_SLAM3_EXECUTABLE RGBD)"/>
+  <arg name="mask_top_fraction" default="0.0"/>
+  <arg name="mask_bottom_fraction" default="0.0"/>
+  <!-- The native RGB-D example is compiled with a public NodeHandle. Use
+       absolute names here because this top-level workspace launch is the
+       runner's authoritative file even when an included launch resolves from
+       the image's installed package copy. -->
+  <param name="/mask_top_fraction" value="$(arg mask_top_fraction)"/>
+  <param name="/mask_bottom_fraction" value="$(arg mask_bottom_fraction)"/>
   <arg name="max_step_m" default="1.25"/>
   <arg name="max_gap_step_m" default="3.0"/>
   <arg name="max_speed_mps" default="12.0"/>
@@ -24,6 +32,8 @@
   <include file="$(find orbslam3_e2o)/launch/native.launch">
     <arg name="camera_config" value="$(arg camera_config)"/>
     <arg name="executable" value="$(arg executable)"/>
+    <arg name="mask_top_fraction" value="$(arg mask_top_fraction)"/>
+    <arg name="mask_bottom_fraction" value="$(arg mask_bottom_fraction)"/>
   </include>
 
   <node name="orbslam3_pose_republisher" pkg="orbslam3_e2o"
