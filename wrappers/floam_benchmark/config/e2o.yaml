@@ -1,0 +1,15 @@
+relocalization: false
+gps_initialization: false
+useImuYaw: false
+use_actual_utm_no_offset: false
+scan_line: 16
+scan_period: 0.10
+vertical_angle: 15.0
+map_resolution: 0.25
+max_dis: 100.0
+min_dis: 0.5
+ndt_transform_epsilon: 0.01
+ndt_step_size: 0.1
+ndt_resolution: 0.1
+mapFileName: ""
+lidarPoseTopic: /floam/pose

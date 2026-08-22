@@ -219,6 +219,16 @@ Runs evaluate automatically on completion. To evaluate manually:
 ./evaluation/evaluate.sh data/output/<run_id> data/e2o/ground_truth/ref.csv
 ```
 
+## ALIVE weather and sensor perturbation campaign
+
+The reproducible rain, fog, and GNSS/IMU disturbance workflow for ALIVE
+`one_full_loop.bag` is documented in
+[`robustness/README.md`](robustness/README.md). It keeps that bag immutable,
+injects controlled raw-sensor effects live before each estimator, applies one
+fixed SE(3) reference evaluation, and creates RMSE/degradation/recovery tables
+plus shaded error-versus-time plots. Its analysis generator deliberately emits
+no robustness conclusions until all required trajectories are actually present.
+
 ---
 
 ## Static validation

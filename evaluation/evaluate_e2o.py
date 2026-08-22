@@ -30,9 +30,11 @@ def load_trajectory(path: Path) -> dict:
         reader = csv.DictReader(handle)
         for row in reader:
             try:
-                stamp_text = row.get("timestamp_s", "").strip()
+                stamp_text = str(row.get("timestamp_s", row.get("timestamp_sec", row.get("stamp", "")))).strip()
                 stamp = float(stamp_text) if stamp_text else float(row["timestamp_ns"]) * 1.0e-9
-                p = [float(row["x_m"]), float(row["y_m"]), float(row.get("z_m", 0.0) or 0.0)]
+                p = [float(row.get("x_m", row.get("x"))),
+                     float(row.get("y_m", row.get("y"))),
+                     float(row.get("z_m", row.get("z", 0.0)) or 0.0)]
                 q = np.asarray([
                     float(row.get("qx", 0.0) or 0.0), float(row.get("qy", 0.0) or 0.0),
                     float(row.get("qz", 0.0) or 0.0), float(row.get("qw", 1.0) or 1.0),

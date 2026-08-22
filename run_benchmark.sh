@@ -3,6 +3,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATASET=""; SEQUENCE=""; ALGORITHM=""; RATE=""; DURATION="0"; START_OFFSET="0"
+INPUT_OVERRIDE=""; GT_OVERRIDE=""; PERTURBATION_SCENARIO="baseline"
 PRE_ROLL=""
 PHASE="production"; RVIZ="false"
 BENCHMARK_ROS_MASTER_PORT="${BENCHMARK_ROS_MASTER_PORT:-11311}"
@@ -17,9 +18,10 @@ RTAB_ODOM_MODE=""
 
 usage() {
   printf '%s\n' \
-    'Usage: ./run_benchmark.sh --dataset urbanloco|boreas_rt --sequence NAME --algorithm NAME [options]' \
-    'Algorithms: lvisam fastlivo2 orbslam3 rtabmap fastlio2' \
+    'Usage: ./run_benchmark.sh --dataset urbanloco|boreas_rt|alive --sequence NAME --algorithm NAME [options]' \
+    'Algorithms: lvisam fastlivo2 floam orbslam3 rtabmap fastlio2' \
     'Options: --start-offset SECONDS --duration SECONDS --pre-roll SECONDS --rate FACTOR' \
+    '         --input-bag PATH --ground-truth PATH --scenario NAME' \
     '         --phase tuning|validation|holdout|production' \
     '         --orb-mode rgbd-inertial|rgbd|mono-inertial|mono' \
     '         --rtab-odom-mode rgbdicp|rgbd|icp' \
@@ -39,6 +41,9 @@ while (($#)); do
     --orb-mode) ORB_MODE="${2:-}"; shift 2 ;;
     --rtab-odom-mode) RTAB_ODOM_MODE="${2:-}"; shift 2 ;;
     --lvisam-mode) LVISAM_MODE="${2:-}"; shift 2 ;;
+    --input-bag) INPUT_OVERRIDE="${2:-}"; shift 2 ;;
+    --ground-truth) GT_OVERRIDE="${2:-}"; shift 2 ;;
+    --scenario) PERTURBATION_SCENARIO="${2:-}"; shift 2 ;;
     --rviz) RVIZ=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
@@ -54,6 +59,7 @@ if [[ -z "$RATE" ]]; then
     # accepted Tunnel stream. 0.25x prevents native FAST-LIVO2 input starvation
     # across all Boreas routes; sensor timestamps and estimator dt are unchanged.
     fastlivo2) RATE="0.25" ;;
+    floam) RATE="0.5" ;;
     lvisam) RATE="0.10" ;;
     rtabmap) RATE="0.07" ;;
     # Full-resolution feature extraction and local mapping must keep every
@@ -103,12 +109,35 @@ fi
 
 [[ "$DATASET" == "boreas" ]] && DATASET=boreas_rt
 case "$DATASET:$SEQUENCE" in
+  alive:one_full_loop)
+    [[ -n "$INPUT_OVERRIDE" ]] || {
+      printf 'ALIVE requires --input-bag PATH\n' >&2
+      exit 2
+    }
+    INPUT_KIND=bag
+    INPUT_HOST="$(realpath "$INPUT_OVERRIDE")"
+    SENSOR_CONFIG=/workspace/wrappers/localization_benchmark/config/e2o.yaml
+    LIDAR_TOPIC=/lidar103/velodyne_points; IMU_TOPIC=/mavros/imu/data
+    CAMERA_TOPIC=/camera/color/image_raw; DEPTH_TOPIC=/camera/depth/image_rect_raw
+    SEQUENCE_START_TIME=1723528213.157976
+    SEQUENCE_DURATION=308.506953
+    ORB_ROTATION='[-0.18256836,0.11110754,0.97689503,-0.98306216,-0.00440978,-0.18321936,-0.01604916,-0.99379861,0.11003070]'
+    ORB_TRANSLATION='[0.0,0.0,0.0]'
+    BASE_TO_LIDAR='[0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]'
+    # LVI-SAM's odometry wrapper consumes a homogeneous 4x4 sensor-to-body
+    # transform.  ALIVE currently uses coincident lidar/body frames, so this
+    # must be the full identity matrix (not a compact/partial transform).
+    LIDAR_TO_BODY='[1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0]'
+    CONFIG_STEM=e2o
+    SEQUENCE_ROUTE=FacultyLoop
+    STORAGE_SCOPE=complete_sequence
+    ;;
   urbanloco:ca_20190828184706)
     INPUT_KIND=bag
     INPUT_HOST="$ROOT/data/datasets/urbanloco/$SEQUENCE/CA-20190828184706_blur_align-002.bag"
     SENSOR_CONFIG=/workspace/wrappers/localization_benchmark/config/urbanloco_ca_20190828184706.yaml
     LIDAR_TOPIC=/rslidar_points; IMU_TOPIC=/imu_raw
-    CAMERA_TOPIC=/camera_array/cam0/image_raw/compressed
+    CAMERA_TOPIC=/camera_array/cam0/image_raw/compressed; DEPTH_TOPIC=""
     SEQUENCE_START_TIME=1567043229.035060
     SEQUENCE_DURATION=248.743
     ORB_ROTATION='[-0.999905182,-0.012990044,-0.004570194,0.004732473,-0.012489447,-0.999910805,0.012931806,-0.999837623,0.012549737]'
@@ -141,7 +170,7 @@ PY
     INPUT_HOST="$ROOT/data/datasets/boreas_rt/${BOREAS_META[0]}"
     SENSOR_CONFIG=/workspace/wrappers/localization_benchmark/config/boreas_2024_12_04_14_44.yaml
     CONFIG_STEM=boreas_2024_12_04_14_44
-    LIDAR_TOPIC=/dataset/lidar; IMU_TOPIC=/dataset/imu; CAMERA_TOPIC=/dataset/camera
+    LIDAR_TOPIC=/dataset/lidar; IMU_TOPIC=/dataset/imu; CAMERA_TOPIC=/dataset/camera; DEPTH_TOPIC=""
     # Acquisition-time origin and duration come from the sequence manifest.
     # Route-window manifests point at their selected absolute interval, so
     # playback/evaluation cannot shift when an algorithm enables fewer sensors.
@@ -210,6 +239,7 @@ fi
 
 case "$ALGORITHM" in
   fastlivo2) IMAGE=fastlivo2-e2o:latest; OUTPUT_TOPIC=/fast_livo2/odometry ;;
+  floam) IMAGE=floam-e2o:latest; OUTPUT_TOPIC=/floam/odometry ;;
   orbslam3) IMAGE=orbslam3-e2o:latest; OUTPUT_TOPIC=/orbslam3/camera_odometry ;;
   lvisam) IMAGE=lvisam-e2o:latest; OUTPUT_TOPIC=/lvisam/odometry ;;
   fastlio2) IMAGE=fastlio2-benchmark:latest; OUTPUT_TOPIC=/fastlio2/odometry ;;
@@ -224,6 +254,25 @@ case "$ALGORITHM" in
     ;;
   *) usage >&2; printf 'Unsupported algorithm: %s\n' "$ALGORITHM" >&2; exit 2 ;;
 esac
+
+# ALIVE robustness runs leave the rosbag immutable. The player emits the
+# original sensor topics, a live bridge injects only the configured interval,
+# and the existing adapter receives the bridge outputs under private topics.
+LIVE_PERTURBATION=false
+ADAPTER_LIDAR_TOPIC="$LIDAR_TOPIC"; ADAPTER_IMU_TOPIC="$IMU_TOPIC"
+ADAPTER_CAMERA_TOPIC="$CAMERA_TOPIC"; ADAPTER_DEPTH_TOPIC="$DEPTH_TOPIC"
+GPS_TOPIC=""
+if [[ "$DATASET" == alive && "$PERTURBATION_SCENARIO" != baseline ]]; then
+  case "$PERTURBATION_SCENARIO" in rain|fog|sensor_degradation) ;; *)
+    printf 'Unknown ALIVE perturbation scenario: %s\n' "$PERTURBATION_SCENARIO" >&2; exit 2 ;;
+  esac
+  LIVE_PERTURBATION=true
+  ADAPTER_LIDAR_TOPIC=/robustness/perturbed/lidar
+  ADAPTER_IMU_TOPIC=/robustness/perturbed/imu
+  ADAPTER_CAMERA_TOPIC=/robustness/perturbed/camera
+  ADAPTER_DEPTH_TOPIC=/robustness/perturbed/depth
+  GPS_TOPIC=/mavros/global_position/global
+fi
 if [[ "$ALGORITHM" != orbslam3 ]]; then
   ALIGNMENT_REASON="native metric estimator; sensor calibration makes scale observable"
 fi
@@ -256,6 +305,8 @@ case "$ALGORITHM" in
     [[ "$ORB_MODE" == mono-inertial || "$ORB_MODE" == rgbd-inertial ]] && NEED_IMU=true ;;
   fastlio2)
     NEED_LIDAR=true; NEED_IMU=true; ENABLE_RAW=true ;;
+  floam)
+    NEED_LIDAR=true; ENABLE_RAW=true ;;
   rtabmap)
     NEED_LIDAR=true; NEED_IMU=true; ENABLE_RAW=true
     # Boreas timestamps each LiDAR file at scan midpoint and RTAB-Map accepts
@@ -278,10 +329,11 @@ for required_image in e2o-localization-fusion:latest "$IMAGE"; do
   }
 done
 
-RUN_ID="$(date +%Y%m%d_%H%M%S)_${DATASET}_${SEQUENCE}_${ALGORITHM}_$$"
+RUN_ID="${BENCHMARK_RUN_ID:-$(date +%Y%m%d_%H%M%S)_${DATASET}_${SEQUENCE}_${ALGORITHM}_$$}"
 OUT_HOST="$ROOT/results/$DATASET/$SEQUENCE/$ALGORITHM/$RUN_ID"
 OUT_CONTAINER="/data/output/$RUN_ID"
 STACK="public_loc_$RUN_ID"
+[[ ! -e "$OUT_HOST" ]] || { printf 'Run output already exists: %s\n' "$OUT_HOST" >&2; exit 2; }
 mkdir -p "$OUT_HOST"
 CONTAINERS=()
 COMMON=(--network host
@@ -318,29 +370,52 @@ printf 'playback_start_offset=%s\nplayback_duration=%s\nevaluation_start_offset=
 printf 'sequence_start_time=%s\n' "$SEQUENCE_START_TIME" >>"$OUT_HOST/run_metadata.env"
 printf 'sequence_duration=%s\n' "$SEQUENCE_DURATION" >>"$OUT_HOST/run_metadata.env"
 printf 'route=%s\nstorage_scope=%s\n' "$SEQUENCE_ROUTE" "$STORAGE_SCOPE" >>"$OUT_HOST/run_metadata.env"
+printf 'perturbation_scenario=%s\ninput_bag=%s\nground_truth=%s\n' \
+  "$PERTURBATION_SCENARIO" "$INPUT_HOST" "${GT_OVERRIDE:-auto}" >>"$OUT_HOST/run_metadata.env"
 printf 'ros_master_port=%s\n' "$BENCHMARK_ROS_MASTER_PORT" >>"$OUT_HOST/run_metadata.env"
 printf 'orb_mode=%s\nrtab_odom_mode=%s\nlvisam_mode=%s\n' \
   "$ORB_MODE" "$RTAB_ODOM_MODE" "$LVISAM_MODE" >>"$OUT_HOST/run_metadata.env"
-printf './run_benchmark.sh --dataset %q --sequence %q --algorithm %q --rate %q --start-offset %q --duration %q --phase %q --orb-mode %q --rtab-odom-mode %q --lvisam-mode %q%s%s\n' \
-  "$DATASET" "$SEQUENCE" "$ALGORITHM" "$RATE" "$START_OFFSET" "$DURATION" "$PHASE" "$ORB_MODE" "$RTAB_ODOM_MODE" "$LVISAM_MODE" "$([[ -n "$PRE_ROLL" ]] && printf ' --pre-roll %q' "$PRE_ROLL")" "$([[ "$RVIZ" == true ]] && printf ' --rviz')" \
-  >"$OUT_HOST/reproduction_command.txt"
+if [[ "$DATASET" == alive ]]; then
+  printf './run_benchmark.sh --dataset %q --sequence %q --algorithm %q --input-bag %q --ground-truth %q --scenario %q --rate %q --start-offset %q --duration %q --phase %q --orb-mode %q --rtab-odom-mode %q --lvisam-mode %q%s\n' \
+    "$DATASET" "$SEQUENCE" "$ALGORITHM" "$INPUT_HOST" "$GT_OVERRIDE" "$PERTURBATION_SCENARIO" \
+    "$RATE" "$START_OFFSET" "$DURATION" "$PHASE" "$ORB_MODE" "$RTAB_ODOM_MODE" "$LVISAM_MODE" \
+    "$([[ "$RVIZ" == true ]] && printf ' --rviz')" >"$OUT_HOST/reproduction_command.txt"
+else
+  printf './run_benchmark.sh --dataset %q --sequence %q --algorithm %q --rate %q --start-offset %q --duration %q --phase %q --orb-mode %q --rtab-odom-mode %q --lvisam-mode %q%s%s\n' \
+    "$DATASET" "$SEQUENCE" "$ALGORITHM" "$RATE" "$START_OFFSET" "$DURATION" "$PHASE" "$ORB_MODE" "$RTAB_ODOM_MODE" "$LVISAM_MODE" "$([[ -n "$PRE_ROLL" ]] && printf ' --pre-roll %q' "$PRE_ROLL")" "$([[ "$RVIZ" == true ]] && printf ' --rviz')" \
+    >"$OUT_HOST/reproduction_command.txt"
+fi
 docker image inspect -f '{{.Id}}' "$IMAGE" >"$OUT_HOST/docker_image_id.txt"
 cp "$ROOT/wrappers/localization_benchmark/config/${CONFIG_STEM}.yaml" "$OUT_HOST/sensor_adapter.yaml"
 
 start roscore e2o-localization-fusion:latest roscore -p "$BENCHMARK_ROS_MASTER_PORT"
 sleep 2
 INPUT_COMMAND='for f in e2o_sensor_adapter.py e2o_static_tf_publisher.py; do cp "/workspace/wrappers/localization_benchmark/scripts/${f}" "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}"; chmod +x "/root/catkin_ws/devel/.private/localization_benchmark/lib/localization_benchmark/${f}"; done; source /opt/ros/noetic/setup.bash; source /root/catkin_ws/devel/setup.bash; export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH}; rospack profile >/dev/null; exec roslaunch /workspace/wrappers/localization_benchmark/launch/dataset_input_pipeline.launch "$@"'
-start input e2o-localization-fusion:latest bash -lc "$INPUT_COMMAND" _ config:="$SENSOR_CONFIG" source_lidar_topic:="$LIDAR_TOPIC" source_imu_topic:="$IMU_TOPIC" source_camera_topic:="$CAMERA_TOPIC" source_depth_topic:="" \
+start input e2o-localization-fusion:latest bash -lc "$INPUT_COMMAND" _ config:="$SENSOR_CONFIG" source_lidar_topic:="$ADAPTER_LIDAR_TOPIC" source_imu_topic:="$ADAPTER_IMU_TOPIC" source_camera_topic:="$ADAPTER_CAMERA_TOPIC" source_depth_topic:="$ADAPTER_DEPTH_TOPIC" \
   enable_lidar:="$NEED_LIDAR" enable_imu:="$NEED_IMU" enable_camera:="$NEED_CAMERA" \
   enable_fastlivo:="$ENABLE_FASTLIVO" enable_orb:="$ENABLE_ORB" \
   enable_lvisam:="$ENABLE_LVISAM" enable_raw:="$ENABLE_RAW" \
   normalize_raw_negative_point_time:="$NORMALIZE_RAW_NEGATIVE_POINT_TIME" \
   orb_mode:="$ORB_MODE"
 
+if [[ "$LIVE_PERTURBATION" == true ]]; then
+  PERTURB_COMMAND='source /opt/ros/noetic/setup.bash; exec python3 /workspace/robustness/scripts/live_perturbation_node.py "$@"'
+  start perturbation e2o-localization-fusion:latest bash -lc "$PERTURB_COMMAND" _ \
+    _config:=/workspace/robustness/config/alive_perturbations.yaml _scenario:="$PERTURBATION_SCENARIO" \
+    _bag_start_time_s:="$SEQUENCE_START_TIME" \
+    _lidar_input_topic:="$LIDAR_TOPIC" _lidar_output_topic:="$ADAPTER_LIDAR_TOPIC" \
+    _imu_input_topic:="$IMU_TOPIC" _imu_output_topic:="$ADAPTER_IMU_TOPIC" \
+    _camera_input_topic:="$CAMERA_TOPIC" _camera_output_topic:="$ADAPTER_CAMERA_TOPIC" \
+    _depth_input_topic:="$DEPTH_TOPIC" _depth_output_topic:="$ADAPTER_DEPTH_TOPIC" \
+    _gps_input_topic:="$GPS_TOPIC" _gps_output_topic:=/robustness/perturbed/gps
+fi
+
 case "$ALGORITHM" in
   fastlivo2)
-    CONFIG="/workspace/wrappers/fast_livo2_e2o/config/${CONFIG_STEM}.yaml"
-    [[ "$DATASET" == urbanloco ]] && SCAN_LINES=32 || SCAN_LINES=128
+    [[ "$DATASET" == alive ]] \
+      && CONFIG="/workspace/wrappers/fast_livo2_e2o/config/fast_livo2_e2o.yaml" \
+      || CONFIG="/workspace/wrappers/fast_livo2_e2o/config/${CONFIG_STEM}.yaml"
+    case "$DATASET" in alive) SCAN_LINES=16 ;; urbanloco) SCAN_LINES=32 ;; *) SCAN_LINES=128 ;; esac
     COMMAND='source /opt/ros/noetic/setup.bash; source /root/catkin_ws/devel/setup.bash; export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH}; exec roslaunch /workspace/wrappers/fast_livo2_e2o/launch/algorithm.launch "$@"'
     start algorithm "$IMAGE" bash -lc "$COMMAND" _ config_path:="$CONFIG" output_topic:="$OUTPUT_TOPIC" pcd_save_en:=false img_en:="$FASTLIVO_IMG_EN" scan_line:="$SCAN_LINES" rebase_on_start:=false
     ;;
@@ -357,7 +432,9 @@ case "$ALGORITHM" in
     cp "${CAMERA_CONFIG/\/workspace/$ROOT}" "$OUT_HOST/camera_config.yaml"
     ;;
   orbslam3)
-    CONFIG="/workspace/wrappers/orbslam3_e2o/config/${CONFIG_STEM}.yaml"
+    [[ "$DATASET" == alive ]] \
+      && CONFIG="/workspace/wrappers/orbslam3_e2o/config/e2o_front_mono_orbslam3.yaml" \
+      || CONFIG="/workspace/wrappers/orbslam3_e2o/config/${CONFIG_STEM}.yaml"
     COMMAND='for f in pose_republisher_node.py run_orbslam3_native.py; do cp "/workspace/wrappers/orbslam3_e2o/scripts/${f}" "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}"; chmod +x "/root/catkin_ws/devel/.private/orbslam3_e2o/lib/orbslam3_e2o/${f}"; done; source /opt/ros/noetic/setup.bash; source /root/catkin_ws/devel/setup.bash; export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH}; exec roslaunch /workspace/wrappers/orbslam3_e2o/launch/algorithm.launch "$@"'
     # Public-dataset evaluation records the native metric trajectory. Disable
     # the E2O continuity/re-anchor policy so real motion, resets, and jumps are
@@ -404,6 +481,14 @@ case "$ALGORITHM" in
     CONFIG="/workspace/wrappers/fastlio2_benchmark/config/${CONFIG_STEM}.yaml"
     COMMAND='source /opt/ros/noetic/setup.bash; source /root/catkin_ws/devel/setup.bash; export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH}; exec roslaunch /workspace/wrappers/fastlio2_benchmark/launch/algorithm.launch "$@"'
     start algorithm "$IMAGE" bash -lc "$COMMAND" _ config:="$CONFIG" output_topic:="$OUTPUT_TOPIC"
+    ;;
+  floam)
+    CONFIG="/workspace/wrappers/floam_benchmark/config/${CONFIG_STEM}.yaml"
+    [[ "$DATASET" == alive ]] && FLOAM_FILTER_RINGS=false || FLOAM_FILTER_RINGS=true
+    COMMAND='source /opt/ros/noetic/setup.bash; source /root/catkin_ws/devel/setup.bash; export ROS_PACKAGE_PATH=/workspace/wrappers:${ROS_PACKAGE_PATH}; rospack profile >/dev/null; exec roslaunch /workspace/wrappers/floam_benchmark/launch/algorithm.launch "$@"'
+    start algorithm "$IMAGE" bash -lc "$COMMAND" _ config:="$CONFIG" \
+      lidar_topic:=/benchmark/points_raw base_to_lidar:="$BASE_TO_LIDAR" \
+      filter_rings:="$FLOAM_FILTER_RINGS"
     ;;
   rtabmap)
     CONFIG="/workspace/wrappers/rtabmap_benchmark/config/${CONFIG_STEM}.yaml"
@@ -455,8 +540,11 @@ if [[ "$INPUT_KIND" == bag ]]; then
   docker run --name "${STACK}_player" "${COMMON[@]}" -v "$(dirname "$INPUT_HOST"):/bags:ro" e2o-localization-fusion:latest \
     bash -lc "$PLAYER_COMMAND" _ bag_path:="/bags/$(basename "$INPUT_HOST")" rate:="$RATE" \
     start_offset:="$PLAYBACK_START" duration:="$PLAYBACK_DURATION" \
-    lidar_topic:="$LIDAR_TOPIC" imu_topic:="$IMU_TOPIC" camera_topic:="$CAMERA_TOPIC" \
+    lidar_topic:="$LIDAR_TOPIC" imu_topic:="$IMU_TOPIC" camera_topic:="$CAMERA_TOPIC" depth_topic:="$DEPTH_TOPIC" gps_topic:="$GPS_TOPIC" \
     enable_lidar:="$NEED_LIDAR" enable_imu:="$NEED_IMU" enable_camera:="$NEED_CAMERA" \
+    enable_depth:="$([[ "$NEED_CAMERA" == true && -n "$DEPTH_TOPIC" ]] && printf true || printf false)" \
+    enable_gps:="$([[ "$LIVE_PERTURBATION" == true && "$PERTURBATION_SCENARIO" == sensor_degradation ]] && printf true || printf false)" \
+    restamp_camera:="$([[ "$DATASET" == urbanloco ]] && printf true || printf false)" \
     2>&1 | tee "$OUT_HOST/player.log" || PLAYER_EXIT=$?
   CONTAINERS+=("${STACK}_player")
 else
@@ -520,7 +608,8 @@ printf '{"status":"%s","reason":"%s","player_exit":%d,"trajectory_poses":%d}\n' 
 
 QUALITY_STATUS=not_evaluated
 if [[ "$STATUS" == completed ]]; then
-  if [[ "$INPUT_KIND" == bag ]]; then GT="$(dirname "$INPUT_HOST")/ground_truth.csv"; else GT="$INPUT_HOST/ground_truth.csv"; fi
+  if [[ -n "$GT_OVERRIDE" ]]; then GT="$(realpath "$GT_OVERRIDE")";
+  elif [[ "$INPUT_KIND" == bag ]]; then GT="$(dirname "$INPUT_HOST")/ground_truth.csv"; else GT="$INPUT_HOST/ground_truth.csv"; fi
   if [[ -f "$GT" ]]; then
     if python3 "$ROOT/evaluation/evaluate_public.py" --run-dir "$OUT_HOST" --gt "$GT" \
       --trajectory "$TRAJECTORY" --algorithm "$ALGORITHM" --alignment "$ALIGNMENT" \

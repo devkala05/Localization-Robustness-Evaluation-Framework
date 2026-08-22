@@ -1,0 +1,5 @@
+scenario	algorithm	run_id	status	run_directory
+baseline	lvisam	20260821_132000_baseline_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260821_132000_baseline_lvisam
+rain	lvisam	20260821_132000_rain_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260821_132000_rain_lvisam
+fog	lvisam	20260821_132000_fog_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260821_132000_fog_lvisam
+sensor_degradation	lvisam	20260821_132000_sensor_degradation_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260821_132000_sensor_degradation_lvisam

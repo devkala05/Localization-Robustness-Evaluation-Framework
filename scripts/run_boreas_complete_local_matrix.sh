@@ -11,7 +11,7 @@ SEQUENCES=(
   boreas_2025_07_18_11_53_forest_complete_local
   boreas_2025_08_06_06_33_urban_complete_local
 )
-ALGORITHMS=(fastlio2 fastlivo2 lvisam orbslam3 rtabmap)
+ALGORITHMS=(fastlio2 fastlivo2 lvisam floam orbslam3 rtabmap)
 
 if (($#)); then SEQUENCES=("$@"); fi
 

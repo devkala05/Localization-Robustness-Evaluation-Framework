@@ -6,9 +6,19 @@
   <arg name="lidar_topic" default="/rslidar_points"/>
   <arg name="imu_topic" default="/imu_raw"/>
   <arg name="camera_topic" default="/camera_array/cam0/image_raw/compressed"/>
+  <arg name="depth_topic" default=""/>
+  <arg name="gps_topic" default=""/>
+  <arg name="lidar_output_topic" default=""/>
+  <arg name="imu_output_topic" default=""/>
+  <arg name="camera_output_topic" default=""/>
+  <arg name="depth_output_topic" default=""/>
+  <arg name="gps_output_topic" default=""/>
   <arg name="enable_lidar" default="true"/>
   <arg name="enable_imu" default="true"/>
   <arg name="enable_camera" default="true"/>
+  <arg name="enable_depth" default="false"/>
+  <arg name="enable_gps" default="false"/>
+  <arg name="restamp_camera" default="true"/>
   <param name="use_sim_time" value="true"/>
   <node pkg="localization_benchmark" type="urban_bag_player.py"
         name="urban_bag_player" output="screen" required="true">
@@ -19,8 +29,18 @@
     <param name="lidar_topic" value="$(arg lidar_topic)"/>
     <param name="imu_topic" value="$(arg imu_topic)"/>
     <param name="camera_topic" value="$(arg camera_topic)"/>
+    <param name="depth_topic" value="$(arg depth_topic)"/>
+    <param name="gps_topic" value="$(arg gps_topic)"/>
+    <param name="lidar_output_topic" value="$(arg lidar_output_topic)"/>
+    <param name="imu_output_topic" value="$(arg imu_output_topic)"/>
+    <param name="camera_output_topic" value="$(arg camera_output_topic)"/>
+    <param name="depth_output_topic" value="$(arg depth_output_topic)"/>
+    <param name="gps_output_topic" value="$(arg gps_output_topic)"/>
     <param name="enable_lidar" value="$(arg enable_lidar)"/>
     <param name="enable_imu" value="$(arg enable_imu)"/>
     <param name="enable_camera" value="$(arg enable_camera)"/>
+    <param name="enable_depth" value="$(arg enable_depth)"/>
+    <param name="enable_gps" value="$(arg enable_gps)"/>
+    <param name="restamp_camera" value="$(arg restamp_camera)"/>
   </node>
 </launch>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>floam_benchmark</name>
+  <version>0.1.0</version>
+  <description>Dataset-neutral FLOAM odometry launch for public benchmarks.</description>
+  <maintainer email="benchmark@example.invalid">Localization Benchmark</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>floam</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+</package>

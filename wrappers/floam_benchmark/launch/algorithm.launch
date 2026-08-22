@@ -1,0 +1,33 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+  <arg name="config"/>
+  <arg name="lidar_topic" default="/benchmark/points_raw"/>
+  <arg name="base_to_lidar"/>
+  <arg name="filter_rings" default="true"/>
+
+  <rosparam command="load" file="$(arg config)"/>
+  <node pkg="floam_benchmark" type="rewrite_cloud_frame.py"
+        name="floam_cloud_frame_adapter" output="screen" required="true">
+    <param name="input_topic" value="$(arg lidar_topic)"/>
+    <param name="output_topic" value="/floam/points_raw"/>
+    <param name="frame_id" value="base_link"/>
+    <param name="filter_rings" value="$(arg filter_rings)"/>
+  </node>
+  <!-- FLOAM's feature extractor computes scan-line elevation after its own
+       transform to base_link.  Preserve native LiDAR coordinates and rewrite
+       only the frame label so that internal lookup is the identity transform. -->
+  <param name="lidarTopic" value="/floam/points_raw"/>
+
+  <node pkg="floam" type="floam_odom_estimation_node"
+        name="floam_odom_estimation_node" output="screen" required="true">
+    <rosparam command="load" file="$(find floam)/resources/floam_odometry_params.yaml"/>
+  </node>
+  <node pkg="floam" type="floam_laser_processing_node"
+        name="floam_laser_processing_node" output="screen" required="true"/>
+  <node pkg="floam_benchmark" type="convert_lidar_odometry.py"
+        name="floam_lidar_to_base_odometry" output="screen" required="true">
+    <param name="input_topic" value="/odom"/>
+    <param name="output_topic" value="/floam/odometry"/>
+    <rosparam param="base_to_lidar" subst_value="true">$(arg base_to_lidar)</rosparam>
+  </node>
+</launch>
