@@ -162,6 +162,15 @@ def degradation(value: Optional[float], baseline: Optional[float]) -> Optional[f
     return 100.0 * (value - baseline) / baseline
 
 
+def percent(value: Optional[float]) -> str:
+    """Avoid misleading '-0.0%' after rounding small measured changes."""
+    if value is None:
+        return "N/A"
+    if abs(value) < 0.05:
+        return f"{value:+.2f}%"
+    return f"{value:+.1f}%"
+
+
 def fmt(value: Optional[float], suffix: str = "") -> str:
     return "N/A" if value is None or not math.isfinite(value) else f"{value:.3f}{suffix}"
 
@@ -223,8 +232,8 @@ def make_analysis(all_metrics: dict) -> str:
     lines = ["# Research Analysis", "",
              "All statements below are generated only from valid campaign artifacts. Results are one replay per condition; a negative change is reported as a score difference, not an improvement claim.", "",
              "## Overall robustness", "",
-             f"Among systems without a configured localization failure, **{DISPLAY_ALGORITHMS[most_stable]}** has the smallest worst-case relative 3D-RMSE change ({worst_change[most_stable]:+.1f}%). "
-             f"**{DISPLAY_ALGORITHMS[best_baseline]}** has the lowest clean-baseline 3D RMSE ({all_metrics[best_baseline]['baseline']['overall_rmse_m']:.3f} m), but its worst perturbation increase is {worst_change[best_baseline]:+.1f}%.", ""]
+             f"Among systems without a configured localization failure, **{DISPLAY_ALGORITHMS[most_stable]}** has the smallest worst-case relative 3D-RMSE change ({percent(worst_change[most_stable])}). "
+             f"**{DISPLAY_ALGORITHMS[best_baseline]}** has the lowest clean-baseline 3D RMSE ({all_metrics[best_baseline]['baseline']['overall_rmse_m']:.3f} m), but its worst perturbation increase is {percent(worst_change[best_baseline])}.", ""]
     if failed:
         lines += [f"**{', '.join(DISPLAY_ALGORITHMS[a] for a in failed)}** is excluded from the robustness ranking: the configured failure/dropout criterion was triggered in every condition, and recovery was not detected. Its RMSE values remain reported as failure evidence, not as a robustness win.", ""]
     for scenario in SCENARIOS[1:]:
@@ -234,8 +243,8 @@ def make_analysis(all_metrics: dict) -> str:
         least = min(changes, key=changes.get)
         most = max(changes, key=changes.get)
         lines += [f"## {DISPLAY_SCENARIOS[scenario]}", "",
-                  f"Smallest score change among operational systems: **{DISPLAY_ALGORITHMS[least]}** ({changes[least]:+.1f}%). "
-                  f"Largest increase: **{DISPLAY_ALGORITHMS[most]}** ({changes[most]:+.1f}%).", ""]
+                  f"Smallest score change among operational systems: **{DISPLAY_ALGORITHMS[least]}** ({percent(changes[least])}). "
+                  f"Largest increase: **{DISPLAY_ALGORITHMS[most]}** ({percent(changes[most])}).", ""]
     lines += ["## Sensor dependency and recovery", ""]
     for algorithm in DISPLAY_ALGORITHMS:
         recovery = ", ".join(
@@ -320,7 +329,7 @@ def main() -> int:
                 f"{fmt(item.get('y_rmse_m'))} | {fmt(item.get('z_rmse_m'))} | "
                 f"{fmt(item.get('xy_rmse_m'))} | {fmt(item.get('overall_rmse_m'))} | "
                 f"{fmt(item.get('yaw_rmse_deg'))} | {fmt(item.get('maximum_trajectory_error_m'))} | "
-                f"{('—' if scenario == 'baseline' else ('N/A' if change is None else f'{change:+.1f}%'))} | "
+                f"{('—' if scenario == 'baseline' else percent(change))} | "
                 f"{('YES' if item.get('localization_failure') else 'no') if item.get('valid') else 'N/A'} | "
                 f"{('N/A' if recovery is None else f'{recovery:.2f} s')} |"
             )
@@ -328,8 +337,8 @@ def main() -> int:
     (args.output / "detailed_tables.md").write_text("\n".join(detailed), encoding="utf-8")
     table = ["# ALIVE Robustness Comparison", "",
              "Values are 3D RMSE in metres; parentheses give change relative to the clean baseline.", "",
-             "| Algorithm | Baseline | Rain | Fog | Sensor Degradation | Worst % degradation |",
-             "|---|---:|---:|---:|---:|---:|"]
+             "| Algorithm | Baseline | Rain | Fog | Sensor Degradation |",
+             "|---|---:|---:|---:|---:|"]
     for algorithm in config["algorithms"]:
         values = all_metrics[algorithm]
         cells = [fmt(values["baseline"].get("overall_rmse_m"))]
@@ -338,10 +347,11 @@ def main() -> int:
             value = values[scenario].get("overall_rmse_m")
             change = values[scenario].get("overall_rmse_degradation_percent")
             changes.append(change)
-            cells.append("N/A" if value is None else f"{value:.3f} ({change:+.1f}%)")
-        finite_changes = [value for value in changes if value is not None]
-        table.append(f"| {DISPLAY_ALGORITHMS[algorithm]} | {' | '.join(cells)} | " +
-                     (f"{max(finite_changes):+.1f}% |" if finite_changes else "N/A |"))
+            if value is None:
+                cells.append("N/A")
+            else:
+                cells.append(f"{value:.3f} ({percent(change)})")
+        table.append(f"| {DISPLAY_ALGORITHMS[algorithm]} | {' | '.join(cells)} |")
     (args.output / "comparison_table.md").write_text("\n".join(table) + "\n", encoding="utf-8")
     (args.output / "research_analysis.md").write_text(make_analysis(all_metrics), encoding="utf-8")
     print(args.output)

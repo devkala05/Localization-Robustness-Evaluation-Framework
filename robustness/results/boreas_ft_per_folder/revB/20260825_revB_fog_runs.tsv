@@ -1,0 +1,7 @@
+scenario	algorithm	run_id	status	run_directory
+fog	fastlivo2	20260825_revB_fog_fog_fastlivo2	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/fastlivo2/20260825_revB_fog_fog_fastlivo2
+fog	fastlio2	20260825_revB_fog_fog_fastlio2	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/fastlio2/20260825_revB_fog_fog_fastlio2
+fog	lvisam	20260825_revB_fog_fog_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260825_revB_fog_fog_lvisam
+fog	floam	20260825_revB_fog_fog_floam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/floam/20260825_revB_fog_fog_floam
+fog	orbslam3	20260825_revB_fog_fog_orbslam3	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/orbslam3/20260825_revB_fog_fog_orbslam3
+fog	rtabmap	20260825_revB_fog_fog_rtabmap	requires_review	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/rtabmap/20260825_revB_fog_fog_rtabmap

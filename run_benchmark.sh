@@ -267,6 +267,12 @@ if [[ "$DATASET" == alive && "$PERTURBATION_SCENARIO" != baseline ]]; then
     printf 'Unknown ALIVE perturbation scenario: %s\n' "$PERTURBATION_SCENARIO" >&2; exit 2 ;;
   esac
   LIVE_PERTURBATION=true
+  LIVE_PERTURBATION_CONFIG="${PERTURBATION_CONFIG:-$ROOT/robustness/config/alive_perturbations.yaml}"
+  [[ -f "$LIVE_PERTURBATION_CONFIG" ]] || {
+    printf 'Missing live perturbation config: %s\n' "$LIVE_PERTURBATION_CONFIG" >&2
+    exit 2
+  }
+  LIVE_PERTURBATION_CONFIG_CONTAINER="/workspace/${LIVE_PERTURBATION_CONFIG#"$ROOT/"}"
   ADAPTER_LIDAR_TOPIC=/robustness/perturbed/lidar
   ADAPTER_IMU_TOPIC=/robustness/perturbed/imu
   ADAPTER_CAMERA_TOPIC=/robustness/perturbed/camera
@@ -401,7 +407,7 @@ start input e2o-localization-fusion:latest bash -lc "$INPUT_COMMAND" _ config:="
 if [[ "$LIVE_PERTURBATION" == true ]]; then
   PERTURB_COMMAND='source /opt/ros/noetic/setup.bash; exec python3 /workspace/robustness/scripts/live_perturbation_node.py "$@"'
   start perturbation e2o-localization-fusion:latest bash -lc "$PERTURB_COMMAND" _ \
-    _config:=/workspace/robustness/config/alive_perturbations.yaml _scenario:="$PERTURBATION_SCENARIO" \
+    _config:="$LIVE_PERTURBATION_CONFIG_CONTAINER" _scenario:="$PERTURBATION_SCENARIO" \
     _bag_start_time_s:="$SEQUENCE_START_TIME" \
     _lidar_input_topic:="$LIDAR_TOPIC" _lidar_output_topic:="$ADAPTER_LIDAR_TOPIC" \
     _imu_input_topic:="$IMU_TOPIC" _imu_output_topic:="$ADAPTER_IMU_TOPIC" \

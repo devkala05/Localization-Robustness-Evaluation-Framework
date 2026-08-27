@@ -33,12 +33,23 @@ class LivePerturbation:
             ("lidar", "camera", "depth", "gps", "imu"), child_seeds)}
         self.imu = ImuPerturber(self.scenario.get("imu", {}), self.severity, self.rng["imu"])
         self.publishers = {}
+        self.stats = {name: {"input": 0, "active": 0, "input_points": 0,
+                             "output_points": 0, "dropped": 0} for name in
+                      ("lidar", "camera", "depth", "gps", "imu")}
         self._wire("lidar", PointCloud2, self.lidar_callback)
         self._wire("camera", Image, self.camera_callback)
         self._wire("depth", Image, self.depth_callback)
         self._wire("gps", NavSatFix, self.gps_callback)
         self._wire("imu", Imu, self.imu_callback)
         rospy.loginfo("[live_perturbation] scenario=%s interval=[%.3f, %.3f]", self.scenario_name, self.start, self.end)
+        rospy.on_shutdown(self.report_stats)
+
+    def report_stats(self) -> None:
+        for name, values in self.stats.items():
+            if values["input"]:
+                rospy.loginfo("[live_perturbation] stats %s input=%d active=%d input_points=%d output_points=%d dropped=%d",
+                              name, values["input"], values["active"], values["input_points"],
+                              values["output_points"], values["dropped"])
 
     def _wire(self, name, message_type, callback) -> None:
         source = str(rospy.get_param(f"~{name}_input_topic", ""))
@@ -56,35 +67,57 @@ class LivePerturbation:
         self.publishers[name].publish(message)
 
     def lidar_callback(self, message: PointCloud2) -> None:
+        stat = self.stats["lidar"]
+        stat["input"] += 1
+        stat["input_points"] += int(message.width * message.height)
         output = message
-        if self.active() and self.scenario_name in ("rain", "fog"):
+        active = self.active() and "lidar" in self.scenario
+        if active:
+            stat["active"] += 1
+            # Rev-B sensor degradation deliberately includes a secondary
+            # LiDAR disturbance. This makes the condition observable to
+            # LiDAR-only/ICP estimators while retaining the configured
+            # GNSS/IMU disturbance for estimators that consume those streams.
             output = perturb_lidar(message, self.scenario["lidar"], self.severity, self.rng["lidar"], self.scenario_name)
+        stat["output_points"] += int(output.width * output.height)
+        stat["dropped"] += max(0, int(message.width * message.height) - int(output.width * output.height))
         self.publish("lidar", output)
 
     def camera_callback(self, message: Image) -> None:
+        self.stats["camera"]["input"] += 1
         output = message
         if self.active() and self.scenario_name == "fog":
+            self.stats["camera"]["active"] += 1
             output = perturb_camera(message, self.scenario["camera"], self.severity, self.rng["camera"])
         self.publish("camera", output)
 
     def depth_callback(self, message: Image) -> None:
+        self.stats["depth"]["input"] += 1
         output = message
         if self.active() and self.scenario_name == "fog":
+            self.stats["depth"]["active"] += 1
             output = perturb_depth(message, self.scenario["camera"], self.severity, self.rng["depth"])
         self.publish("depth", output)
 
     def gps_callback(self, message: NavSatFix) -> None:
+        self.stats["gps"]["input"] += 1
         if self.active() and self.scenario_name == "sensor_degradation":
+            self.stats["gps"]["active"] += 1
             relative = rospy.Time.now().to_sec() - self.bag_start
             gps = self.scenario["gps"]
             if bool(gps.get("drop_messages_during_outage", True)) and float(gps["outage_start_time"]) <= relative <= float(gps["outage_end_time"]):
+                self.stats["gps"]["dropped"] += 1
                 return
             self.publish("gps", perturb_gps(message, gps, self.severity, self.rng["gps"]))
             return
         self.publish("gps", message)
 
     def imu_callback(self, message: Imu) -> None:
-        output = self.imu(message) if self.active() and self.scenario_name == "sensor_degradation" else message
+        self.stats["imu"]["input"] += 1
+        active = self.active() and self.scenario_name == "sensor_degradation"
+        if active:
+            self.stats["imu"]["active"] += 1
+        output = self.imu(message) if active else message
         self.publish("imu", output)
 
 

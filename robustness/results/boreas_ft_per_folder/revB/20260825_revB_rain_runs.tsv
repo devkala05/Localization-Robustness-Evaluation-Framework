@@ -1,0 +1,7 @@
+scenario	algorithm	run_id	status	run_directory
+rain	fastlivo2	20260825_revB_rain_rain_fastlivo2	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/fastlivo2/20260825_revB_rain_rain_fastlivo2
+rain	fastlio2	20260825_revB_rain_rain_fastlio2	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/fastlio2/20260825_revB_rain_rain_fastlio2
+rain	lvisam	20260825_revB_rain_rain_lvisam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/lvisam/20260825_revB_rain_rain_lvisam
+rain	floam	20260825_revB_rain_rain_floam	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/floam/20260825_revB_rain_rain_floam
+rain	orbslam3	20260825_revB_rain_rain_orbslam3	accepted	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/orbslam3/20260825_revB_rain_rain_orbslam3
+rain	rtabmap	20260825_revB_rain_rain_rtabmap	requires_review	/home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/results/alive/one_full_loop/rtabmap/20260825_revB_rain_rain_rtabmap

@@ -1,0 +1,96 @@
+schema_version: 2
+dataset: alive_one_full_loop
+profile: revB_observable_sensor_stress
+input_bag: /home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/ss..'/data/e2o/one_full_loop.bag
+random_seed: 24081996
+
+topics:
+  lidar: [/lidar103/velodyne_points]
+  camera: [/camera/color/image_raw]
+  depth: [/camera/depth/image_rect_raw]
+  gps: [/mavros/global_position/global]
+  imu: [/mavros/imu/data]
+
+# Rev-B keeps the same three disjoint 40-second intervals as the audit run.
+# It increases degradation within physically plausible bounds and adds a
+# documented secondary LiDAR disturbance to sensor_degradation. This is
+# intentional: otherwise FLOAM (LiDAR-only) and the RTAB-Map ICP mode cannot
+# observe a GNSS/IMU-only disturbance.
+scenarios:
+  rain:
+    start_time: 70.0
+    end_time: 110.0
+    severity: 0.85
+    lidar:
+      dropout_percentage: 55.0
+      range_noise_std_m: 0.060
+      maximum_usable_range_m: 45.0
+      intensity_attenuation: 0.60
+      false_return_percentage: 1.00
+      false_return_min_range_m: 1.0
+      false_return_max_range_m: 18.0
+
+  fog:
+    start_time: 140.0
+    end_time: 180.0
+    severity: 0.85
+    lidar:
+      dropout_percentage: 30.0
+      range_noise_std_m: 0.040
+      maximum_usable_range_m: 25.0
+      intensity_attenuation: 0.75
+      extinction_coefficient_per_m: 0.060
+      false_return_percentage: 0.15
+      false_return_min_range_m: 1.0
+      false_return_max_range_m: 10.0
+    camera:
+      degradation_strength: 0.85
+      atmospheric_light: 0.86
+      visibility_m: 25.0
+      blur_sigma_px: 2.2
+      depth_maximum_usable_range_m: 20.0
+      depth_dropout_percentage: 20.0
+
+  sensor_degradation:
+    start_time: 210.0
+    end_time: 250.0
+    severity: 0.80
+    lidar:
+      dropout_percentage: 25.0
+      range_noise_std_m: 0.050
+      maximum_usable_range_m: 50.0
+      intensity_attenuation: 0.30
+      false_return_percentage: 0.20
+      false_return_min_range_m: 1.0
+      false_return_max_range_m: 20.0
+    gps:
+      mode: multipath_then_outage
+      horizontal_noise_std_m: 5.0
+      vertical_noise_std_m: 8.0
+      multipath_bias_east_m: 14.0
+      multipath_bias_north_m: -10.0
+      multipath_bias_up_m: 6.0
+      outage_start_time: 228.0
+      outage_end_time: 240.0
+      drop_messages_during_outage: true
+    imu:
+      angular_velocity_noise_std_rad_s: 0.022
+      linear_acceleration_noise_std_m_s2: 0.20
+      angular_velocity_bias_rad_s: [0.008, -0.006, 0.012]
+      linear_acceleration_bias_m_s2: [0.15, -0.10, 0.22]
+      bias_random_walk_std_rad_s_sqrt_s: 0.0010
+      accel_bias_random_walk_std_m_s2_sqrt_s: 0.010
+
+evaluation:
+  ground_truth: /home/devil/Desktop/car/localisation/Localization-Robustness-Evaluation-Framework/gt/reference_gt/trajectories/reference_trajectory_final.csv
+  bag_start_time_s: 1723528213.157976
+  alignment: se3
+  max_association_difference_s: 0.10
+  failure_error_threshold_m: 10.0
+  failure_minimum_duration_s: 1.0
+  dropout_gap_threshold_s: 1.0
+  recovery_error_threshold_m: 2.0
+  recovery_hold_duration_s: 3.0
+  recovery_search_limit_s: 45.0
+
+algorithms: [fastlivo2, fastlio2, lvisam, floam, orbslam3, rtabmap]

@@ -1,0 +1,176 @@
+{
+  "expected_pairs": 24,
+  "completed_with_poses": 24,
+  "trajectory_validation_pass": 24,
+  "perturbation_wiring_pass": 18,
+  "execution": [
+    {
+      "algorithm": "fastlivo2",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 2511,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlivo2",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 2498,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlivo2",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 2506,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlivo2",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 2487,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlio2",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 3056,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlio2",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 3056,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlio2",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 3056,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "fastlio2",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 3056,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "lvisam",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 1528,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "lvisam",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 1528,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "lvisam",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 1528,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "lvisam",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 1528,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "floam",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 3059,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "floam",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 3059,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "floam",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 3059,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "floam",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 3059,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "orbslam3",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 2073,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "orbslam3",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 2073,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "orbslam3",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 2073,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "orbslam3",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 2073,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "rtabmap",
+      "scenario": "baseline",
+      "status": "completed",
+      "poses": 2977,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "rtabmap",
+      "scenario": "rain",
+      "status": "completed",
+      "poses": 1575,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "rtabmap",
+      "scenario": "fog",
+      "status": "completed",
+      "poses": 1642,
+      "trajectory_validation": true
+    },
+    {
+      "algorithm": "rtabmap",
+      "scenario": "sensor_degradation",
+      "status": "completed",
+      "poses": 2973,
+      "trajectory_validation": true
+    }
+  ]
+}
